@@ -131,6 +131,6 @@
     "n": 6,
     "work": "resumed the killed cycle-6 build wave: merged T-002 + T-006, authored and ran both verification gates",
     "outcome": "both items done and verified: 32/32 units+normalize gate, 18/18 filters+score gate, 152/152 suite green; all 14 mutants detected",
-    "commit": "pending"
+    "commit": "6f02235"
   }
 }
