@@ -1,0 +1,29 @@
+=== T-006 GATE — hard filters + weighted scoring ===
+
+--- W: the weights are SPEC's, and they live in ONE config object ---
+  PASS  W1    weights are exactly 0.32/0.20/0.16/0.12/0.10/0.10 :: preference=8/25 context_interruption=1/5 inventory_use=4/25 cost=3/25 novelty=1/10 leftover_usefulness=1/10
+  PASS  W2    the six weights sum to EXACTLY one :: sum = 1/1
+  PASS  W3    every component obeys an INJECTED config — no inlined weight literals :: 6 components follow the injected weights
+
+--- B: the persisted breakdown is complete and exact ---
+  PASS  B1    total = SUM(weighted) - SUM(penalties), re-derived independently :: 3 breakdowns re-derived exactly
+  PASS  B2    no JS number anywhere in a persisted breakdown :: 2 breakdowns, every leaf a bigint Rational
+  PASS  B3    scoring is deterministic across repeated calls :: byte-identical
+
+--- P: hard-constraint precedence is absolute and never averaged ---
+  PASS  P1    precedence ranks follow the SPEC chain strictly :: allergy=0 household=1 member=2 strong_dislike=4
+  PASS  P2    multiple reasons are ordered most-binding first :: 6 kinds, ranks [0,1,1,3,4,5,5,6] ordered
+  PASS  P3    a strong dislike is never outweighed by inventory use or low cost :: excluded before scoring, never scored
+  PASS  P4    an allergen-carrying recipe is unreachable, not merely low-ranked :: carrier=peanut_butter allergen=peanut survivors=1 scored=1
+  PASS  P5    an optional garnish line cannot smuggle an allergen past the filter :: optional unsalted_butter still excluded
+  PASS  P6    an unresolvable ingredient is excluded when safety constraints exist :: constrained household: excluded; unconstrained household: 1 survivor
+  PASS  P7    time ceilings exclude strictly above, admit exactly at the ceiling :: survivors=1 (want 1: the at-ceiling recipe)
+
+--- F: DoD 9 fuzz — zero hard-excluded ingredients among survivors ---
+  PASS  F1    fuzz: 4000 household/recipe pairs, zero hard-excluded survivors :: 4000 iterations, 1169 survivors (995 from constrained households), 0 hard-excluded
+  PASS  F2    the fuzz is non-vacuous — it produces real survivors too :: 472 survived / 28 excluded of 500
+  PASS  F3    filtering is pure — repeatable and non-mutating :: repeatable, inputs untouched
+  PASS  F4    survivors + exclusions partition the input, preserving order :: 2 + 2 = 4 of 4, ordered
+  PASS  F5    every exclusion carries at least one typed reason :: 2 exclusions, all typed
+
+GATE PASS — 18 passed, 0 failed

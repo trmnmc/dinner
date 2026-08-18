@@ -1,0 +1,54 @@
+====================================================================
+MUTANT: M1 same-dimension conversion routed through binary floats
+  expected the gate to fail on: /U1|U4|U10/
+====================================================================
+  FAIL  U3    toCanonical is total and lands in the dimension base unit
+  FAIL  U4a   1/3 cup -> ml is EXACTLY cup_factor/3 (no float drift)
+  FAIL  U4b   round-trip 1/3 cup -> ml -> cup returns EXACTLY 1/3
+  FAIL  U4c   0.8 g/ml density applied to 1/3 cup stays exact
+  FAIL  U9a   range bounds canonicalize independently, never to a midpoint
+GATE FAIL — 27 passed, 5 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: M2 missing curated density GUESSED as 1 g/ml instead of refused
+  expected the gate to fail on: /U6/
+====================================================================
+  FAIL  U6    cross-dimension refusal sweep: 6 pairs x 4 curation shapes
+GATE FAIL — 31 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: M3 range collapsed to its midpoint instead of scaled independently
+  expected the gate to fail on: /U9a/
+====================================================================
+  FAIL  U9a   range bounds canonicalize independently, never to a midpoint
+GATE FAIL — 31 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: M4 normalized-form ambiguity resolved by coin flip
+  expected the gate to fail on: /N5c/
+====================================================================
+  FAIL  N5c   normalized-form ambiguity is reported with sorted candidates, never guessed
+GATE FAIL — 31 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: M5 registry alias-uniqueness guard removed
+  expected the gate to fail on: /N5b/
+====================================================================
+  FAIL  N5b   the parser REFUSES a registry where two entries claim one alias
+GATE FAIL — 31 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: M6 "to taste" folded into a numeric zero quantity
+  expected the gate to fail on: /U8/
+====================================================================
+  FAIL  U8    "to taste" survives every convert path as itself
+GATE FAIL — 31 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+
+ALL MUTANTS DETECTED BY THEIR TARGETED CHECK: YES

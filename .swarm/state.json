@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 5,
+  "cycle": 6,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -73,6 +73,20 @@
       "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work — authored the gates from scratch, ran them, and closed the wave.",
       "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind — detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
       "cycle": 5
+    },
+    {
+      "id": "D-9",
+      "topic": "scope-cut",
+      "decision": "T-002's domain/src/ingredients.ts is CUT from scope. catalog.ts (landed by T-008) already owns the curated ingredient registry — aliases, allergen classes, densities, per-item weights — sourced from data/ingredients.json. normalize.ts consumes IngredientRegistry as a parameter instead of owning a second table.",
+      "why": "A second curated table would be a second source of truth, which is precisely the data-drift failure Invariant 5 exists to prevent. Ruled at cycle 6 dispatch time and recorded in the in-flight marker; formalised here because the cycle that made the ruling died before it could write a journal block.",
+      "cycle": 6
+    },
+    {
+      "id": "D-10",
+      "topic": "crashed-cycle-salvage",
+      "decision": "Cycle 6 was killed mid-wave by the pacer's 600s background-task ceiling (\"Background tasks still running after 600s; terminating\", runs/pacer.log 22:55Z). This session RESUMED cycle 6 rather than opening cycle 7: merged wave-006-T-002 (complete and committed by its builder), salvage-committed the T-006 builder's uncommitted worktree files, merged those too, then authored and ran both verification gates.",
+      "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed — it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests — filed as T-029 rather than papered over.",
+      "cycle": 6
     }
   ],
   "known_issues": [
@@ -93,13 +107,19 @@
       "severity": "medium",
       "desc": "SWARM-side, workflows/build-wave.js. Its builder Step 0 hardcodes a /tmp worktree (mktemp -d \"${TMPDIR:-/tmp}/wave-<id>.XXXXXX\"). On this host, agent file-edit tools are confined to the session's allowed directories (/opt/swarm, /opt/targets/<target>), so a /tmp worktree is writable by git but NOT by the builder's own Write/Edit tools: every builder would provision successfully, then stall or fail part-way through its first edit. Worked around this cycle by a conductor `context` override pointing the worktree at <target>/.wt/<item-id> (gitignored) plus an `npm ci` there; the wave then ran clean first try. The durable fix is to derive the worktree root from projectDir in build-wave.js rather than TMPDIR. Second, smaller gap in the same file: it passes the backlog's effort value straight to agent({effort}), but the backlog uses S/M/L while the harness expects low/medium/high - the conductor mapped L->high at dispatch. Hard rule 5 forbids editing the script mid-run; both belong in the morning report.",
       "cycle": 3
+    },
+    {
+      "id": "KI-4",
+      "severity": "high",
+      "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" — runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
+      "cycle": 6
     }
   ],
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 4,
-    "wave_streak": 0,
+    "wave_streak": 1,
     "window_tokens_attributed": 19263667
   },
   "qa": {
@@ -108,9 +128,9 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 5,
-    "work": "verification gate for the crashed cycle-4 wave (T-008, T-012) + backlog hygiene",
-    "outcome": "both items done and verified: 55/55 catalog gate + 49/49 cooking gate + 97/97 suite green; both gates proven failable against mutants",
-    "commit": "808d695"
+    "n": 6,
+    "work": "resumed the killed cycle-6 build wave: merged T-002 + T-006, authored and ran both verification gates",
+    "outcome": "both items done and verified: 32/32 units+normalize gate, 18/18 filters+score gate, 152/152 suite green; all 14 mutants detected",
+    "commit": "pending"
   }
 }

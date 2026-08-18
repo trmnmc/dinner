@@ -43,14 +43,13 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-001"
       ],
       "files_hint": [
         "domain/src/units.ts",
         "domain/src/normalize.ts",
-        "domain/src/ingredients.ts",
         "tests/units.test.ts",
         "tests/normalize.test.ts"
       ],
@@ -66,7 +65,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 1 binds: all arithmetic through qty.ts Rational; review greps for bare +/* on numbers in these files. 'To taste' is a distinct non-numeric state, never foldable into a quantity. Ranges preserved as min/max, scaled independently."
+      "notes": "Invariant 1 binds: all arithmetic through qty.ts Rational; review greps for bare +/* on numbers in these files. 'To taste' is a distinct non-numeric state, never foldable into a quantity. Ranges preserved as min/max, scaled independently. CYCLE 6 (D-9): domain/src/ingredients.ts CUT — catalog.ts already owns the curated registry; a second table would be a second source of truth."
     },
     {
       "id": "T-003",
@@ -172,7 +171,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-001"
       ],
@@ -195,7 +194,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Hard-constraint precedence is absolute and never averaged: allergy > household hard restriction > member hard restriction > strong dislike > soft preference > optimisation. A strong dislike can never be outweighed by inventory use or cost. Adjacent novelty = attribute distance with at least one familiar anchor preserved. No LLM anywhere. Invariant 1 binds on persisted scores."
+      "notes": "Hard-constraint precedence is absolute and never averaged: allergy > household hard restriction > member hard restriction > strong dislike > soft preference > optimisation. A strong dislike can never be outweighed by inventory use or cost. Adjacent novelty = attribute distance with at least one familiar anchor preserved. No LLM anywhere. Invariant 1 binds on persisted scores. CYCLE 6: builder was killed mid-wave before writing tests/score.test.ts; behaviour verified by the conductor gate instead, and the missing regression tests are filed as T-029."
     },
     {
       "id": "T-007",
@@ -931,6 +930,64 @@
       "model": "sonnet",
       "attempts": 0,
       "notes": "DESIGN names this FIRST TO CUT — it is the only delighter editing existing modules rather than adding a leaf. Any touched frozen type is a contract-drift emergency (single-agent commit). Member hard restriction sits in the existing precedence chain below household hard restriction, above strong dislike."
+    },
+    {
+      "id": "T-029",
+      "title": "Commit regression tests for score.ts (weights, breakdown arithmetic, penalties)",
+      "kind": "fix",
+      "priority": 1,
+      "value": "H",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-006"
+      ],
+      "files_hint": [
+        "tests/score.test.ts"
+      ],
+      "acceptance": "tests/score.test.ts asserts the six SPEC weights exactly, that they sum to one, that total equals the sum of weighted components minus the sum of penalties for a fixture set, that every persisted value is a Rational, and that an injected config is honoured by every component (no inlined weight literals). Suite green.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [
+        "Deterministic recommendation engine"
+      ],
+      "dod": [
+        2,
+        11
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "T-006 landed score.ts with ZERO committed test coverage: the builder was killed by the harness before it wrote this file. The conductor gate (SWARM/runs/cycle-006-gate-T006.mjs) verified the behaviour at cycle 6, but that gate is not in the repo and npm test does not run it, so a weight drift would ship silently. This item closes that hole. Do NOT copy the conductor gate; write tests from SPEC."
+    },
+    {
+      "id": "T-030",
+      "title": "Align the registry name-uniqueness key with the fold used at match time",
+      "kind": "fix",
+      "priority": 4,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-002"
+      ],
+      "files_hint": [
+        "domain/src/catalog.ts",
+        "tests/catalog.test.ts"
+      ],
+      "acceptance": "Two entries whose aliases differ only by internal whitespace (e.g. \"red  onion\" vs \"red onion\") are REJECTED by parseIngredientRegistry, with a test proving it. Uniqueness is keyed on the same folded form matchIngredient indexes on, so no alias collision can reach the match index.",
+      "packages": [],
+      "wave": 3,
+      "must_haves": [
+        "Deterministic quantity engine"
+      ],
+      "dod": [
+        4
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Found by the cycle-6 conductor gate (check N5d). parseIngredientRegistry keys uniqueness on name.toLowerCase(); normalize.ts keys its alias index on foldIngredientText (lowercase + COLLAPSED whitespace). An alias pair differing only in internal whitespace therefore passes the parser and then silently collides in the fold index, where last-writer-wins. LATENT, not live: gate check N4 proves the shipped 97-entry registry has no such pair, so no current behaviour is wrong. It is an authoring-time trap, and DoD 4 is exactly about duplicate lines caused by naming differences."
     }
   ]
 }

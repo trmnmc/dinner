@@ -1,0 +1,72 @@
+====================================================================
+MUTANT: S1 the preference weight silently drifts from 0.32 to 0.30
+  expected the gate to fail on: /W1|W2/
+====================================================================
+  FAIL  W1    weights are exactly 0.32/0.20/0.16/0.12/0.10/0.10
+  FAIL  W2    the six weights sum to EXACTLY one
+GATE FAIL — 16 passed, 2 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: S2 the preference weight is INLINED, ignoring the config object
+  expected the gate to fail on: /W3/
+====================================================================
+  FAIL  W3    every component obeys an INJECTED config — no inlined weight literals
+GATE FAIL — 17 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: S3 penalties silently dropped from the persisted total
+  expected the gate to fail on: /B1/
+====================================================================
+  FAIL  B1    total = SUM(weighted) - SUM(penalties), re-derived independently
+GATE FAIL — 17 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: S4 a strong dislike demoted from hard exclusion to a scoring input
+  expected the gate to fail on: /P2|P3/
+====================================================================
+  FAIL  P3    a strong dislike is never outweighed by inventory use or low cost
+GATE FAIL — 17 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: S5 optional garnish lines exempted from the allergy sweep
+  expected the gate to fail on: /P5|F1/
+====================================================================
+  FAIL  P5    an optional garnish line cannot smuggle an allergen past the filter
+  FAIL  F1    fuzz: 4000 household/recipe pairs, zero hard-excluded survivors
+GATE FAIL — 16 passed, 2 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: S6 allergens trusted from the recipe tag only, registry not consulted
+  expected the gate to fail on: /P4|P5|F1/
+====================================================================
+  FAIL  P4    an allergen-carrying recipe is unreachable, not merely low-ranked
+  FAIL  P5    an optional garnish line cannot smuggle an allergen past the filter
+  FAIL  F1    fuzz: 4000 household/recipe pairs, zero hard-excluded survivors
+  FAIL  F2    the fuzz is non-vacuous — it produces real survivors too
+  FAIL  F5    every exclusion carries at least one typed reason
+GATE FAIL — 13 passed, 5 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: S7 the time ceiling excludes AT the ceiling (off-by-one)
+  expected the gate to fail on: /P7/
+====================================================================
+  FAIL  P7    time ceilings exclude strictly above, admit exactly at the ceiling
+GATE FAIL — 17 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+====================================================================
+MUTANT: S8 exclusion reasons returned unsorted (precedence lost)
+  expected the gate to fail on: /P2/
+====================================================================
+  FAIL  P2    multiple reasons are ordered most-binding first
+GATE FAIL — 17 passed, 1 failed
+  -> defect DETECTED by the targeted check: YES
+
+
+ALL MUTANTS DETECTED BY THEIR TARGETED CHECK: YES

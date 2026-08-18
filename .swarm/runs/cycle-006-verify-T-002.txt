@@ -1,0 +1,39 @@
+=== T-002 GATE — units + ingredient normalization ===
+
+--- U: unit conversion ---
+  PASS  U1a   kg = 1000 x g exactly
+  PASS  U1b   lb = 16 x oz exactly
+  PASS  U1c   l = 1000 x ml exactly
+  PASS  U1d   tbsp = 3 x tsp exactly
+  PASS  U1e   cup = 16 x tbsp exactly
+  PASS  U1f   fl_oz = 2 x tbsp exactly
+  PASS  U1g   g / ml / count are the identity factors
+  PASS  U2    all 11 factors are positive bigint Rationals :: 11 units
+  PASS  U3    toCanonical is total and lands in the dimension base unit :: 11 units -> g/ml/count
+  PASS  U4a   1/3 cup -> ml is EXACTLY cup_factor/3 (no float drift) :: got 157725491/2000000 want 157725491/2000000
+  PASS  U4b   round-trip 1/3 cup -> ml -> cup returns EXACTLY 1/3 :: got 1/3
+  PASS  U4c   0.8 g/ml density applied to 1/3 cup stays exact :: 157725491/2500000 vs 157725491/2500000
+  PASS  U5    same-dimension conversion ignores the registry entirely :: all units, empty registry entry
+  PASS  U6    cross-dimension refusal sweep: 6 pairs x 4 curation shapes :: 24 combinations, 0 guesses
+  PASS  U7a   count -> mass: 3 items x 5 g = exactly 15 g :: 15/1
+  PASS  U7b   mass -> count keeps the exact fraction, never rounds :: 7/5
+  PASS  U7c   volume -> count chains through BOTH curated values exactly :: 160/1 vs 160/1
+  PASS  U8    "to taste" survives every convert path as itself :: 12 convert paths + canonicalize
+  PASS  U9a   range bounds canonicalize independently, never to a midpoint :: min 473176473/2000000 max 1419529419/2000000
+  PASS  U9b   range crosses dimensions bound-by-bound via curated data :: 5/1..15/1
+  PASS  U9c   an unconvertible RANGE refuses whole — the line is never dropped :: not_convertible
+  PASS  U10   no JS number escapes any conversion result :: all results bigint-exact
+
+--- N: ingredient normalization (DoD 4) ---
+  PASS  N1    the four SPEC-named garlic variants collapse to ONE id with confidence :: ids=garlic confidences=19/20 4/5 4/5 4/5
+  PASS  N2    confidence grades are exact Rationals, strictly ordered id>alias>form :: 1/1 > 19/20 > 4/5
+  PASS  N3    registry-wide sweep: every id + every alias resolves to its own entry :: 234 id+alias probes over 97 entries, 0 misroutes
+  PASS  N4    no alias is claimed by two entries :: 234 distinct claims
+  PASS  N5a   unknown text is unmatched and carries its normalized form :: unmatched "quantum flapjack of zorb"
+  PASS  N5b   the parser REFUSES a registry where two entries claim one alias :: name "the same thing" collides with entry 'alpha_thing' — ids and aliases must be globally unique
+  PASS  N5c   normalized-form ambiguity is reported with sorted candidates, never guessed :: unmatched_ambiguous candidates=alpha_pepper,beta_pepper
+  PASS  N5d   LATENT-GAP PROBE (informational): whitespace-only alias variants :: parser admitted whitespace-variant aliases; fold index resolved to beta_ws (gap is real but latent — see backlog)
+  PASS  N6    matching is deterministic across repeated calls :: 4 texts x 2 calls identical
+  PASS  N7    every matched confidence is a bigint Rational in (0,1] :: all confidences exact and in range
+
+GATE PASS — 32 passed, 0 failed

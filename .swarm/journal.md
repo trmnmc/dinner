@@ -675,3 +675,177 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787091957,"next_wakeup_at":1787094657,"pid":2357774,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":5,"ratio":0.077,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":55551168,"window_cost_usd":67.79387625,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":12529049,"projected_depletion_at":1787113934,"last_probe_ts":1787092373,"last_real_probe_ts":1787092373,"probe_failures":0,"probe_note":"Cycle 5 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh DENIED again — KI-1 recurs). Raw probe: runs/cc-probe-c5.json. 5h window 18:00-23:00Z: limit=max prior block 130,591,250; used 55,551,168; remaining 75,040,082 over 1,657s to T_target (usage_reset 23:00Z, earlier than stop_at) => target 163,032,164 tok/h; actual 12,529,049 tok/h (ccusage burnRate 208,817 tok/min) => rho 0.077 => gear_target 5. The window is nearly over, so the target denominator is tiny and rho is artificially low — evidence, not licence. WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 52.0% at week_elapsed 24.65% => heat 2.11 > 1.3 (opus 47/24.65 = 1.91) => ceiling 2 + promote_blocked. KI-2 RE-OPENED: allocator swarm_used_pct fell 4 -> 0 with allow_overall_pct 0, so the env-heat denominator is zero again and the feeder would DISENGAGE the governor exactly when posture is \"trickle\". The raw-account clamp is what holds the ceiling at 2 this cycle; the blind spot did not bite only because a second, independent signal was hot. gear_target 5 clamped to 2; hysteresis from 2 => applied gear 2. Wave cap 2, demote=true. Allocator also now advertises dial 0.30 (posture trickle) against the runfile pacing dial 1.0 — recorded, not applied: pacing is a kickoff-time input and hard rule 5 forbids re-tuning it mid-run.","weekly":{"ok":true,"weekly_used_pct":52,"opus_used_pct":47,"week_elapsed_pct":24.65,"weekly_heat":2.11,"opus_heat":1.91,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":5,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+
+## cycle 6 | 2026-08-18T23:40:49+0000 | dinner | BUILD
+
+work: RESUMED the killed cycle-6 build wave (T-002 units+normalization, T-006 filters+scoring)
+gear: 2 (rho 1.23, weekly governor clamp 2) | wave: k=2, both route_class core -> fable
+outcome: both items VERIFIED done. 32/32 + 18/18 gate checks, 152/152 suite, 14/14 mutants caught.
+
+### ORIENT — cycle 6 was guillotined mid-wave, and left a map
+
+`git status` clean; master carried `f793e77 cycle 6: in-flight marker`. state.json said
+cycle 5. Two wave branches existed and neither was merged. The pacer log names the killer
+exactly:
+
+    2026-08-18T22:40:48+0000 decision=spawned auth=subscription
+    Background tasks still running after 600s; terminating.
+    2026-08-18T22:55:01+0000 decision=cycle-done cost=4.2696195
+
+The harness kills a headless cycle's background tasks at 600s. build-wave's own duration
+budget is 2700s. Any wave running past ten minutes is cut off mid-flight — which is also
+what happened to cycle 4. Filed as KI-4 (high): the tool's two timeouts disagree with each
+other by a factor of 4.5, and the wave always loses. Not fixable mid-run (hard rule 5).
+
+The difference from cycle 4 is that this time the dying cycle left a map. Its in-flight
+marker — written at dispatch, before any merge, as D-8 recommended — named the branches,
+the worktrees, the runId and the recovery procedure. That is why this session spent its
+time verifying rather than diagnosing. The mechanism D-8 asked for paid for itself on its
+first real use.
+
+Recovery taken (D-10): this session RESUMED cycle 6 instead of opening cycle 7.
+  - `wave-006-T-002` was complete and committed by its builder -> merged, npm test green.
+  - `wave-006-T-006` was EMPTY at the branch tip, but its worktree held three uncommitted
+    files (filters.ts 434, score.ts 416, filters.test.ts 520). The builder had been killed
+    between writing them and committing. The work is coherent and self-contained — it
+    imports only frozen modules (recipe.ts, qty.ts, catalog.ts) — so it was salvage-
+    committed and merged rather than discarded.
+  - What the salvage cannot invent: `tests/score.test.ts` was never written. score.ts
+    landed with ZERO committed coverage. That is filed as T-029 (priority 1), not papered
+    over. My gate below verifies score.ts behaviourally, but the gate lives in SWARM, not
+    in the repo, and `npm test` does not run it.
+Also recorded: D-9, the scope cut of `domain/src/ingredients.ts` that cycle 6 ruled at
+dispatch and died before it could journal.
+
+control channel: polled, 0 pending, 0 injections. allocator posture trickle, dial 0.30
+advertised against the runfile's 1.0 — recorded, not applied (pacing is a kickoff input).
+
+### VERIFICATION EVIDENCE
+
+Both builders' claims were unavailable — one never returned at all. That changes nothing
+about method: I authored both gates this cycle, from SPEC.md and the frozen types, after
+the code was already on disk. Neither builder saw a check. Both gates implement their own
+bigint rational arithmetic rather than importing qty.ts, so the module under test is never
+used to check itself.
+Gate sources (conductor-owned): /opt/swarm/runs/cycle-006-gate-T002.mjs, cycle-006-gate-T006.mjs
+Full output: .swarm/runs/cycle-006-verify-T-002.txt, cycle-006-verify-T-006.txt
+Mutants: .swarm/runs/cycle-006-mutant-T-002.txt, cycle-006-mutant-T-006.txt
+
+1. test_cmd, run by me on master after EACH merge — `npm test`:
+     after T-002:  tests 132  pass 132  fail 0
+     after T-006:  tests 152  pass 152  fail 0
+   (`tsc --noEmit` gates test:unit in the npm script, so 152 passing means strict
+   typecheck passed first.) Hard rule 4 satisfied at both merge points.
+
+2. T-002 gate — 32 checks, GATE PASS, 0 failed:
+     U1a-g  kg=1000g, lb=16oz, l=1000ml, tbsp=3tsp, cup=16tbsp, fl_oz=2tbsp  PASS
+     U4a    1/3 cup -> ml is EXACTLY 157725491/2000000, no float drift        PASS
+     U4b    round-trip 1/3 cup -> ml -> cup returns EXACTLY 1/3               PASS
+     U6     24 cross-dimension combinations, 0 guesses, exact `missing` sets  PASS
+     U8     "to taste" survives 12 convert paths as itself, never a number    PASS
+     U9a    range keeps min AND max, never collapses to the midpoint          PASS
+     N1     the four SPEC-named garlic variants -> ONE id, confidences 19/20, 4/5, 4/5, 4/5  PASS
+     N3     registry sweep: 234 id+alias probes over 97 entries, 0 misroutes  PASS
+     N4     no alias claimed by two entries (234 distinct claims)             PASS
+   U1 asserts RELATIONS (3 tsp = 1 tbsp), not absolute constants, so the check cannot
+   smuggle in my own choice of measurement standard. N3 is the one I trust most: it does
+   not use hand-picked examples but walks every id and every alias the product ships.
+
+3. T-006 gate — 18 checks, GATE PASS, 0 failed:
+     W1     weights exactly 8/25, 1/5, 4/25, 3/25, 1/10, 1/10                 PASS
+     W2     they sum to EXACTLY 1/1                                           PASS
+     W3     all 6 components honour an INJECTED prime-weight config           PASS
+     B1     total = SUM(weighted) - SUM(penalties), re-derived independently  PASS
+     B2     not one JS number in a persisted breakdown (Invariant 1)          PASS
+     P1     precedence: allergy 0 < household 1 < member 2 < strong_dislike 4 PASS
+     P3     strong dislike NOT outweighed by inventory+low cost -> excluded   PASS
+     P5     an OPTIONAL garnish cannot smuggle an allergen past the filter    PASS
+     P7     a ceiling admits exactly-at, excludes strictly-above              PASS
+     F1     fuzz 4000 pairs: 1169 survivors (995 constrained), 0 leaks        PASS
+   W3 is how "weights live in one config object, never inline literals" becomes testable:
+   I inject a config of distinct primes and demand every component follow it. An inlined
+   0.32 anywhere fails immediately (mutant S2 confirms). P3 is the SPEC claim stated twice
+   — the counter-case is built as strong as possible (cheapest cost band, everything in
+   inventory, loved on five other axes, one strong dislike) and it must still be EXCLUDED,
+   not merely out-ranked.
+   F1 carries its own non-vacuity assertion: it FAILS if fewer than 100 survivors came
+   from constrained households, so "0 violations" can never mean "nothing got through to
+   check". It reported 995. Its notion of "hard-excluded" is re-derived from SPEC inside
+   the check and never calls back into filters.ts.
+
+4. MY GATES WERE THEMSELVES TESTED — 14 mutants, 14 caught
+
+A gate that cannot fail is worse than no gate. Every check above is load-bearing only if
+the defect it targets actually trips it, so I planted 14 defects one at a time and re-ran:
+  T-002: floats in toCanonical -> U3/U4a/U4b/U4c/U9a FAIL. Missing density GUESSED as
+    1 g/ml -> U6 FAIL. Range collapsed to midpoint -> U9a FAIL. Ambiguity coin-flipped ->
+    N5c FAIL. Alias-uniqueness guard removed -> N5b FAIL. "to taste" folded to 0 g -> U8 FAIL.
+  T-006: weight drift 0.32->0.30 -> W1+W2 FAIL. Weight inlined -> W3 FAIL. Penalties
+    dropped from total -> B1 FAIL. Strong dislike demoted to a scoring input -> P3 FAIL.
+    Optional lines exempted from the allergy sweep -> P5+F1 FAIL. Registry not consulted
+    for allergens -> P4+P5+F1+F2+F5 FAIL. Ceiling off-by-one -> P7 FAIL. Reasons unsorted
+    -> P2 FAIL.
+All 14 detected by the check written for them. The PASSes above are earned.
+
+5. ONE CHECK OF MINE PASSED FOR THE WRONG REASON, AND I CAUGHT IT
+
+N5b originally built a colliding registry as a hand-made Map and asserted matchIngredient
+reported ambiguity. It FAILED — the code returned `beta_thing`. The finding was mine, not
+the code's: parseIngredientRegistry already refuses to admit two entries claiming one
+name, so my fixture had bypassed the actual guard by constructing a state the product
+cannot reach. I re-aimed the check at the guard itself rather than deleting it.
+Re-aimed, it passed — but for the WRONG REASON: my fixture used store_section 'pantry',
+which is not a valid section, so the parser threw on THAT and my regex matched a
+collision message that happened to be elsewhere in the issues array. Fixed by adding a
+CONTROL: the same fixture with the collision removed must parse cleanly first, and the
+assertion now requires a message matching /collide/ specifically. Both edits made the
+gate stricter; neither weakened it.
+That detour also surfaced a real latent gap — filed as T-030, not as a pass:
+parseIngredientRegistry keys uniqueness on `name.toLowerCase()` while normalize.ts indexes
+on `foldIngredientText` (lowercase + COLLAPSED whitespace). Aliases differing only by
+internal whitespace pass the parser and then silently collide in the fold index, last
+writer winning. Check N4 proves the shipped 97-entry registry contains no such pair, so
+this is latent, not live — an authoring trap rather than a current defect, which is
+exactly why it is a backlog item and not a gate failure.
+
+6. collision-scan: `no classic scripts found — not applicable`. Reported as
+   not-applicable, never as a pass.
+
+result: T-002 -> done, T-006 -> done. Five verified items of 30.
+  - units.ts (280) + normalize.ts (268) + 61 tests. Cross-dimension conversion refuses
+    with a typed NotConvertible naming the ingredient, both dimensions and every absent
+    curated field — the "reported separately, never guessed" half of DoD 4, which is the
+    part most implementations quietly skip.
+  - filters.ts (434) + score.ts (416) + 20 tests. Exclusion is unreachability: scoring
+    physically cannot see an excluded recipe because it takes HardFilterResult, not a
+    recipe list. That is the structural reason a strong dislike can never be averaged
+    away, rather than a rule someone has to remember.
+
+wave autotune: zero reverted merges, zero failed verifies -> CLEAN on the rule's own
+terms, so wave_streak 0 -> 1 (promotion needs 2). k_current stays 4. Honest caveat: this
+wave was also KILLED mid-flight, but that is an infrastructure signal (KI-4), not evidence
+about wave size, and the autotune rule keys on reverts and failed verifies. Effective wave
+size next cycle = min(k_current 4, gear cap 2, hard max 5) = 2.
+
+burn attribution: skipped — window_tokens went 55,551,168 -> 720,910 across the 23:00Z
+window reset, a negative delta.
+
+honest note on what this cycle did NOT establish: score.ts has no committed test coverage
+(T-029) — my gate proves it correct TODAY, and nothing in `npm test` will notice if it
+drifts TOMORROW. That is the single most important thing a reader of this journal should
+know about the current state. DoD 9's fuzz is proven at the FILTER layer only; there is no
+planner yet, so "zero plans containing a hard-excluded ingredient" remains unproven
+end-to-end and T-007 is where that risk lands. Still nothing rendered: no server, no
+screen, so the accessibility must-have and tokens.css contrast ratios remain unverified
+exactly as at cycles 3 and 5, and DoD 7's kill-survival claim stays a domain-layer claim
+until T-020. No QA or look pass ran — still no subject. All reported as not-run.
+
+next: wave 2 with effective k=2. Best-value unblocked pair with disjoint scopes:
+T-029 (score.ts regression tests — closes the coverage hole this cycle opened, S-effort)
+and T-003 (serving scaling + cross-recipe aggregation + traceability, which T-002 just
+unblocked and DoD 5 depends on). Disjoint: tests/score.test.ts vs domain/src/aggregate.ts.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787096449,"next_wakeup_at":1787097349,"pid":2361607,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":1.23,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":720910,"window_cost_usd":0.8827030000000001,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":35326700,"projected_depletion_at":1787108960,"last_probe_ts":1787096449,"last_real_probe_ts":1787096449,"probe_failures":0,"probe_note":"Cycle 6 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh DENIED again \u2014 KI-1 recurs, 3rd consecutive cycle). Raw probe: runs/cc-probe-c6.json; rho arithmetic: runs/.c6-rho.mjs. NEW 5h window 23:00-04:00Z opened 12 min before this cycle. limit=max prior block 130,591,250; used 720,910; remaining 129,870,340 over 16,274s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 28,728,845 tok/h; actual 35,326,700 tok/h (ccusage burnRate 588,778 tok/min) => rho 1.23 => gear_target 2. Caveat recorded, not hidden: a burn rate sampled 12 min into a fresh window is spiky and this rho is the least trustworthy of the run so far \u2014 but it lands in the same gear the governor would force anyway, so nothing rests on it. WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 54.0% at week_elapsed 25.27% => heat 2.14 > 1.3 (opus 50/25.27 = 1.98) => ceiling 2 + promote_blocked. KI-2 status: allocator swarm_used_pct recovered 0 -> 2 with allow_overall_pct still 0, so the feeder's denominator is non-zero this cycle and the governor would engage \u2014 but ONLY by luck of drift, exactly as at cycle 3. The zero-envelope blind spot is unchanged and the bug stays open. gear_target 2, prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).","weekly":{"ok":true,"weekly_used_pct":54,"opus_used_pct":50,"week_elapsed_pct":25.27,"weekly_heat":2.14,"opus_heat":1.98,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":7,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
