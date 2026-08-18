@@ -84,9 +84,9 @@
     },
     {
       "id": "KI-2",
-      "severity": "low",
-      "desc": "RESOLVED-BY-DRIFT at cycle 3, kept for the morning report. The weekly governor's zero-envelope blind spot (heat computed as 100*swarm_used/(swarm_used+allow_overall); denominator 0 -> disengage) closed on its own once swarm_used_pct rose 0 -> 4, so the feeder now returns weekly_used_pct 100 at week_elapsed 23.26 => heat 4.30 and the governor clamps the ceiling to 2. The BUG IS STILL REAL: a zero envelope should clamp hardest, and it disengaged instead for cycles 0-2, exactly when the allocator posture was most restrictive. The fix belongs in bin/swarm-weekly-from-allocator.sh (treat u+a<=0 as maximum heat, not as unconfigured). Hard rule 5 forbids the fix mid-run.",
-      "cycle": 1
+      "severity": "medium",
+      "desc": "RE-OPENED at cycle 5 (was mislabelled RESOLVED-BY-DRIFT at cycle 3). The weekly governor zero-envelope blind spot in bin/swarm-weekly-from-allocator.sh: heat is computed as 100*swarm_used/(swarm_used+allow_overall), so a zero denominator DISENGAGES the governor. At cycle 3 swarm_used_pct had drifted 0 -> 4 and I recorded the bug as resolved. At cycle 5 it fell back to 0 with allow_overall_pct 0 and posture \"trickle\", so the feeder would disengage the governor again — precisely when restraint matters most. The ceiling held at 2 this cycle ONLY because a second, independent signal was hot (raw account 52.0% weekly at 24.65% week-elapsed => heat 2.11). Drift is not a fix. Correct behaviour: u+a <= 0 must mean MAXIMUM heat, not \"unconfigured\". Hard rule 5 forbids the fix mid-run; morning report.",
+      "cycle": 5
     },
     {
       "id": "KI-3",
@@ -111,6 +111,6 @@
     "n": 5,
     "work": "verification gate for the crashed cycle-4 wave (T-008, T-012) + backlog hygiene",
     "outcome": "both items done and verified: 55/55 catalog gate + 49/49 cooking gate + 97/97 suite green; both gates proven failable against mutants",
-    "commit": ""
+    "commit": "808d695"
   }
 }
