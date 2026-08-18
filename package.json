@@ -1,0 +1,21 @@
+{
+  "name": "three-good-dinners",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dinner decision-and-execution system for an interrupted parent. Deterministic core, zero runtime dependencies.",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node server/src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --test 'tests/**/*.test.ts'",
+    "test": "npm run typecheck && npm run test:unit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  }
+}
