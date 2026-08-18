@@ -134,3 +134,83 @@ firing 18:39:57Z. Cycle 1 will therefore spawn headless with the correct --add-d
 
 goodnight push: sent via `bin/swarm-notify.sh send goodnight` (relative form — the absolute
 form is the one KI-2 denies).
+
+## cycle 1 | 2026-08-18T19:35:12+0000 | dinner | DESIGN -> PLAN
+
+work: design-panel — step-4 gate 1. state.json.decisions held D-1..D-4 (platform,
+scope-cut, persistence, prior-art) but no DESIGN-topic entry, so the DESIGN gate was
+still closed and no other work type was reachable.
+
+budget: gear 3 cruise (up one from 2 by hysteresis), rho 0.48, gear_target 5, k_cap 3.
+window 19,972,818 tokens / $17.91 of a 130,591,250 limit; 14,611,177 tokens/hour;
+projected depletion 1787108276 (2026-08-19T03:37Z, well past the 23:00Z reset).
+governor DISENGAGED — see KI-2. probe REAL, probe_failures 0.
+
+probe method (deviation, journaled not hidden): `bin/swarm-budget.sh` is NOT in the
+permission allowlist (KI-1), so it could not be invoked. Rather than cruise blind on a
+clock fallback, the probe itself was run with the allowlisted tool the script would have
+used — `npx ccusage@latest blocks --json --token-limit max` — and the gear was computed
+by replaying the script's documented controller (T_target = min(rolled-forward reset,
+future stop_at); rho = tokensPerMinute / (dial * remaining / minutes); ladder
+0.5/0.8/1.2/2.0; weekly ceiling; one-step hysteresis). This is a read-only measurement
+with sanctioned tools, not a workaround of the denied WRITE — the kickoff's refusal to
+route around the denied settings edit still stands.
+
+KI-2 opened (SWARM-side, low): the weekly governor disengaged at exactly the moment the
+allocator was most restrictive. swarm-weekly-from-allocator.sh computes heat as
+100*swarm_used/(swarm_used+allow_overall); allocator.json reports posture "trickle" with
+allow_overall_pct 0 AND swarm_used_pct 0, so the denominator is zero, the feeder returns
+week_elapsed_pct 0, and the governor reads "unconfigured" -> ceiling 5. Raw account heat
+is meanwhile 1.84 (42% weekly used at 22.83% week elapsed). Only one-step hysteresis kept
+this cycle at gear 3 instead of 5. A zero envelope should clamp harder, not disengage.
+Not fixed — hard rule 5. Morning report.
+
+control: no runs/control.json on disk -> control idle, nothing pending, no injections.
+
+workflow: runId wf_0d145bc2-64b -> .swarm/runs/cycle-001-design-panel.json
+models: 3 designers + 1 blind judge, all claude-fable-5 (judgment seats, both policies).
+4/4 agents alive, 0 errors, 90,854 subagent tokens, 431s.
+candidates: MINIMAL "Dinner" (34 files) | AMBITIOUS "Three Good Dinners" (49 files) |
+TASTE-FORWARD "Tonight" (42 files).
+
+DECISION D-5: adopt candidate B (AMBITIOUS), judge 45/50, + 6 grafted steals.
+Locked to .swarm/DESIGN.md, binding on every builder.
+
+VERIFICATION EVIDENCE:
+  Gate authored AT VERIFY TIME (conductor-written checker, not the panel's own claims;
+  full script run and discarded, output reproduced verbatim):
+    C1 three candidates :: got 3                                              PASS
+    C1 fields MINIMAL :: file_plan=34 | AMBITIOUS :: 49 | TASTE-FORWARD :: 42 PASS
+    C2 total A :: 9+9+7+9+6=40 vs stated 40                                   PASS
+    C2 total B :: 10+9+9+9+8=45 vs stated 45                                  PASS
+    C2 total C :: 9+8+8+10+7=42 vs stated 42                                  PASS
+    C2 winner is argmax :: declared B, argmax B (45)                          PASS
+    C3 covers: 17/17 must-have surfaces probed against the winning file plan  PASS
+      (rational/bigint, density gate, alias+confidence, trace links, 30 recipes,
+       validation gate, calibration, weights config, set-scoring, swap, packaging,
+       confirmed-only inventory, SIGKILL survival, prep, feedback, household_id,
+       aria-live/44px)
+    C4 no runtime deps :: "sole devDependency" / zero-runtime-dependency          PASS
+    C4 no LLM in runtime path :: no llm/openai/anthropic-api/model-call match      PASS
+    GATE PASS — 0 failed check(s)   (32 checks total)
+  test_cmd: NOT RUN — no package.json and no source exists yet (cycle 1 produced a
+    design decision, not code). Reported as not-run, never as passed.
+
+honest note on what this cycle did NOT establish: a design that scores 45/50 is still a
+plan. Nothing in it has been compiled, run, or measured. The judge's "buildability 9" is
+an opinion from a model that wrote no code. The catalog risk it names (30 recipes x 9
+interruption fields per step, treated as prose instead of schema-first data) is the one
+most likely to be underestimated by exactly the kind of agent that wrote the estimate.
+
+next: PLAN gate — inline PLAN pass turning DESIGN.md's waves 0-4 into a backlog covering
+all 12 SPEC must-haves, then wave 0 (interface freeze) as the first build wave. Wave 0 is
+deliberately ONE agent: every other file imports its type contracts.
+
+commit: (recorded below)
+next wakeup: 1787081802 (+90s) — written to heartbeat.next_wakeup_at; on the VPS
+swarm-pacer.timer reads that field and spawns the cycle (cycle.md step 9), so no
+ScheduleWakeup call is made from this headless -p session.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787081712,"next_wakeup_at":1787081802,"pid":2341030,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1.0},"budget":{"source":"probe","gear":3,"gear_target":5,"ratio":0.48,"mode":"thermostat","k_cap":3,"promote":false,"demote":false,"window_tokens":19972818,"window_cost_usd":17.908393250000014,"api_cap_usd":null,"api_spend_usd":0.0,"tokens_per_hour":14611177,"projected_depletion_at":1787108276,"last_probe_ts":1787081022,"last_real_probe_ts":1787081022,"probe_failures":0,"weekly":{"ok":false,"weekly_used_pct":0,"opus_used_pct":0,"week_elapsed_pct":0,"weekly_heat":0,"opus_heat":0,"ceiling":5,"promote_blocked":false}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":1,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"parse DENIED at kickoff (KI-2 recurrence); apply_mode read directly as auto; no directives staged"},"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

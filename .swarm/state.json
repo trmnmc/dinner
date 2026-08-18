@@ -2,8 +2,8 @@
   "idea": "Dinner decision-and-execution system for a busy parent: onboarding -> taste calibration -> ranked 3-dinner plan -> one-tap reasoned swaps -> consolidated traceable grocery list -> prep plan -> interruption-aware cooking mode -> one-tap feedback. Mobile-first web client over a deterministic TypeScript domain package and node:sqlite, zero runtime dependencies.",
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
-  "phase": "DESIGN",
-  "cycle": 0,
+  "phase": "PLAN",
+  "cycle": 1,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": { "launch_name": "", "port": 0 },
@@ -42,6 +42,13 @@
       "decision": "Build, not adopt or extend. Treat Mealie's aggregation design as the reference bar to clear.",
       "why": "Scout grep-verified that Mealie (AGPL-3.0, gate-fail for adoption) already ships deterministic conversion + fuzzy normalization + cross-recipe aggregation with traceability, and Grocy (MIT) ships conversion chains + pantry subtraction. That engine is table stakes, not the moat. Step-level interruption metadata, package-size selection and leftover optimization are unoccupied across all five products checked.",
       "cycle": 0
+    },
+    {
+      "id": "D-5",
+      "topic": "design",
+      "decision": "ADOPT design-panel candidate B, 'Three Good Dinners' (AMBITIOUS brief), with six ideas grafted from the losers. Locked to .swarm/DESIGN.md, which is BINDING on every builder. Architecture: three strict layers (domain/ pure + server/ node:http+node:sqlite + web/ framework-free) run directly by Node 24 native type stripping, tsc --noEmit as the strict gate and never a build step. Six invariants are non-negotiable: (1) Rational bigint num/den is the only arithmetic type on authoritative paths, qty.ts the sole entry point; (2) timers stored as absolute UTC end instants, never remaining-seconds, so DoD 7 recovery is arithmetic; (3) every db.ts helper takes household_id as a required first argument and appends the WHERE itself, making an unscoped query inexpressible; (4) swap re-ranks against the frozen remaining two meals and never re-runs planset; (5) the catalog validation gate plus the ingredient-id/allergen-class cross-check land BEFORE the recipes, not in the proof wave; (6) recovery/panic guidance reads required per-step metadata only, never fabricated. Grafted steals: single copy module with numeric slots + one shared total-vs-active time renderer (makes DoD 6 a property of one helper); user grocery edits in a separate never-overwritten column; DESIGN.md as binding contract + tokens-only CSS rule; wave-0 node:sqlite smoke check on a real file DB; receipt/ledger grocery treatment; broadened e2e.loop asserting DoD 2 and DoD 6; ephemeral-port and db-path flags on the server entrypoint as test affordances against kill-test flake.",
+      "why": "Blind judge scored B 45/50 vs C 42 and A 40 across must_haves/buildability/value/coherence/depth. B was the only candidate whose calibration module deliberately SELECTS attribute-spread cards (the spec demands deliberate variance, not just reactions), and the only one to catch that DoD 9 can fail via data rather than code - an allergen present but the dietary tag unverified - forcing the cross-check early. Its delighters are additive leaves on data the spec already forces it to persist, sequenced strictly after DoD is green and individually droppable, so they cannot compromise the core. C won coherence 10 for making aesthetics enforceable as code, which is exactly right for a headless build nobody can look at - hence four of the six steals come from C. Conductor gate re-derived all three judge totals from their axes, confirmed the declared winner is the argmax, probed the winning file plan for all 17 must-have surfaces, and checked the non-goal guards (zero runtime deps, no LLM on the authoritative path): 32/32 checks passed.",
+      "cycle": 1
     }
   ],
   "known_issues": [
@@ -50,8 +57,14 @@
       "severity": "medium",
       "desc": "Kickoff step-5 settings.json edit DENIED by the harness (recurrence of the SWARM-side KI-2 seen on the moon run for 24 consecutive runs). Two consequences: (a) permissions.additionalDirectories stays [], so every headless cycle depends on swarm-pacer.sh passing --add-dir /opt/targets/dinner explicitly - a relaunch that omits it will stall on permission prompts; (b) bin/swarm-budget.sh and bin/swarm-playbook.sh remain unallowlisted, so the budget probe and playbook parser cannot run from a headless conductor and must be worked around (budget seeded from the last real probe; playbook apply_mode read by direct file read). SWARM-side tooling gap, not a target defect. Hard rule 5 forbids fixing it from inside a run - it belongs in the morning report.",
       "cycle": 0
+    },
+    {
+      "id": "KI-2",
+      "severity": "low",
+      "desc": "Weekly governor blind spot (SWARM-side, observation only). bin/swarm-weekly-from-allocator.sh computes heat ENVELOPE-relative: 100*swarm_used/(swarm_used+allow_overall). runs/allocator.json currently reports posture 'trickle' with allow_overall_pct 0 and swarm_used_pct 0, so the denominator is zero, the feeder returns week_elapsed_pct 0, and the governor DISENGAGES (ceiling 5) at exactly the moment its posture is most restrictive. The raw account is meanwhile hot: 42 pct weekly used at 22.83 pct week elapsed = heat 1.84. Cycle 1 was protected only by one-step hysteresis (gear 2 -> 3, not 2 -> 5). A zero envelope should clamp harder, not disengage. Hard rule 5 forbids the fix mid-run; morning report.",
+      "cycle": 1
     }
   ],
   "counters": { "consecutive_no_value": 0, "consecutive_failures": 0, "k_current": 3, "wave_streak": 0, "window_tokens_attributed": 0 },
-  "last_cycle": { "n": 0, "work": "", "outcome": "", "commit": "" }
+  "last_cycle": { "n": 1, "work": "design-panel", "outcome": "design direction locked (candidate B + 6 steals), gate 32/32", "commit": "" }
 }

@@ -1,0 +1,662 @@
+{
+  "candidates": [
+    {
+      "brief": "MINIMAL",
+      "name": "Dinner",
+      "summary": "One loop, built exactly to the contract: onboarding → 8–15-card taste calibration → a ranked 3-dinner plan with reasoned one-tap swaps → a fully traceable grocery list → prep plan → interruption-aware cooking that survives a process kill → two-tap feedback that updates attribute-level preferences. A pure TypeScript domain package (exact rational arithmetic, deterministic recommender, confidence-gated inventory) sits under a node:sqlite store and a node:http server; the client is plain HTML/CSS/JS where the server is the single source of truth, so reload-survival and one-handed simplicity are properties of the architecture rather than features bolted on. Every screen has one dominant action, at most three choices, and copy that counts things (\"9 minutes hands-on\", \"safe stopping point after step 3\"). Nothing outside the must-haves is in scope.",
+      "architecture": "Three strict layers.\n\n1) Domain package (src/domain/) — pure functions, zero I/O, TypeScript strict with no `any`. Quantities are exact rationals (bigint numerator/denominator), so serving scale factors like 4/3 are exact and no binary float ever touches an authoritative path; rounding is defined once, at the display and package-selection boundary. Modules: quantity (scaling min/max independently, same-dimension conversion, curated density and per-item bridges), normalize (curated aliases + confidence, preparation state preserved on the line), aggregate (merge only on canonical id + dimension, per-line trace links to recipe lines, ranges bought conservatively, \"to taste\" segregated), inventory (subtraction gated on confirmed/assumed_staple, confirmation questions for anything less certain), packages (yield ≥ requirement, minimise (waste, count), generic fallbacks labelled estimates, expected_surplus), preferences (per-attribute value/confidence/durability signals; negative feedback weighted heavier and faster), recommend (absolute hard filters → weighted scoring from one config object → penalties → adjacent-novelty distance with a familiar anchor → greedy set-scoring pass → persisted score breakdowns → swap-by-reason returning ≤3 alternatives scored against the two kept meals' ingredient context), cook (a pure reducer over a cook-session: step index, timers as UTC end timestamps, continuous-attention warnings with required uninterrupted duration, next-safe-stopping-point lookup, curated recovery instructions only; also derives the prep plan).\n\n2) Persistence + API (src/server/) — node:sqlite with a Postgres-shaped schema (UUID text ids, UTC timestamps, integer cents, quantities stored as rational text). Every table carries household_id; db.ts exposes only household-scoped query helpers, and api.ts resolves the household from a bearer token on every request, making cross-household reads structurally impossible and testable. All state lives here — including cook sessions and running timers — so killing the process or reloading the page loses nothing: remaining timer time is recomputed from wall-clock end timestamps.\n\n3) Client (public/) — static HTML/CSS/JS ES modules served by the same node:http process. A tiny hash router; every mutation is an API call and every render reads server state (the one rule that makes DoD 7 hold). Accessibility is in the shell: 44px targets, dynamic-type-friendly rem sizing, aria-live timer announcements, status conveyed in text not colour alone, no gesture-only actions, and a single shared undo-toast primitive replacing all confirmation modals.\n\nRuntime: Node 24 executes the .ts server directly via native type stripping (tsconfig enforces erasableSyntaxOnly); `tsc --noEmit` in the test script enforces strict typing. Catalog is data (30 recipe JSON files + curated tables for aliases, densities, per-item weights, package options, store sections, staples) admitted only through a validation gate that refuses incomplete recipes for recommendation.",
+      "file_plan": [
+        {
+          "path": "/opt/targets/dinner/package.json",
+          "purpose": "Zero runtime deps; typescript as devDependency; scripts: start (node src/server/main.ts), test (tsc --noEmit + node --test)"
+        },
+        {
+          "path": "/opt/targets/dinner/tsconfig.json",
+          "purpose": "strict, noEmit, erasableSyntaxOnly so Node 24 type stripping runs the same code tsc checks"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/types.ts",
+          "purpose": "All shared domain types: Recipe with per-step interruption metadata, Rational quantity, preference signal (value/confidence/durability), plan, grocery line with trace links, cook session, weight-config shape. Lands first; every other file codes against it"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/quantity.ts",
+          "purpose": "Exact rational (bigint) arithmetic; serving scaling with min/max scaled independently; same-dimension unit conversion; volume→mass only via curated density, count→mass only via curated per-item weight; single rounding boundary"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/normalize.ts",
+          "purpose": "Ingredient normalization against curated aliases with a confidence value; preparation state preserved, never merged away"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/aggregate.ts",
+          "purpose": "Cross-recipe aggregation keyed on canonical id + base-unit dimension; full trace links from every aggregated number to its recipe lines; ranges kept and purchased conservatively; to-taste never numeric"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/inventory.ts",
+          "purpose": "Confidence-gated subtraction (confirmed/assumed_staple only); confirmation-question generation for uncertain entries; decrement on cooked; surplus write-back model"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/packages.ts",
+          "purpose": "purchase_requirement = max(0, req − usable inventory); package combination with yield ≥ requirement minimising (waste, package count); generic fallbacks labelled as estimates; expected_surplus"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/grocery.ts",
+          "purpose": "Pipeline composing scale→normalize→aggregate→subtract→package→store-section grouping; user quantity edits preserved and never silently overwritten on regeneration"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/preferences.ts",
+          "purpose": "Attribute-level signals across protein/cuisine/flavour/texture/spice/richness/method/effort; calibration-card and post-meal updates; negative signals weighted stronger and faster; never one opaque score"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/recommend.ts",
+          "purpose": "Absolute hard filters (allergy > household restriction > member restriction > strong dislike > soft pref > optimisation); weighted score from one config object (32/20/16/12/10/10) with explicit penalties; adjacent-novelty attribute distance with familiar anchor; greedy set-scoring for overlap/diversity/time/cost; persisted score breakdowns; swap-by-reason producing ≤3 alternatives and ≤3 reason codes, scored against the kept meals' ingredient context"
+        },
+        {
+          "path": "/opt/targets/dinner/src/domain/cook.ts",
+          "purpose": "Pure cook-session reducer: one-step-at-a-time progression, UTC-timestamp timers, continuous-attention warnings with uninterrupted duration needed, next safe stopping point, curated recovery instructions only; prep-plan derivation (ingredients, equipment, do-ahead tasks, first non-interruptible step, first safe stop, active-time blocks)"
+        },
+        {
+          "path": "/opt/targets/dinner/src/catalog/recipes/",
+          "purpose": "30 internally authored recipe JSON files spread across proteins, cuisines, methods, effort and flavour, each with full machine-readable attributes and complete per-step interruption metadata (all nine fields)"
+        },
+        {
+          "path": "/opt/targets/dinner/src/catalog/curated.json",
+          "purpose": "Curated tables: ingredient aliases, canonical ingredients with store sections, densities, per-item weights, package options with yields, default staples"
+        },
+        {
+          "path": "/opt/targets/dinner/src/catalog/validate.ts",
+          "purpose": "Validation gate: recipe ineligible for recommendation unless quantities complete, steps ordered, servings known, dietary tags verified, interruption metadata present; loader that admits only valid recipes"
+        },
+        {
+          "path": "/opt/targets/dinner/src/server/db.ts",
+          "purpose": "node:sqlite schema (UUID text ids, UTC timestamps, integer cents, rational-text quantities) and household-scoped query helpers — no query path exists without a household_id parameter"
+        },
+        {
+          "path": "/opt/targets/dinner/src/server/api.ts",
+          "purpose": "JSON endpoints for the whole loop (household create/onboard, calibration, plan, swap, grocery list + edits + confirmations, purchase confirm, prep, cook session + step/timer mutations, feedback); bearer-token household resolution on every route"
+        },
+        {
+          "path": "/opt/targets/dinner/src/server/main.ts",
+          "purpose": "node:http entry: static file serving for public/ plus api.ts mount; npm start target; ephemeral-port + db-path flags for tests"
+        },
+        {
+          "path": "/opt/targets/dinner/public/index.html",
+          "purpose": "Single-page shell: semantic landmarks, view containers, aria-live regions for timers and undo"
+        },
+        {
+          "path": "/opt/targets/dinner/public/style.css",
+          "purpose": "Dark-friendly calm theme via typography and spacing: 44px targets, rem-based dynamic type, WCAG contrast, large-text cook mode, one dominant action per screen"
+        },
+        {
+          "path": "/opt/targets/dinner/public/app.js",
+          "purpose": "Hash router, API client with household token in localStorage, shared undo-toast primitive (undo instead of confirmation for every destructive-feeling action)"
+        },
+        {
+          "path": "/opt/targets/dinner/public/views/onboard.js",
+          "purpose": "Onboarding form (household size, restrictions, allergies, never-recommend, proteins, cuisines, time ceilings, novelty, staples) and 8–15 calibration cards with the four reactions"
+        },
+        {
+          "path": "/opt/targets/dinner/public/views/plan.js",
+          "purpose": "Plan screen: three dinners with total AND active time, interruption profile, effort, ≤3 concrete reason codes, owned/shared ingredients, cost band, novelty indicator; swap sheet with the nine explicit reasons, ≤3 alternatives, replaces only that meal"
+        },
+        {
+          "path": "/opt/targets/dinner/public/views/grocery.js",
+          "purpose": "Store-section-grouped list; tap any line to see contributing recipes and amounts, inventory deducted, expected surplus; estimate labels; quantity edits; inventory confirmation questions inline"
+        },
+        {
+          "path": "/opt/targets/dinner/public/views/cook.js",
+          "purpose": "Prep plan then cooking mode: one large step at a time, labelled active/unattended intervals, timestamp-backed timers with aria announcements, continuous-attention warning before entry, next safe stopping point always visible, recovery instruction on resume; two-tap post-meal feedback"
+        },
+        {
+          "path": "/opt/targets/dinner/test/quantity.test.ts",
+          "purpose": "Rational arithmetic, scaling (min/max independent), conversion rules, density/per-item gating, no-float guarantees"
+        },
+        {
+          "path": "/opt/targets/dinner/test/alias.test.ts",
+          "purpose": "DoD 4: alias fixtures ('garlic cloves', 'cloves of garlic', 'fresh garlic', '3 cloves garlic, minced') produce zero duplicate lines"
+        },
+        {
+          "path": "/opt/targets/dinner/test/grocery.test.ts",
+          "purpose": "DoD 5: every list line has trace links to contributing recipe lines; package selection never underbuys; user edits survive regeneration; to-taste and range handling"
+        },
+        {
+          "path": "/opt/targets/dinner/test/recommend.test.ts",
+          "purpose": "Hard-filter precedence, weight config, penalties, novelty anchor, greedy set-scoring, swap changes exactly one meal, score breakdowns persisted; preference update dynamics incl. negative weighting"
+        },
+        {
+          "path": "/opt/targets/dinner/test/fuzz.test.ts",
+          "purpose": "DoD 9: generated households with random allergies/exclusions — zero plans containing a hard-excluded ingredient"
+        },
+        {
+          "path": "/opt/targets/dinner/test/catalog.test.ts",
+          "purpose": "All 30 recipes pass the validation gate; attribute spread assertions (protein/cuisine/method/effort coverage sufficient for swaps and novelty)"
+        },
+        {
+          "path": "/opt/targets/dinner/test/isolation.test.ts",
+          "purpose": "DoD 10: two households via the real API; every entity type unreadable and unwritable across the boundary"
+        },
+        {
+          "path": "/opt/targets/dinner/test/cook-survival.e2e.test.ts",
+          "purpose": "DoD 7: spawn server on ephemeral port with temp SQLite file, start cooking, advance steps, start a timer, SIGKILL, restart, assert step progress and timer state intact via API"
+        },
+        {
+          "path": "/opt/targets/dinner/test/loop.e2e.test.ts",
+          "purpose": "DoD 1–3, 6, 8 against the running server: onboard→calibrate→plan (≥2 approvable), 3-tap single-meal swap, total+active time present everywhere, 2-tap feedback recorded"
+        }
+      ],
+      "build_order": [
+        "Wave 1 (one agent, short): package.json, tsconfig.json, src/domain/types.ts, src/server/db.ts schema — the contract every other file codes against",
+        "Wave 2 (four agents in parallel, non-overlapping): (A) quantity/normalize/aggregate/inventory/packages/grocery + quantity/alias/grocery tests; (B) preferences/recommend/cook + recommend/fuzz tests; (C) catalog: 30 recipes, curated.json, validate.ts + catalog test — validator written first, run continuously while authoring; (D) server api.ts/main.ts + isolation test + client shell (index.html, style.css, app.js)",
+        "Wave 3 (three agents in parallel): (E) views/onboard.js + views/plan.js; (F) views/grocery.js + views/cook.js; (G) cook-survival.e2e.test.ts + loop.e2e.test.ts against the live server",
+        "Wave 4 (one agent): integration pass — full suite green, walk the Definition of Done items 1–11 against the running app, fix seams only"
+      ],
+      "risks": [
+        "Catalog authoring volume is the biggest single workload: 30 recipes × ~8 steps × 9 interruption-metadata fields is ~2,000 hand-authored values, and the validation gate will reject sloppy work late. Mitigation is structural: validate.ts is written before the recipes and run continuously by the catalog agent, and attribute-spread assertions live in catalog.test.ts so thin coverage fails loudly.",
+        "Exact-arithmetic discipline: scale factors like 4 servings from a 3-serving recipe are non-terminating decimals, so quantities must be rationals end-to-end with rounding at exactly one boundary (quantity.ts). Any builder who sneaks a float into an authoritative path silently violates a must-have; the quantity tests must assert on exact rational equality, not toleranced floats.",
+        "Swap-by-reason is the subtlest algorithm: it must reuse the same scorer with the two kept meals' ingredient context and change only the target slot. Built as a separate filter it will either ignore set context or regenerate the plan — recommend.test.ts pins 'exactly one meal changed' explicitly.",
+        "Cook-survival e2e flake: spawning, SIGKILL-ing and restarting the server in node:test is timing-sensitive. Mitigated by ephemeral ports, a temp-dir SQLite file per test, and timers stored as wall-clock end timestamps so no in-memory state needs to survive.",
+        "The domain/catalog seam: recipes are JSON, so type drift between types.ts and recipe files only surfaces at load time. validate.ts is the single admission gate and catalog.test.ts must land in wave 2, before any client work depends on plan output.",
+        "Vanilla-JS client state discipline: reload survival (DoD 7) holds only if every mutation is an API call and every render reads server state. Two view agents work in parallel in wave 3; if either caches client-only cook state, the e2e test — not review — is what catches it.",
+        "Node 24 type stripping requires erasable-only TypeScript (no enums, no namespaces); tsconfig's erasableSyntaxOnly catches this at typecheck, but a builder ignoring the tsconfig would produce a server that fails at boot. Fallback recorded: `npm start` may run tsc first, which the spec permits."
+      ],
+      "delight": [
+        "Tap any grocery line and it answers 'why am I buying this?' in countable terms: '2 lemons for Skillet Chicken, 1 for the herb salad; you have 1 confirmed; buying one bag of 5, about 2 left over' — the traceability must-have rendered as the product's most trusted moment.",
+        "The swap sheet speaks your reason back concretely: choose 'less hands-on' and the alternative reads '8 minutes hands-on instead of 25' — and only that meal changes.",
+        "Cooking mode's persistent footer always shows the exit: 'next safe stopping point: after step 4'. Before a continuous-attention step it warns with the exact uninterrupted minutes needed, so you can decide before committing.",
+        "Kill the tab mid-simmer, reopen ten minutes later: same step, timer still correct against the wall clock, and a curated recovery line — never a fabricated one — tells you exactly how to pick back up.",
+        "Inventory never becomes homework: one question at most — 'your plan needs 4 lemons, we think you have 2 — still right?' — instead of a pantry review.",
+        "No confirmation modal anywhere: remove an item, swap a meal, mark never-recommend, and a single undo bar appears instead — destructive-feeling actions are always reversible, one-handed."
+      ]
+    },
+    {
+      "brief": "AMBITIOUS",
+      "name": "Three Good Dinners",
+      "summary": "A one-handed dinner system where every number is provable and every interruption is survivable: onboarding and taste calibration feed a deterministic two-stage recommender, three dinners arrive with concrete countable reasons, one grocery list traces every quantity back to its recipe lines via exact bigint-rational arithmetic, and a cooking mode built on absolute-UTC timers survives a process kill. On top of the safe core it ships the moments people demo to friends: an \"I need to step away\" button that computes exactly what to do right now from the per-step interruption metadata, a show-the-math drawer on every recommendation, a copyable aisle-grouped list, and a use-it-up chip that routes tonight's surplus into Thursday's dinner.",
+      "architecture": "Three strict layers in one zero-runtime-dependency repo, executed directly by Node 24's native type stripping (erasable-syntax-only TypeScript; `tsc --noEmit` is the strict gate, never a build step).\n\nLAYER 1 — `domain/`: pure, deterministic, side-effect-free TypeScript. All authoritative arithmetic uses a single Rational type (bigint numerator/denominator) — no IEEE float ever touches a quantity, price, or score that persists. Modules: exact quantities (qty), same-dimension unit conversion with curated density/per-item gates (units), alias normalization with confidence and preserved prep-state (normalize), serving scaling with independent min/max (scale), cross-recipe aggregation emitting a trace edge for every contributing recipe line (aggregate), confirmed-only inventory subtraction that emits confirmation questions instead of guessing (inventoryMath), package selection minimizing (waste, package count) with underbuying structurally impossible (packaging), attribute-level preference signals stored as {value, confidence, durability} with asymmetric negative weighting (preferences), absolute hard-filter ladder with codified precedence (filters), weighted scoring from ONE config object with penalties and adjacent-novelty distance, persisting the full breakdown (score), greedy set-scoring over the 3-meal set (planset), reason-coded single-meal swap that re-ranks against the frozen remainder of the plan (swap), calibration card selection maximizing attribute spread (calibration), prep-plan derivation (prep), and a cooking-session reducer (cooking) — a pure event-sourced state machine whose timers are stored as absolute UTC end instants, so kill/reload/backgrounding recovery is arithmetic, not bookkeeping. The reducer also answers the panic query: given \"I must step away NOW\", it returns the validated recovery instruction, what to do to the stove, and how long you have — all from required per-step metadata, never fabricated.\n\nLAYER 2 — `server/`: node:http + node:sqlite. Postgres-shaped schema (UUID text ids, UTC ISO timestamps, integer cents, quantities as exact \"num/den\" strings). Every data-access helper in db.ts takes household_id as a REQUIRED first argument and appends the WHERE clause itself — routes cannot express an unscoped query, which is what the isolation tests prove. Routes are thin: parse, load household-scoped state, call domain functions, persist results (including every score breakdown), return JSON. Cooking-session events are persisted synchronously per tap/timer-start, so the resume snapshot is always one SELECT away. Serves `web/` as static files.\n\nLAYER 3 — `web/`: framework-free HTML/CSS/JS. A hash router whose first act on load is \"is there a live cooking session? → land in it\". Design tokens (type scale, spacing, dark-first palette, 44px targets) in one CSS file; shared ui.js provides the bottom sheet, undo snackbar (undo instead of confirm, everywhere), aria-live timer announcer, and reason chips so seven screens stay one system. Timers render from server-persisted absolute instants — a reload recomputes remaining time correctly by definition.\n\nDATA — `data/ingredients.json`: curated registry (~120 ingredients: aliases+confidence, densities, per-item weights, store sections, package options, staple flags). `data/recipes/*.json`: 30 authored recipes, each carrying full attribute vectors and complete per-step interruption metadata; the validation gate in recipe.ts runs over the whole catalog in CI from wave 1, so an incomplete recipe can never be recommended.\n\nDelighters are additive leaves on this core: panic guidance and use-it-up are new pure functions over already-required data; score drawer and export surface data the spec already forces us to persist; second-adult min-fit is a droppable extra filter clause.",
+      "file_plan": [
+        {
+          "path": "package.json",
+          "purpose": "Scripts (start: node server/src/main.ts; test: node --test; typecheck: tsc --noEmit); typescript as the sole devDependency"
+        },
+        {
+          "path": "tsconfig.json",
+          "purpose": "strict, erasableSyntaxOnly, allowImportingTsExtensions, noEmit — enforces no-any and Node-native type stripping compatibility"
+        },
+        {
+          "path": "domain/src/qty.ts",
+          "purpose": "Exact Rational arithmetic on bigint num/den: parse, add, mul, compare, floor/ceil-to-unit, human formatting; the only number type on authoritative paths"
+        },
+        {
+          "path": "domain/src/units.ts",
+          "purpose": "Canonical dimensions (g/ml/count), same-dimension conversion tables, gated volume→mass via density and count→mass via per-item weight, else stay-in-dimension"
+        },
+        {
+          "path": "domain/src/normalize.ts",
+          "purpose": "Curated alias matching to canonical ingredient id with confidence value; extracts and preserves prep state ('minced') instead of merging it away"
+        },
+        {
+          "path": "domain/src/ingredients.ts",
+          "purpose": "Ingredient registry types + loader/validator for data/ingredients.json (aliases, density, per-item weight, store section, package options, staple flag)"
+        },
+        {
+          "path": "domain/src/recipe.ts",
+          "purpose": "Recipe + step + interruption-metadata types, and the validation gate that makes incomplete recipes ineligible; the frozen shared vocabulary for all agents"
+        },
+        {
+          "path": "domain/src/scale.ts",
+          "purpose": "Serving scale factor applied independently to min and max quantities; ranges preserved"
+        },
+        {
+          "path": "domain/src/aggregate.ts",
+          "purpose": "Cross-recipe aggregation merging only on (canonical id, dimension); emits a trace link per contributing recipe line; to-taste excluded from numerics; ranges purchased conservatively"
+        },
+        {
+          "path": "domain/src/inventoryMath.ts",
+          "purpose": "Confirmed/assumed_staple-only subtraction, purchase_requirement = max(0, need − usable), confirmation-question generation for uncertain entries, consume-on-cooked, surplus computation"
+        },
+        {
+          "path": "domain/src/packaging.ts",
+          "purpose": "Package-combination chooser: yield ≥ requirement always (no underbuy), minimize (expected waste, package count), generic estimate-labelled fallbacks"
+        },
+        {
+          "path": "domain/src/preferences.ts",
+          "purpose": "Attribute-level signals {value, confidence, durability} across protein/cuisine/flavour/texture/spice/richness/method/effort; calibration and feedback update rules with negative signals weighted stronger and faster"
+        },
+        {
+          "path": "domain/src/filters.ts",
+          "purpose": "Absolute hard filters (allergy > household restriction > member restriction > strong dislike > soft > optimisation) run before any scoring; never averaged"
+        },
+        {
+          "path": "domain/src/score.ts",
+          "purpose": "Single WEIGHTS config object (0.32/0.20/0.16/0.12/0.10/0.10), explicit penalties, adjacent-novelty attribute distance with familiar anchor, full persisted breakdown per candidate"
+        },
+        {
+          "path": "domain/src/planset.ts",
+          "purpose": "Greedy set-scoring pass optimising the 3-meal set for ingredient overlap, protein/cuisine diversity, weekly active time, cost"
+        },
+        {
+          "path": "domain/src/swap.ts",
+          "purpose": "Reason-coded swap (faster, less hands-on, fewer dishes, cheaper, more familiar, more adventurous, no pasta, different protein, use what I have): re-ranks against the frozen two remaining meals, returns ≤3 alternatives with concrete deltas"
+        },
+        {
+          "path": "domain/src/calibration.ts",
+          "purpose": "Selects 8–15 deliberately attribute-spread calibration cards; maps the four reactions to preference-signal updates"
+        },
+        {
+          "path": "domain/src/prep.ts",
+          "purpose": "Derives the prep plan: retrieve list, equipment, do-earlier tasks, first non-interruptible step, first safe stopping point, expected active blocks"
+        },
+        {
+          "path": "domain/src/cooking.ts",
+          "purpose": "Pure event-sourced cooking-session reducer: step advance, absolute-UTC timers, pause legality from metadata, next-safe-stop lookahead, continuous-attention warnings, and the panic query (validated recovery instruction + time available)"
+        },
+        {
+          "path": "domain/src/reasons.ts",
+          "purpose": "Structured reason codes rendered as concrete countable copy ('9 minutes hands-on', 'uses the parsley from Tuesday'); the single copy source for chips"
+        },
+        {
+          "path": "domain/src/useitup.ts",
+          "purpose": "Delighter: scores a recorded surplus against future plan fit and produces at most one guilt-free suggestion chip"
+        },
+        {
+          "path": "data/ingredients.json",
+          "purpose": "Curated registry ~120 ingredients: aliases with confidence, densities, per-item weights, store sections, package options with sizes/cents, staple flags"
+        },
+        {
+          "path": "data/recipes/*.json (30 files)",
+          "purpose": "30 authored recipes spanning proteins/cuisines/methods/effort/flavour, complete quantities, attribute vectors, and full per-step interruption metadata; each must pass the validation gate"
+        },
+        {
+          "path": "server/src/db.ts",
+          "purpose": "node:sqlite schema (UUID text, UTC ISO, integer cents, 'num/den' quantity strings) + household-scoped query helpers where household_id is a mandatory first argument on every read/write"
+        },
+        {
+          "path": "server/src/http.ts",
+          "purpose": "node:http router, JSON body handling, cookie session, static file serving of web/, uniform error envelope"
+        },
+        {
+          "path": "server/src/routes/household.ts",
+          "purpose": "Onboarding (household, restrictions, ceilings, staples) and calibration card fetch/react endpoints"
+        },
+        {
+          "path": "server/src/routes/plan.ts",
+          "purpose": "Plan generation, reason-coded swap, and score-breakdown fetch for the show-the-math drawer"
+        },
+        {
+          "path": "server/src/routes/grocery.ts",
+          "purpose": "List build with trace links, user quantity edits (preserved, never overwritten), purchase confirmation writing surplus to inventory, plain-text export"
+        },
+        {
+          "path": "server/src/routes/cook.ts",
+          "purpose": "Prep plan fetch, cooking-session event append (step/timer/pause/panic), and the resume snapshot used after kill/reload"
+        },
+        {
+          "path": "server/src/routes/feedback.ts",
+          "purpose": "Two-tap post-meal feedback, inventory confirmation-question answers, cooked-consumption trigger"
+        },
+        {
+          "path": "server/src/main.ts",
+          "purpose": "Boot: open DB, run schema, seed/refresh catalog and registry, listen; the npm start entrypoint"
+        },
+        {
+          "path": "web/index.html",
+          "purpose": "Single-page shell with semantic landmarks, viewport, dark-friendly theme-color, no external resources"
+        },
+        {
+          "path": "web/css/tokens.css",
+          "purpose": "Design tokens: type scale, spacing, dark-first palette with verified contrast, 44px minimum targets, focus states, reduced-motion"
+        },
+        {
+          "path": "web/css/app.css",
+          "purpose": "Screen layouts: one dominant action per screen, bottom-anchored thumb zone, card and sheet patterns"
+        },
+        {
+          "path": "web/js/api.js",
+          "purpose": "Fetch wrapper with error envelope handling and session cookie"
+        },
+        {
+          "path": "web/js/router.js",
+          "purpose": "Hash router whose load-time first check is 'live cooking session? → resume straight into it'"
+        },
+        {
+          "path": "web/js/ui.js",
+          "purpose": "Shared components: bottom sheet, undo snackbar (undo not confirm), aria-live timer announcer rendering from absolute UTC instants, reason chips, status-beyond-colour badges"
+        },
+        {
+          "path": "web/js/screens/onboarding.js",
+          "purpose": "Under-four-minute onboarding + swipeless four-reaction calibration cards, one question per screen"
+        },
+        {
+          "path": "web/js/screens/plan.js",
+          "purpose": "Three-dinner plan (total AND active time, interruption profile, ≤3 reason chips, owned/shared ingredients, cost band, novelty indicator), 3-tap swap sheet, show-the-math drawer"
+        },
+        {
+          "path": "web/js/screens/grocery.js",
+          "purpose": "Aisle-grouped list, per-line 'why am I buying this' trace drawer, estimate labels, quantity edit with undo, purchase confirm, copy-to-clipboard export, use-it-up chip"
+        },
+        {
+          "path": "web/js/screens/cook.js",
+          "purpose": "Prep plan, one-step-at-a-time large-text cooking with active/unattended labels, continuous-attention warnings, always-visible next safe stop, panic button, then two-tap feedback"
+        },
+        {
+          "path": "tests/domain/quantities.test.ts",
+          "purpose": "Unit tests for qty/units/normalize/scale/aggregate/inventoryMath/packaging including the garlic alias fixtures (DoD 4) and trace-link assertions (DoD 5)"
+        },
+        {
+          "path": "tests/domain/planning.test.ts",
+          "purpose": "Unit tests for preferences/filters/score/planset/swap/calibration: precedence ladder, strong-dislike-never-outweighed, weights-from-config, swap-changes-only-one-meal"
+        },
+        {
+          "path": "tests/domain/cooking.test.ts",
+          "purpose": "Reducer tests: serialize/deserialize round-trip, absolute-timer recomputation, pause legality, panic answers only from validated metadata"
+        },
+        {
+          "path": "tests/catalog.test.ts",
+          "purpose": "Validation gate over all 30 recipes plus attribute-spread assertions (protein/cuisine/method/effort coverage floors)"
+        },
+        {
+          "path": "tests/fuzz.test.ts",
+          "purpose": "Generated households with random allergies/exclusions: zero plans containing a hard-excluded ingredient (DoD 9)"
+        },
+        {
+          "path": "tests/isolation.test.ts",
+          "purpose": "Two households seeded; every entity type proven unreadable across the boundary via the HTTP API (DoD 10)"
+        },
+        {
+          "path": "tests/e2e.cooking.test.ts",
+          "purpose": "Spawns the real server, starts cooking, starts a timer, SIGKILLs the process, restarts, asserts step progress and remaining timer time are intact (DoD 7)"
+        },
+        {
+          "path": "tests/e2e.loop.test.ts",
+          "purpose": "Full HTTP loop: onboarding → calibration → plan → swap → grocery edit preserved → purchase confirm → feedback recorded in two calls (DoD 1,3,8)"
+        }
+      ],
+      "build_order": [
+        "Wave 0 — interface freeze (1 agent, blocks everything): package.json, tsconfig.json, domain/src/qty.ts, domain/src/recipe.ts (all shared types incl. score-breakdown and cooking-event shapes), server/src/db.ts schema, web/css/tokens.css. Nothing else starts until these type contracts are committed.",
+        "Wave 1 — four parallel non-overlapping agents: (A) quantity pipeline: units, normalize, ingredients, scale, aggregate, inventoryMath, packaging + tests/domain/quantities.test.ts; (B) planning intelligence: preferences, filters, score, planset, swap, calibration + tests/domain/planning.test.ts; (C) content: data/ingredients.json + all 30 data/recipes/*.json + tests/catalog.test.ts, run against the wave-0 gate continuously; (D) cooking core: cooking, prep, reasons + tests/domain/cooking.test.ts.",
+        "Wave 2 — three parallel agents on disjoint files: (E) server: http.ts, main.ts, all routes/, wiring domain to sqlite with household-scoped helpers; (F) web shell + first screens: api.js, router.js, ui.js, app.css, index.html, screens/onboarding.js; (G) screens/plan.js and screens/grocery.js against the route contracts from wave 0.",
+        "Wave 3 — proof wave (2–3 agents): screens/cook.js with resume-into-session; tests/e2e.cooking.test.ts (kill/reload), tests/e2e.loop.test.ts, tests/fuzz.test.ts, tests/isolation.test.ts; accessibility and copy pass (labels, aria-live timers, 44px audit, undo coverage, concrete-countable copy sweep). Full DoD must be green at the end of this wave.",
+        "Wave 4 — delighters, strictly after DoD is green, each independently droppable: panic-button guidance surfaced in cook.js (domain/src/cooking.ts panic query already landed in wave 1D); show-the-math drawer in plan.js reading persisted breakdowns; copy-to-clipboard export in grocery.js; domain/src/useitup.ts + its chip in grocery.js; second-adult preferences with minimum-acceptable-fit as an additive filter clause ONLY if all prior waves are green — first to cut."
+      ],
+      "risks": [
+        "Catalog authoring is the single largest lump of work: 30 recipes × complete quantities × attribute vectors × 9 interruption-metadata fields per step. If agent C treats it as prose instead of schema-first data entry against the wave-0 validation gate, calibration, novelty scoring, and swaps all degrade silently. Mitigation is baked into build_order: the gate exists before the first recipe is written and tests/catalog.test.ts enforces attribute-spread floors, but this remains the likeliest overnight overrun.",
+        "Float leakage into authoritative paths: density conversion, scale factors, and score weights all tempt a builder into `Number`. The design's answer is that qty.ts Rational is the ONLY arithmetic type exported to aggregate/packaging/inventoryMath, but a reviewer must actually grep for arithmetic operators on numbers in those files — DoD 4/5 tests won't always catch a rounding-lucky float.",
+        "The kill/reload e2e (DoD 7) is unforgiving of one design slip: if any builder stores a timer as remaining-seconds instead of an absolute UTC end instant, resume is wrong and the test flakes. The cooking-event shape is frozen in wave 0 precisely to prevent this, but it is the seam most likely to need a midnight fix.",
+        "Domain↔server↔web contract drift: three wave-2 agents build against route contracts defined only in wave-0 types. If routes/plan.ts and screens/plan.js disagree on the breakdown or swap payload, both stall. The frozen shapes in recipe.ts/db.ts are the mitigation; any contract change after wave 1 must be a single-agent commit, not parallel edits.",
+        "Swap semantics ambiguity: 'replaces ONLY that meal' vs. the set-scoring pass. This design resolves it as re-rank against the frozen remaining two meals (never re-running planset), and swap.ts must implement exactly that — an agent who 'helpfully' re-optimises the whole set breaks DoD 3.",
+        "Fuzz test (DoD 9) can fail late via data, not code: an allergen present in a recipe but missing from its verified dietary tags. The validation gate requires tags to be verified per recipe, and tests/catalog.test.ts cross-checks ingredient ids against allergen classes in the registry — that cross-check must land in wave 1C, not wave 3, or failures surface at 5am.",
+        "Seven vanilla-JS screens with no framework can diverge into seven visual dialects. tokens.css + ui.js land before any screen and every screen must consume them; the wave-3 accessibility/copy pass is also the consistency pass.",
+        "The second-adult delighter touches filters/scoring files owned by agent B in wave 1. It is sequenced last and marked first-to-cut specifically because it is the only delighter that edits an existing module rather than adding a leaf."
+      ],
+      "delight": [
+        "The panic button: mid-step, one giant 'I need to step away' target answers with exactly what the spec's metadata already knows — 'Turn the heat to low. The onions hold for 8 more minutes. Pick up at step 4; give them one stir first.' Validated recovery only, never fabricated, and it is the moment people demo to friends.",
+        "Open the app while dinner is on the stove and it lands you back inside your cooking session at the right step with the timer still correct — after a reload, a backgrounded tab, or a killed process. Resume is arithmetic on absolute timestamps, so it simply cannot be wrong.",
+        "Every grocery line answers 'why am I buying this?': tap '2 lb chicken thighs' and see 'Tuesday's adobo needs 1.5 lb, Thursday's skewers need 0.9 lb, you have 0.4 lb confirmed, smallest package that covers it is 2 lb — about 0.2 lb left over.' Estimates say estimated.",
+        "Swaps that argue in numbers: 'less hands-on' offers three alternatives each tagged with its concrete delta — 'saves 12 minutes at the stove', 'one pot instead of three' — and swapping changes only that meal, in three taps.",
+        "Show the math: a quiet drawer on any recommended dinner unfolds the persisted score breakdown — preference fit, interruption fit, what it reuses from the other two meals, the repetition penalty it ate — honest machinery instead of a black box.",
+        "Instead of a pantry audit, one respectful question at list time: 'Your plan needs 4 lemons — we think you have 2. Still right?' One tap either way, and the list updates with the trace shown.",
+        "The whole list leaves with you: one tap copies a clean, aisle-grouped plain-text list ready to paste into any grocery app or a text to the other parent.",
+        "Guilt-free surplus routing: after confirming purchases, at most one chip — 'the leftover half-can of coconut milk fits Thursday's curry' — phrased as an opportunity, never as waste-shaming, and computed from the surplus the engine already recorded."
+      ]
+    },
+    {
+      "brief": "TASTE-FORWARD",
+      "name": "Tonight",
+      "summary": "Tonight is a dinner decision-and-execution system with one point of view: it is built for one hand at 6pm with a baby on the hip, and every screen, sentence, and data structure serves that. The visual identity is a \"kitchen ledger\" — warm charcoal-and-cream editorial typography (serif display / system sans UI), big tabular numerals for every quantity and minute, a receipt-styled grocery list where every line opens a provenance drawer, and a single dominant action docked in the thumb zone of every screen. The voice is a first-class artifact: all user-facing strings live in one reviewed copy module and must be concrete and countable (\"9 min hands-on\", \"safe stop after step 3\", \"uses the parsley from Tuesday\"), guilt-free, and honest about uncertainty (estimates say estimated, unverified metadata says unverified). Under the surface it delivers every must-have: a pure TypeScript domain package with exact-decimal quantity math, curated aliases/densities, traceable aggregation, confirmed-only inventory, a deterministic weighted recommendation engine with greedy set-scoring and reasoned one-tap swaps, a 30-recipe validated catalog with per-step interruption metadata, a kill-and-reload-proof cooking mode, two-tap feedback, and server-enforced household isolation — all on node:http + node:sqlite with zero runtime dependencies and a plain HTML/CSS/JS client.",
+      "architecture": "Three layers, with the aesthetic contract enforced as code alongside the type contract.\n\nLAYER 1 — domain/ (pure TypeScript, strict, no `any`, no I/O, no Date.now in scoring paths). All quantity math runs on an exact decimal type (integer-scaled value + scale, `domain/decimal.ts`) so no binary float ever touches an authoritative number. `normalize.ts` maps raw ingredient lines through curated aliases to canonical ids with a confidence value; `units.ts` converts only within a dimension (g / ml / count), crossing dimensions only via curated densities and per-item weights in `ingredients.ts`; `aggregate.ts` merges only on (canonical id, dimension), preserves prep-state on the line, keeps ranges as min/max pairs bought conservatively, never folds \"to taste\", and emits a trace link from every aggregated number back to each contributing recipe line. `inventory.ts` subtracts only `confirmed`/`assumed_staple` entries and emits confirmation questions for anything less certain. `packages.ts` picks the package combination with total yield >= requirement (underbuying prohibited), minimizing (waste, package count), labels generic fallbacks as estimates, and computes expected surplus. `filters.ts` applies absolute hard constraints in the specified precedence order; `score.ts` ranks survivors using the single weights object in `config.ts` (0.32/0.20/0.16/0.12/0.10/0.10 plus named penalties), computes adjacent novelty as attribute distance with a familiar anchor, and persists full score breakdowns; `setplan.ts` runs the greedy set pass over ingredient overlap, protein/cuisine diversity, weekly active time and cost, and implements swap-by-reason as a re-rank of hard-filter survivors with the other two meals held fixed, returning at most three alternatives each carrying at most three structured reason codes. `preferences.ts` stores attribute-level signals as (value, confidence, durability) triples per dimension — never one opaque score — with negative feedback weighted heavier and faster. `cookplan.ts` derives the prep plan and the interruption timeline (first non-interruptible step, next safe stopping point from any step, continuous-attention warnings with their uninterrupted durations, validated-only recovery instructions).\n\nLAYER 2 — server/ (node:http + node:sqlite, no framework). Postgres-shaped schema: UUID ids, UTC ISO timestamps, integer cents, exact quantities stored as (value, scale, unit) — never REAL. A cookie session resolves to a household id, and every function in `store.ts` takes householdId as its first argument with no query path that omits it; isolation is proven by tests, not convention. The server persists calibration reactions, plans with full score breakdowns, grocery lists with user edits kept in a separate column so regeneration never overwrites them, purchase confirmations (writing surplus to inventory), cooking sessions, and feedback. Cooking state is a server-side snapshot (current step, completed steps, timers) written on every mutation; timers are stored as absolute UTC end-timestamps so remaining time is recomputed after any kill, reload, or backgrounding — the client mirrors the snapshot in localStorage but the server copy is authoritative. Node 24 runs the TypeScript directly (erasable-syntax type stripping), so `npm start` needs no build step; tsc is a devDependency for typechecking only.\n\nLAYER 3 — client/ (static HTML/CSS/JS ES modules, hash-routed single page, no bundler). The identity is enforced by three files every screen must consume: `tokens.css` (the palette — deep charcoal default with cream text and one paprika accent, automatic light variant, 4px spacing grid, type scale, tabular-nums everywhere a number appears, 44px minimum targets, motion limited to <=200ms opacity/transform and disabled under prefers-reduced-motion); `copy.js` (every user-facing string and every reason-code template with numeric slots — \"22 min total, 7 hands-on\" — so voice review is a single-file diff); and the thumb-dock pattern in `app.js` (one dominant action fixed in the bottom third, never two primary buttons, never more than three choices, undo toast instead of confirmation for every destructive-feeling action). Screens: onboarding (under 4 minutes, one question per screen), calibration deck (8–15 full-bleed meal cards, four fixed reactions in a thumb arc), plan (three \"plates\" showing total and active time separately, interruption profile, owned/shared ingredients, cost band, novelty marker), swap sheet (reason chips then <=3 alternatives whose copy answers the chosen reason), grocery receipt (grouped by store section, every line expandable into a provenance drawer naming each recipe, its amount, inventory deducted, and expected surplus), prep plan, cooking mode (one huge step, active vs unattended labels, persistent \"safe stop after step N\" footer, amber continuous-attention pre-warning with its uninterrupted duration, aria-live timer announcements), and two-tap feedback. Total/active time appear separately at every time mention, enforced by a single shared time-rendering helper in copy.js.\n\nTESTS — node:test only: exhaustive domain unit tests including the garlic alias fixtures, package-selection and traceability assertions on every line, a fuzz test over generated households proving zero hard-excluded ingredients ever appear, cross-household isolation tests over every entity, catalog validation-gate and attribute-spread tests, an API-level flow test covering onboarding-to-plan, three-tap swap, and two-tap feedback, and a true end-to-end cooking test that spawns the server, advances steps and timers, SIGKILLs the process, restarts, and asserts step progress and timer remaining-time are intact.",
+      "file_plan": [
+        {
+          "path": "/opt/targets/dinner/package.json",
+          "purpose": "npm start / npm test scripts, typescript as sole devDependency, zero runtime deps"
+        },
+        {
+          "path": "/opt/targets/dinner/tsconfig.json",
+          "purpose": "strict TypeScript config with erasable-syntax-only so Node 24 runs .ts directly without a build"
+        },
+        {
+          "path": "/opt/targets/dinner/DESIGN.md",
+          "purpose": "the identity contract: palette, type scale, thumb-dock rule, one-dominant-action rule, voice rules with good/bad copy examples — binding on every UI agent"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/types.ts",
+          "purpose": "frozen shared types: ExactDecimal, Quantity, Recipe, StepInterruptionMeta, PreferenceSignal, PlanSlot, ReasonCode, GroceryLine, TraceLink, API request/response shapes"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/config.ts",
+          "purpose": "the single weights object (0.32/0.20/0.16/0.12/0.10/0.10), named penalty constants, novelty-distance parameters — no inline literals anywhere else"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/decimal.ts",
+          "purpose": "exact decimal arithmetic (scaled-integer): add, sub, mul by rational, compare, ceil-to-step; the only number type in authoritative paths"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/units.ts",
+          "purpose": "same-dimension conversion tables to canonical grams / millilitres / count; dimension-cross refusal logic"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/ingredients.ts",
+          "purpose": "canonical ingredient registry: curated aliases with confidence, densities, per-item weights, store sections, staple flags, package options with yields"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/normalize.ts",
+          "purpose": "raw line -> canonical ingredient id + base-unit quantity + confidence; preserves prep state and to-taste flag"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/scale.ts",
+          "purpose": "serving scaling: target/default factor applied to min and max independently"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/aggregate.ts",
+          "purpose": "cross-recipe aggregation keyed on (canonical id, dimension) with full TraceLink provenance per line; ranges conservative; to-taste segregated"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/inventory.ts",
+          "purpose": "confirmed-only subtraction, purchase_requirement math, confirmation-question generation, surplus recording, decrement-on-cooked"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/packages.ts",
+          "purpose": "package matching: yield >= requirement (never underbuy), minimize (waste, package count), generic estimated fallbacks, expected_surplus"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/preferences.ts",
+          "purpose": "attribute-level signals (value, confidence, durability) across protein/cuisine/flavour/texture/spice/richness/method/effort; calibration and feedback update rules with fast-heavy negatives"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/filters.ts",
+          "purpose": "absolute hard filters in precedence order: allergy > household restriction > member restriction > strong dislike; time ceilings; recent-repeat constraints"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/score.ts",
+          "purpose": "weighted per-recipe scoring with penalties, adjacent-novelty attribute distance with familiar anchor, structured reason-code emission, persistable breakdowns"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/setplan.ts",
+          "purpose": "greedy set-scoring over overlap/diversity/time/cost, and swap-by-reason returning <=3 alternatives with the other two slots held fixed"
+        },
+        {
+          "path": "/opt/targets/dinner/domain/cookplan.ts",
+          "purpose": "prep plan derivation and interruption timeline: next safe stop from any step, continuous-attention warnings with durations, validated-only recovery instructions"
+        },
+        {
+          "path": "/opt/targets/dinner/catalog/recipes.ts",
+          "purpose": "30 authored recipes with full attributes and per-step interruption metadata, spread across proteins, cuisines, methods, effort, flavour"
+        },
+        {
+          "path": "/opt/targets/dinner/catalog/validate.ts",
+          "purpose": "eligibility gate: complete quantities, ordered steps, known servings, verified dietary tags, complete interruption metadata — ineligible recipes never reach recommendation"
+        },
+        {
+          "path": "/opt/targets/dinner/server/schema.ts",
+          "purpose": "SQLite DDL, Postgres-shaped: UUID ids, UTC timestamps, integer cents, quantities as (value, scale, unit) columns"
+        },
+        {
+          "path": "/opt/targets/dinner/server/store.ts",
+          "purpose": "all persistence; every function takes householdId first; plans stored with score breakdowns; user grocery edits in a separate never-overwritten column"
+        },
+        {
+          "path": "/opt/targets/dinner/server/session.ts",
+          "purpose": "cookie session -> household resolution; household creation on first visit"
+        },
+        {
+          "path": "/opt/targets/dinner/server/api.ts",
+          "purpose": "JSON route handlers: onboarding, calibration, plan, swap, grocery list + edits + purchase confirm, inventory confirmations, cooking session snapshot, feedback"
+        },
+        {
+          "path": "/opt/targets/dinner/server/main.ts",
+          "purpose": "node:http wire-up: static file serving of client/ plus API mounting; npm start entry"
+        },
+        {
+          "path": "/opt/targets/dinner/client/index.html",
+          "purpose": "single-page shell with semantic landmarks, aria-live regions, dark-default theme-color"
+        },
+        {
+          "path": "/opt/targets/dinner/client/css/tokens.css",
+          "purpose": "the identity in CSS custom properties: charcoal/cream/paprika palette with light variant, type scale, 4px grid, tabular-nums, 44px targets, motion restraint, reduced-motion support"
+        },
+        {
+          "path": "/opt/targets/dinner/client/css/app.css",
+          "purpose": "components: plate cards, calibration deck, receipt list + provenance drawer, thumb dock, step view, amber attention band, undo toast — consuming tokens only"
+        },
+        {
+          "path": "/opt/targets/dinner/client/js/copy.js",
+          "purpose": "every user-facing string and reason-code template with numeric slots; the shared total-vs-active time renderer; single-file voice review"
+        },
+        {
+          "path": "/opt/targets/dinner/client/js/app.js",
+          "purpose": "hash router, fetch API client, screen mounting, thumb-dock component, undo-toast system, localStorage mirror of cooking snapshot"
+        },
+        {
+          "path": "/opt/targets/dinner/client/js/onboard.js",
+          "purpose": "onboarding (one question per screen, under 4 minutes) and the 8-15 card calibration deck with four thumb-arc reactions"
+        },
+        {
+          "path": "/opt/targets/dinner/client/js/plan.js",
+          "purpose": "plan screen (three plates: name, total AND active time, interruption profile, effort, reasons, owned/shared, cost band, novelty) and reason-chip swap sheet"
+        },
+        {
+          "path": "/opt/targets/dinner/client/js/grocery.js",
+          "purpose": "receipt list grouped by store section, per-line provenance drawer, estimate labels, quantity edits, purchase confirmation, copy-to-clipboard export"
+        },
+        {
+          "path": "/opt/targets/dinner/client/js/cook.js",
+          "purpose": "prep plan screen plus cooking mode: one large step, active/unattended labels, safe-stop footer, continuous-attention warning, absolute-timestamp timers with aria announcements, snapshot persistence"
+        },
+        {
+          "path": "/opt/targets/dinner/client/js/feedback.js",
+          "purpose": "two-tap post-meal feedback (three verdicts + one optional reason) and the cooked -> inventory-decrement trigger"
+        },
+        {
+          "path": "/opt/targets/dinner/tests/quantity.test.ts",
+          "purpose": "decimal/units/normalize/scale/aggregate/packages units incl. garlic alias fixtures, range conservatism, to-taste exclusion, traceability on every line"
+        },
+        {
+          "path": "/opt/targets/dinner/tests/recommend.test.ts",
+          "purpose": "filters precedence, score weights/penalties, novelty anchor, set-scoring, swap changes only one slot, preference update rules"
+        },
+        {
+          "path": "/opt/targets/dinner/tests/catalog.test.ts",
+          "purpose": "validation gate on all 30 recipes and attribute-spread assertions (proteins, cuisines, methods, effort bands all represented)"
+        },
+        {
+          "path": "/opt/targets/dinner/tests/fuzz.test.ts",
+          "purpose": "generated households with random allergies/exclusions: zero plans ever contain a hard-excluded ingredient"
+        },
+        {
+          "path": "/opt/targets/dinner/tests/isolation.test.ts",
+          "purpose": "two households seeded; every entity type proven unreadable across the boundary"
+        },
+        {
+          "path": "/opt/targets/dinner/tests/flow.test.ts",
+          "purpose": "API-level definition-of-done sweep: onboarding-to-plan interaction budget, 3-tap swap, 2-tap feedback, edit preservation, separate total/active time in payloads"
+        },
+        {
+          "path": "/opt/targets/dinner/tests/e2e-cooking.test.ts",
+          "purpose": "spawns server, starts cooking, advances steps and timers, SIGKILLs, restarts, asserts step progress and timer remaining-time intact"
+        }
+      ],
+      "build_order": [
+        "Wave 0 (one agent, first hour, blocking): package.json, tsconfig.json, domain/types.ts, domain/config.ts, server/schema.ts, client/css/tokens.css, client/js/copy.js skeleton, DESIGN.md. These are the frozen contracts — types, weights, palette, voice — that every other agent imports; nothing downstream may redefine them.",
+        "Wave 1 (five parallel non-overlapping scopes): Agent A — quantity engine (decimal, units, ingredients, normalize, scale, aggregate, inventory, packages) with tests/quantity.test.ts; Agent B — preference/recommendation engine (preferences, filters, score, setplan, cookplan) with tests/recommend.test.ts; Agent C — catalog/recipes.ts + catalog/validate.ts + tests/catalog.test.ts, running the gate continuously while authoring; Agent D — server (store, session, api, main) against the frozen API shapes, with tests/isolation.test.ts; Agent E — client shell (index.html, app.css, app.js, onboard.js) building against fixture JSON matching the frozen API shapes.",
+        "Wave 2 (feature screens and wiring, parallel after Wave 1 scopes land): Agent E — plan.js + swap sheet; Agent A — grocery.js (they own the traceability semantics it renders); Agent B — cook.js + feedback.js (they own the interruption timeline it renders); Agent D — swaps client fixtures for live API, seeds demo household, verifies npm start end to end.",
+        "Wave 3 (proof and polish, parallel): fuzz.test.ts and flow.test.ts (Agent B/D); e2e-cooking.test.ts with real SIGKILL/restart (Agent D); accessibility pass against DESIGN.md checklist — labels, 44px audit, aria-live timers, undo coverage, contrast (Agent E); full-copy voice audit as a single review of copy.js (Agent C); full suite green under npm test."
+      ],
+      "risks": [
+        "Catalog authoring is the biggest single labor sink: 30 recipes each needing complete quantities plus nine interruption-metadata fields per step (~10 steps each is ~2,700 curated values). If the validation gate lands late, failures surface at integration time. Mitigation is baked into the order: validate.ts is written first in the catalog scope and run continuously; if time runs short, fewer fully-valid recipes beat 30 partially-valid ones since the gate excludes incomplete recipes from recommendation anyway.",
+        "Exact-decimal discipline can silently break at edges: parseFloat sneaking into normalize, division during scaling, or rounding at package boundaries reintroducing binary floats. decimal.ts must be the only arithmetic entry point, scaling must use rational multiplication (target_servings and servings_default as integers), and tests must assert on exact string representations, not toBeCloseTo.",
+        "The domain-to-client seam is where blind parallel builds die: reason codes, score breakdowns, trace links, and interruption timelines are rendered by different agents than those who compute them. The Wave 0 type freeze plus fixture JSON conforming to those types is the defense; any mid-night change to types.ts requires touching every consumer and must be treated as an emergency, not a refactor.",
+        "The kill/reload e2e test is genuinely hard: SIGKILL timing races, port reuse on restart, and any timer stored as a countdown (rather than an absolute UTC end-timestamp) will fail it. The absolute-timestamp decision is made now, in the architecture, so no agent implements a ticking counter that cannot survive death.",
+        "Swap semantics are underspecified in the spec ('respecting the rest of the plan's ingredient context'): this design pins it as re-ranking hard-filter survivors with the other two slots fixed, applying the swap reason as a filter/boost, and re-running set-overlap scoring against the fixed pair. Agents must implement that definition, not invent their own.",
+        "The build machine is headless: no agent can visually verify the UI. The aesthetic therefore lives in enforceable artifacts (tokens.css custom properties, copy.js single file, DESIGN.md rules like one-dominant-action and 44px targets) that can be audited by reading code and DOM tests, not screenshots; free-hand CSS outside tokens is the failure mode to police in review.",
+        "node:sqlite maturity on Node 24.19: verify at the very start of Wave 0 that it loads unflagged and supports the needed statement API; if a flag is required, it goes into the npm start script immediately, not discovered at 4am."
+      ],
+      "delight": [
+        "The calibration deck feels like taste, not a survey: full-bleed meal cards with concrete captions ('sheet-pan gochujang chicken — 9 min hands-on, one pan') and four reactions arranged in a thumb arc; 8-15 swipes-worth of taps and the app already knows you hate fussy plating and love braises.",
+        "Every grocery line answers 'why am I buying this?' on one tap: '2 lemons — chicken piccata (1 1/2), kale salad (1/2) · you have 1 confirmed · buying 2 · about 1/2 left over (estimated)'. The receipt aesthetic with tabular numerals makes the list feel trustworthy the way a good ledger does.",
+        "Swap alternatives answer the reason you gave in their own copy: tap 'less hands-on' and the three options lead with '7 min hands-on' — and each notes what it preserves: 'still uses the parsley from Tuesday's dinner'.",
+        "Cooking mode always shows the exit: a persistent footer reading 'safe stop after step 4', and an amber band before any locked step — 'the next step needs 6 uninterrupted minutes — good moment to check on the baby'. Kill the browser mid-sear, reopen, and the step and timer are exactly where you left them, with the validated recovery note waiting.",
+        "Uncertainty is worn openly: packages picked without price data say 'estimated', and nothing ever pretends to precision it does not have — which is precisely what makes the numbers it does state believable.",
+        "No confirmation modals anywhere: remove a grocery line or swap a meal and a quiet undo toast appears instead — the app trusts you and makes reversal free.",
+        "Feedback closes the loop in two taps and says what it learned in plain, countable terms: tap 'not again' + 'too much work' and it replies 'noted — next week's plan will lean under 15 minutes hands-on'.",
+        "The whole product is dark, calm, and finishable: no streaks, no badges, no red dots — you open it with no plan, and a few minutes later you leave with three dinners, one list, and a way to cook them one-handed. Then it leaves you alone."
+      ]
+    }
+  ],
+  "judge": {
+    "rationale": "All three candidates cover the must-have surface competently — every one specifies exact non-float arithmetic, a validation-gated 30-recipe catalog with the nine per-step interruption fields, the 32/20/16/12/10/10 weight config as a single object, confirmed-only inventory, absolute-UTC timers with a SIGKILL e2e test, and household-scoped query helpers proven by isolation tests. The separation happens at the edges.\n\nCandidate A is the tightest pure reading of the contract (\"Nothing outside the must-haves is in scope\") and its test files map one-to-one onto DoD items (alias.test.ts → DoD 4, cook-survival.e2e → DoD 7, loop.e2e → DoD 1-3/6/8 — the only candidate to explicitly assert DoD 2's \"≥2 approvable\"). But that austerity costs it: no copy-to-clipboard export for a user the spec says \"orders groceries for pickup or delivery\" (a nice-to-have, so value not must_haves takes the hit), and nothing on the product grows or reveals itself after the first week — the loop learns internally but shows the user the same surfaces every time (depth 6, value 7).\n\nCandidate B has the most complete must-have mechanization: it is the only design with a dedicated calibration module that *selects* the \"deliberately varied\" cards by maximizing attribute spread (the spec demands deliberate variance, not just reactions), and its risks catch the sharpest real failure mode — DoD 9 failing via data (allergen present but dietary tag unverified), with the ingredient-id/allergen-class cross-check forced into wave 1C rather than discovered at 5am. Its build order is the most defensive: wave 0 freezes the cooking-event shape specifically to kill the countdown-timer bug, and every delighter is an additive leaf on data the spec already forces it to persist, sequenced strictly after DoD is green and individually droppable — extras that cannot compromise the core. Those extras (panic button computed from required metadata, use-it-up chip linking this week's surplus to next week's plan, show-the-math drawer over already-persisted breakdowns, plain-text export) are precisely aimed at the interrupted parent and give the product cross-week substance, earning value 9 and depth 8.\n\nCandidate C is the strongest single product identity — the only design that makes the aesthetic and voice enforceable as code (tokens-only CSS, a single copy.js holding every string with numeric slots, a shared total/active time renderer that mechanically enforces DoD 6, a binding DESIGN.md) — which is exactly right for a headless build no one can look at (coherence 10). It also has the most concrete edit-preservation mechanism (user grocery edits in a separate never-overwritten column) and the only wave-0 node:sqlite smoke check. But its fixture-JSON-then-swap client integration adds a seam B avoids, and it carries less post-first-week substance than B (depth 7).\n\nB wins on the totals (45 vs 42 vs 40): it matches A on contract discipline, nearly matches C on system coherence, and beats both on what the user actually gets after ten uses — while structurally guaranteeing the extras can be cut without touching the DoD.",
+    "scores": [
+      {
+        "candidate": "A",
+        "must_haves": 9,
+        "buildability": 9,
+        "value": 7,
+        "coherence": 9,
+        "depth": 6,
+        "total": 40
+      },
+      {
+        "candidate": "B",
+        "must_haves": 10,
+        "buildability": 9,
+        "value": 9,
+        "coherence": 9,
+        "depth": 8,
+        "total": 45
+      },
+      {
+        "candidate": "C",
+        "must_haves": 9,
+        "buildability": 8,
+        "value": 8,
+        "coherence": 10,
+        "depth": 7,
+        "total": 42
+      }
+    ],
+    "winner": "B",
+    "steals": [
+      {
+        "from": "C",
+        "what": "The single copy.js voice module: every user-facing string and reason-code template with numeric slots, plus one shared total-vs-active time renderer. It makes DoD 6 ('total and active time separately everywhere') a property of one helper instead of a per-screen convention, and turns the whole product's voice into a single-file review — critical when seven vanilla-JS screens are written by parallel agents nobody can see running."
+      },
+      {
+        "from": "C",
+        "what": "Store user grocery-quantity edits in a separate, never-overwritten column so list regeneration cannot clobber them by construction — a concrete schema mechanism where B only states the invariant."
+      },
+      {
+        "from": "C",
+        "what": "DESIGN.md as a binding identity contract plus the 'tokens-only CSS, free-hand CSS is the failure mode to police' rule, and the wave-0 node:sqlite smoke check on Node 24.19 (verify it loads unflagged before anything else is built, not at 4am)."
+      },
+      {
+        "from": "C",
+        "what": "The receipt/ledger treatment of the grocery list: tabular-nums for every quantity and minute, each line expanding into a provenance drawer — typography doing the trust-building work the traceability must-have exists for."
+      },
+      {
+        "from": "A",
+        "what": "Broaden the loop e2e to assert the full DoD sweep the way A's loop.e2e.test.ts does — explicitly checking DoD 2 (at least two of three meals approvable) and DoD 6 (total+active time present everywhere in payloads), which B's e2e.loop only covers for DoD 1, 3 and 8."
+      },
+      {
+        "from": "A",
+        "what": "Ephemeral-port and db-path flags on the server entrypoint as first-class test affordances, so the SIGKILL/restart e2e gets a temp SQLite file and port per run — A's stated mitigation for kill-test flake."
+      }
+    ]
+  }
+}
