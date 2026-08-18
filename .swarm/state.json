@@ -104,6 +104,6 @@
     "n": 3,
     "work": "build-wave (wave 0, T-001 solo, fable)",
     "outcome": "T-001 done and verified: 57/57 static gate + 22/22 behavioural + 26/26 suite green",
-    "commit": ""
+    "commit": "b050511"
   }
 }
