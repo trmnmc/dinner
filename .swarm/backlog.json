@@ -1,0 +1,4 @@
+{
+  "_schema_note": "Item schema: reference/state-spec.md (Backlog section). Keys starting with an underscore are ignored by the conductor — this note is data, not schema.",
+  "items": []
+}

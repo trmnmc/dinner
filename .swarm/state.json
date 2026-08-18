@@ -1,0 +1,57 @@
+{
+  "idea": "Dinner decision-and-execution system for a busy parent: onboarding -> taste calibration -> ranked 3-dinner plan -> one-tap reasoned swaps -> consolidated traceable grocery list -> prep plan -> interruption-aware cooking mode -> one-tap feedback. Mobile-first web client over a deterministic TypeScript domain package and node:sqlite, zero runtime dependencies.",
+  "project_dir": "/opt/targets/dinner",
+  "created_at": "2026-08-18T18:33:00+00:00",
+  "phase": "DESIGN",
+  "cycle": 0,
+  "run_cmd": "npm start",
+  "test_cmd": "npm test",
+  "preview": { "launch_name": "", "port": 0 },
+  "spec_digest": [
+    "Dinner decision-and-execution system for an interrupted parent: onboarding -> 3-meal plan -> reasoned swap -> traceable grocery list -> interruption-aware cooking -> feedback.",
+    "Deterministic core is the product: quantities, units, aggregation, inventory subtraction, dietary filtering and ranking are pure tested code - never an LLM.",
+    "The differentiator nothing else ships: per-step active/unattended/continuous-attention time, safe stopping points, validated recovery, and cooking state that survives a kill.",
+    "Non-goals: no import, no grocery integration, no notifications, no nutrition, no social, no native build, no LLM in the authoritative path.",
+    "Taste: one hand, one dominant action per screen, <=3 choices, concrete countable copy, guilt-free language, honest uncertainty, zero engagement mechanics."
+  ],
+  "decisions": [
+    {
+      "id": "D-1",
+      "topic": "platform",
+      "decision": "Mobile-first web client instead of the brief's React Native + Expo.",
+      "why": "Headless Linux build machine has no iOS simulator; an Expo client could not be run, interacted with or verified and would ship unproven. Domain package is client-agnostic so an RN port consumes it unchanged later.",
+      "cycle": 0
+    },
+    {
+      "id": "D-2",
+      "topic": "scope-cut",
+      "decision": "Catalog 55 -> 30 recipes; confirmed-only inventory (defer inference layer); greedy set-scoring instead of combinatorial plan search.",
+      "why": "Independent taste judge scored scope-fits-night 3/10 and named the clock, not the idea, as the failure mode. Cuts protect the interruption-aware cooking loop and the traceable grocery list - the two things prior-art scouting confirmed nobody else ships. User endorsed all three.",
+      "cycle": 0
+    },
+    {
+      "id": "D-3",
+      "topic": "persistence",
+      "decision": "node:sqlite built-in, zero runtime dependencies; schema stays Postgres-shaped (UUIDs, UTC, integer cents, exact numeric quantities).",
+      "why": "No PostgreSQL on this host and no sudo assumed. Verified node:sqlite works on Node 24.19 at kickoff. Postgres-shaped schema keeps the later migration mechanical.",
+      "cycle": 0
+    },
+    {
+      "id": "D-4",
+      "topic": "prior-art",
+      "decision": "Build, not adopt or extend. Treat Mealie's aggregation design as the reference bar to clear.",
+      "why": "Scout grep-verified that Mealie (AGPL-3.0, gate-fail for adoption) already ships deterministic conversion + fuzzy normalization + cross-recipe aggregation with traceability, and Grocy (MIT) ships conversion chains + pantry subtraction. That engine is table stakes, not the moat. Step-level interruption metadata, package-size selection and leftover optimization are unoccupied across all five products checked.",
+      "cycle": 0
+    }
+  ],
+  "known_issues": [
+    {
+      "id": "KI-1",
+      "severity": "medium",
+      "desc": "Kickoff step-5 settings.json edit DENIED by the harness (recurrence of the SWARM-side KI-2 seen on the moon run for 24 consecutive runs). Two consequences: (a) permissions.additionalDirectories stays [], so every headless cycle depends on swarm-pacer.sh passing --add-dir /opt/targets/dinner explicitly - a relaunch that omits it will stall on permission prompts; (b) bin/swarm-budget.sh and bin/swarm-playbook.sh remain unallowlisted, so the budget probe and playbook parser cannot run from a headless conductor and must be worked around (budget seeded from the last real probe; playbook apply_mode read by direct file read). SWARM-side tooling gap, not a target defect. Hard rule 5 forbids fixing it from inside a run - it belongs in the morning report.",
+      "cycle": 0
+    }
+  ],
+  "counters": { "consecutive_no_value": 0, "consecutive_failures": 0, "k_current": 3, "wave_streak": 0, "window_tokens_attributed": 0 },
+  "last_cycle": { "n": 0, "work": "", "outcome": "", "commit": "" }
+}
