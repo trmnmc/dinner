@@ -103,3 +103,34 @@ gate 1 routes to design-panel.
 
 next: DESIGN gate — design direction for the plan / grocery / cooking surfaces, then PLAN
 until the backlog covers all 12 must-haves.
+
+### addendum — kickoff steps 10-12
+
+dashboard: rendered to runs/dashboard.html, 24110 bytes, VERIFIED zero unreplaced
+placeholders. First render was WRONG and caught by that check: `String.replace` with a
+string pattern replaces only the first occurrence, and the template names each placeholder
+twice — once in its own documentation comment, once in the live slot — so the initial pass
+filled several comments and left the real regions empty. Fixed with `replaceAll` and
+re-verified (12 -> 0 remaining). Recording it because a "rendered successfully" log line
+would have been a false claim; the grep is what made it a fact.
+
+step-11 headless assert: COULD NOT RUN. `claude` is not in the permission allowlist, and
+neither is `timeout`, so the mandated zero-prompt assert
+(`claude -p "/swarm status ..." --permission-mode acceptEdits --add-dir ...`) is denied
+from this session. This is downstream of KI-1: the fix would be an allowlist edit, and the
+allowlist edit is precisely what the harness denies. NOT worked around. Warned the user
+explicitly per SKILL.md step 11.
+MITIGATING EVIDENCE, measured not assumed: swarm-pacer.service spawns cycles via systemd,
+outside this session's permission layer, and did so successfully ~97 times today for the
+moon run (runs/cycle-*.json, most recent 18:14:02Z, subtype "success"). The headless path
+is therefore known-good empirically; what is missing is the ability to PROVE it from here
+before the first spawn.
+
+pacer handoff VERIFIED by reading the script, not by assuming: swarm-pacer.sh line 233
+builds ADD_DIRS from `.targets[]?.path` in the runfile, which now resolves to
+/opt/targets/dinner. swarm-pacer.timer and swarm-watchdog.timer both `active`; next pacer
+firing 18:39:57Z. Cycle 1 will therefore spawn headless with the correct --add-dir within
+~5 minutes of this commit.
+
+goodnight push: sent via `bin/swarm-notify.sh send goodnight` (relative form — the absolute
+form is the one KI-2 denies).
