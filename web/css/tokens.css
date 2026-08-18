@@ -1,0 +1,173 @@
+/* tokens.css — FROZEN design tokens (wave 0). Tokens ONLY.
+ *
+ * Every screen consumes these custom properties; free-hand values outside
+ * them are the failure mode review polices (DESIGN.md identity contract).
+ * No component or screen styles live here — only :root and the media
+ * queries the tokens need.
+ *
+ * The product is a calm, one-handed kitchen tool used under interruption:
+ * dark-first, high legibility, generous targets, ONE warm accent used
+ * sparingly (3-5 placements per viewport), and nothing decorating harder
+ * than the numbers.
+ *
+ * Contrast ratios below are computed WCAG 2.1 relative-luminance ratios
+ * for each pair as stated (not estimates).
+ */
+
+:root {
+  /* ---- color: warm dark neutrals (default scheme) ----------------------
+   * --color-text        #F1EAE0 on --color-bg #12100E  = 15.90:1 (AAA)
+   *                     on --color-surface #1B1815     = 14.80:1 (AAA)
+   *                     on --color-surface-raised      = 13.57:1 (AAA)
+   * --color-text-secondary #BFB4A4 on bg               =  9.29:1 (AAA)
+   *                        on surface                  =  8.65:1 (AAA)
+   * --color-text-muted  #948A7C on bg                  =  5.59:1 (AA)
+   *                     on surface                     =  5.21:1 (AA)
+   * --color-accent      #E5A158 on bg                  =  8.65:1 (AAA)
+   *   (accent as text is legible; bg-on-accent button
+   *    text #12100E on #E5A158                         =  8.65:1)
+   * --color-accent-pressed #C9853B on bg               =  6.24:1 (AA)
+   * --color-danger      #E5776A on bg                  =  6.49:1 (AA)
+   * --color-ok          #9BC98F on bg                  = 10.08:1 (AAA)
+   * --color-focus-ring  #F0B268 on bg                  = 10.19:1
+   * --color-border      #38322A on bg                  =  1.50:1 (decorative
+   *   hairlines only — NOT a state signal; state is never color-alone)
+   * --color-border-interactive #6B6154 on bg           =  3.13:1 (≥3:1 for
+   *   non-text UI boundaries, WCAG 1.4.11)
+   * --------------------------------------------------------------------- */
+  --color-bg: #12100e;
+  --color-surface: #1b1815;
+  --color-surface-raised: #242019;
+  --color-border: #38322a;
+  --color-border-interactive: #6b6154;
+  --color-text: #f1eae0;
+  --color-text-secondary: #bfb4a4;
+  --color-text-muted: #948a7c;
+  --color-accent: #e5a158;
+  --color-accent-pressed: #c9853b;
+  --color-on-accent: #12100e;
+  --color-danger: #e5776a;
+  --color-ok: #9bc98f;
+  --color-scrim: rgba(6, 5, 4, 0.6);
+
+  /* ---- type ------------------------------------------------------------
+   * One body family (system stack). Numerals use the same family with
+   * tabular figures — apply `font-variant-numeric: var(--numeric-tabular)`
+   * to EVERY quantity and every minute (DESIGN.md identity contract).
+   * Scale: 12 / 14 / 16 / 18 / 22 / 28 / 40 px (rem-based).
+   * 12px is the floor; uppercase tracked labels only at --text-label.
+   * Headings at --text-title and above tighten letter-spacing.
+   * --------------------------------------------------------------------- */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --numeric-tabular: tabular-nums;
+
+  --text-label: 0.75rem;      /* 12px — uppercase tracked eyebrow/category */
+  --text-caption: 0.875rem;   /* 14px — secondary detail                  */
+  --text-body: 1rem;          /* 16px — default                           */
+  --text-body-lg: 1.125rem;   /* 18px — cooking-step body                 */
+  --text-title: 1.375rem;     /* 22px — screen titles                     */
+  --text-display: 1.75rem;    /* 28px — plan meal names, step headings    */
+  --text-numeral: 2.5rem;     /* 40px — timer digits, glanceable numbers  */
+
+  --leading-tight: 1.2;
+  --leading-body: 1.5;
+  --tracking-label: 0.06em;   /* uppercase 12px labels only               */
+  --tracking-title: -0.01em;  /* headings ≥22px                           */
+  --tracking-display: -0.02em;/* headings ≥28px                           */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* ---- spacing: strict 4px grid ---------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- touch targets: 44px minimum, one-handed thumb zone --------------- */
+  --touch-target-min: 44px;
+  --control-height: 48px;        /* standard buttons/inputs               */
+  --control-height-primary: 56px;/* the ONE dominant bottom-anchored action */
+
+  /* ---- radius: scales with element size (inputs < cards < sheets) ------ */
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-sheet: 20px;
+
+  /* ---- elevation: layered ambient + direct shadows ---------------------- */
+  --shadow-raised:
+    0 1px 2px rgba(0, 0, 0, 0.45),
+    0 6px 20px rgba(0, 0, 0, 0.30);
+  --shadow-sheet:
+    0 2px 4px rgba(0, 0, 0, 0.50),
+    0 16px 40px rgba(0, 0, 0, 0.40);
+
+  /* ---- focus: always visible, never color-alone ------------------------- */
+  --focus-ring-color: #f0b268;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* ---- motion: entrances ≤ 300ms, exits ~75% of entrances --------------- */
+  --duration-enter: 240ms;
+  --duration-exit: 180ms;
+  --duration-quick: 120ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Light scheme override (dark is the default and the design target).
+ * Contrast, computed for the light values:
+ * --color-text        #201B15 on --color-bg #FAF6F0   = 15.87:1 (AAA)
+ *                     on --color-surface #FFFFFF      = 17.09:1 (AAA)
+ * --color-text-secondary #5C544A on bg                =  6.91:1 (AA)
+ * --color-text-muted  #6E665B on bg                   =  5.25:1 (AA)
+ * --color-accent (as text) #8A5A1F on bg              =  5.47:1 (AA)
+ * --color-accent-pressed #B06F1F on bg                =  3.80:1 (large/UI only)
+ * --color-danger      #A63D2F on bg                   =  5.86:1 (AA)
+ * --color-ok          #33691E on bg                   =  6.13:1 (AA)
+ * --color-border-interactive #857B6C on bg            =  3.86:1 (≥3:1)      */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #faf6f0;
+    --color-surface: #ffffff;
+    --color-surface-raised: #ffffff;
+    --color-border: #e2dacc;
+    --color-border-interactive: #857b6c;
+    --color-text: #201b15;
+    --color-text-secondary: #5c544a;
+    --color-text-muted: #6e665b;
+    --color-accent: #8a5a1f;
+    --color-accent-pressed: #b06f1f;
+    --color-on-accent: #ffffff;
+    --color-danger: #a63d2f;
+    --color-ok: #33691e;
+    --color-scrim: rgba(32, 27, 21, 0.4);
+    --focus-ring-color: #8a5a1f;
+    --shadow-raised:
+      0 1px 2px rgba(32, 27, 21, 0.10),
+      0 6px 20px rgba(32, 27, 21, 0.08);
+    --shadow-sheet:
+      0 2px 4px rgba(32, 27, 21, 0.12),
+      0 16px 40px rgba(32, 27, 21, 0.14);
+  }
+}
+
+/* Reduced motion: durations collapse to 1ms (not 0 — keeps transitionend
+ * events firing for any logic listening to them). Screens must animate
+ * exclusively via these duration tokens, so this one block honors
+ * prefers-reduced-motion product-wide. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-enter: 1ms;
+    --duration-exit: 1ms;
+    --duration-quick: 1ms;
+  }
+}
