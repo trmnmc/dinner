@@ -1,0 +1,68 @@
+
+== R: ingredient registry ==
+  PASS  R1 registry parses :: 97 entries
+  PASS  R2 ids+aliases globally unique :: 234 distinct names
+  PASS  R3 nulls are honest, not blanket :: 16 curated densities, 81 explicit nulls
+  PASS  R4 duplicate id throws :: CatalogDataError
+  PASS  R5 missing allergen_classes throws :: CatalogDataError
+  PASS  R6 alias colliding with another id throws :: CatalogDataError
+  PASS  R7 non-object registry throws :: CatalogDataError
+  PASS  R8 forbidden-class table covers every DietaryTag :: 10 tags mapped
+
+== C: non-vacuity controls (valid data must be ELIGIBLE) ==
+  PASS  C1 the valid fixture is ELIGIBLE :: eligible, 0 issues
+  PASS  C2 eligible implies zero issues and a parsed recipe :: issues=0
+  PASS  C3 "to taste" is legitimate, not an incomplete quantity :: SPEC: never folded into a number, but never a defect
+  PASS  C4 dairy DECLARED with no contradicting tag stays eligible :: proves the cross-check is not just "any allergen -> reject"
+
+== M: each defect class is excluded with a structured reason ==
+  PASS  M1  servings 0 :: codes=[servings_unknown]
+  PASS  M2  servings fractional :: codes=[servings_unknown]
+  PASS  M3  servings missing :: codes=[servings_unknown]
+  PASS  M4  quantity amount is a float, not an exact string :: codes=[quantity_incomplete]
+  PASS  M5  quantity amount missing :: codes=[quantity_incomplete]
+  PASS  M6  quantity amount unparseable :: codes=[quantity_incomplete]
+  PASS  M7  range min > max :: codes=[quantity_incomplete]
+  PASS  M8  zero steps :: codes=[steps_missing]
+  PASS  M9  step indices non-contiguous :: codes=[steps_unordered]
+  PASS  M10 step indices duplicated :: codes=[steps_unordered]
+  PASS  M11 declared total time wrong :: codes=[time_totals_inconsistent]
+  PASS  M12 declared active time wrong :: codes=[time_totals_inconsistent]
+  PASS  M13 ingredient id not in registry :: codes=[unresolved_ingredient_id]
+  PASS  M14.active_duration_seconds absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.unattended_duration_seconds absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.requires_continuous_attention absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.safe_to_pause_before absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.safe_to_pause_during absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.safe_to_pause_after absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.maximum_pause absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.natural_stopping_point absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.interruption_risk absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.recovery_instruction absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M14.timer_duration_seconds absent on a step :: codes=[interruption_metadata_incomplete]
+  PASS  M15 SPEC name maximum_pause_seconds rejected (D-7) :: codes=[interruption_metadata_incomplete]
+  PASS  M16 SPEC name timer_duration rejected (D-7) :: codes=[interruption_metadata_incomplete]
+  PASS  M17 recovery_instruction as a bare string rejected (D-7) :: codes=[interruption_metadata_incomplete]
+  PASS  M18 maximum_pause bounded without seconds :: codes=[interruption_metadata_incomplete]
+
+== A: an allergen can never hide behind an unverified tag ==
+  FAIL  A1 milk in a "vegan" recipe, allergen undeclared :: codes=[undeclared_allergen]
+  FAIL  A2 milk in a "vegan" recipe, allergen honestly declared — tag still contradicted :: STILL ELIGIBLE — allergen hid successfully
+  FAIL  A3 milk in a "dairy_free" recipe :: STILL ELIGIBLE — allergen hid successfully
+  FAIL  A4 OPTIONAL parmesan garnish still betrays "vegan" :: codes=[undeclared_allergen]
+  FAIL  A5 shrimp in a "vegetarian" recipe :: STILL ELIGIBLE — allergen hid successfully
+  FAIL  A6 egg in an "egg_free" recipe :: STILL ELIGIBLE — allergen hid successfully
+  FAIL  A7 tofu in a "soy_free" recipe :: STILL ELIGIBLE — allergen hid successfully
+  PASS  A8 undeclared allergen alone is an exclusion, even with no tags :: codes=[undeclared_allergen]
+  PASS  A9 registry-wide sweep: no ingredient escapes a tag it contradicts :: 0 (ingredient, class, tag) combinations exercised; 0 escaped
+
+== G: catalog gate excludes rather than throws ==
+  PASS  G1 a catalog with broken entries does not throw :: returned a result
+  PASS  G2 exactly the valid recipe survives :: 1 eligible of 5
+  PASS  G3 one aligned report per input :: 5 reports
+  PASS  G4 duplicate slug excluded with duplicate_id :: ["duplicate_id"]
+  PASS  G5 a non-object entry is malformed_recipe, not a crash :: string input
+  PASS  G6 every exclusion carries a structured reason (code+path+message) :: no bare booleans
+
+GATE FAIL — 48 passed, 7 failed of 55
+failed: A1 milk in a "vegan" recipe, allergen undeclared | A2 milk in a "vegan" recipe, allergen honestly declared — tag still contradicted | A3 milk in a "dairy_free" recipe | A4 OPTIONAL parmesan garnish still betrays "vegan" | A5 shrimp in a "vegetarian" recipe | A6 egg in an "egg_free" recipe | A7 tofu in a "soy_free" recipe

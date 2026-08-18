@@ -9,12 +9,28 @@
       "effort": "L",
       "status": "done",
       "deps": [],
-      "files_hint": ["package.json", "tsconfig.json", "domain/src/qty.ts", "domain/src/recipe.ts", "server/src/db.ts", "web/css/tokens.css", "tests/qty.test.ts", "tests/smoke.sqlite.test.ts"],
+      "files_hint": [
+        "package.json",
+        "tsconfig.json",
+        "domain/src/qty.ts",
+        "domain/src/recipe.ts",
+        "server/src/db.ts",
+        "web/css/tokens.css",
+        "tests/qty.test.ts",
+        "tests/smoke.sqlite.test.ts"
+      ],
       "acceptance": "All downstream modules can import a frozen contract surface — Rational quantity type, recipe/step/score-breakdown/cooking-event shapes, household-scoped DB helpers over a real SQLite file, and the design tokens — with the repo typechecking strictly and running .ts directly on Node 24 with zero runtime dependencies.",
       "packages": [],
       "wave": 0,
-      "must_haves": ["Deterministic quantity engine", "Household isolation", "Accessibility"],
-      "dod": [10, 11],
+      "must_haves": [
+        "Deterministic quantity engine",
+        "Household isolation",
+        "Accessibility"
+      ],
+      "dod": [
+        10,
+        11
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -28,13 +44,25 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001"],
-      "files_hint": ["domain/src/units.ts", "domain/src/normalize.ts", "domain/src/ingredients.ts", "tests/units.test.ts", "tests/normalize.test.ts"],
+      "deps": [
+        "T-001"
+      ],
+      "files_hint": [
+        "domain/src/units.ts",
+        "domain/src/normalize.ts",
+        "domain/src/ingredients.ts",
+        "tests/units.test.ts",
+        "tests/normalize.test.ts"
+      ],
       "acceptance": "Ingredient text variants (including the garlic alias family: 'garlic cloves', 'cloves of garlic', 'fresh garlic', '3 cloves garlic, minced') normalize to one canonical ingredient id with a confidence value, and same-dimension conversions land in grams/millilitres/count while cross-dimension conversion happens only via curated density or per-item weight and is otherwise reported separately, never guessed.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Deterministic quantity engine"],
-      "dod": [4],
+      "must_haves": [
+        "Deterministic quantity engine"
+      ],
+      "dod": [
+        4
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -48,13 +76,25 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001", "T-002"],
-      "files_hint": ["domain/src/scale.ts", "domain/src/aggregate.ts", "tests/aggregate.test.ts"],
+      "deps": [
+        "T-001",
+        "T-002"
+      ],
+      "files_hint": [
+        "domain/src/scale.ts",
+        "domain/src/aggregate.ts",
+        "tests/aggregate.test.ts"
+      ],
       "acceptance": "Requirements from multiple recipes scaled to target servings merge into single lines only when canonical ingredient id AND base-unit dimension match, every aggregated number carries links back to each contributing recipe line and amount, and the four garlic alias fixture forms produce exactly one aggregated line.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Deterministic quantity engine"],
-      "dod": [4, 5],
+      "must_haves": [
+        "Deterministic quantity engine"
+      ],
+      "dod": [
+        4,
+        5
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -68,13 +108,27 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001", "T-002"],
-      "files_hint": ["domain/src/inventoryMath.ts", "domain/src/packaging.ts", "tests/inventory.test.ts", "tests/packaging.test.ts"],
+      "deps": [
+        "T-001",
+        "T-002"
+      ],
+      "files_hint": [
+        "domain/src/inventoryMath.ts",
+        "domain/src/packaging.ts",
+        "tests/inventory.test.ts",
+        "tests/packaging.test.ts"
+      ],
       "acceptance": "purchase_requirement = max(0, aggregated − usable_inventory) subtracting only confirmed/assumed_staple entries (less-certain entries become confirmation-question objects, never silent subtractions), and the chosen package combination's total yield always covers the requirement — underbuying impossible — minimising (expected waste, package count), with expected_surplus computed and generic fallbacks ('one bunch', 'one ~2 lb package') flagged as estimates.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Deterministic quantity engine", "Confirmed-only inventory", "Consolidated grocery list"],
-      "dod": [5],
+      "must_haves": [
+        "Deterministic quantity engine",
+        "Confirmed-only inventory",
+        "Consolidated grocery list"
+      ],
+      "dod": [
+        5
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -88,13 +142,25 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001"],
-      "files_hint": ["domain/src/preferences.ts", "domain/src/calibration.ts", "tests/preferences.test.ts", "tests/calibration.test.ts"],
+      "deps": [
+        "T-001"
+      ],
+      "files_hint": [
+        "domain/src/preferences.ts",
+        "domain/src/calibration.ts",
+        "tests/preferences.test.ts",
+        "tests/calibration.test.ts"
+      ],
       "acceptance": "Every calibration reaction and post-meal feedback event updates per-attribute signals (protein, cuisine, flavour, texture, spice, richness, method, effort) each carrying value, confidence and durability — never one opaque score — with negative signals weighted more strongly and faster than weak positives, and the calibration module deliberately SELECTS 8–15 cards for maximum attribute spread rather than sampling randomly.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Onboarding + taste calibration", "Post-meal feedback"],
-      "dod": [8],
+      "must_haves": [
+        "Onboarding + taste calibration",
+        "Post-meal feedback"
+      ],
+      "dod": [
+        8
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "Card selection variance is why candidate B won — the spec demands deliberately varied cards, not just reactions. Four reactions: looks good / not for me / never recommend / too much work; 'never recommend' feeds the hard-exclusion set consumed by filters. Persisted score/signal values go through Rational on authoritative paths (Invariant 1)."
@@ -107,13 +173,25 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001"],
-      "files_hint": ["domain/src/filters.ts", "domain/src/score.ts", "tests/filters.test.ts", "tests/score.test.ts"],
+      "deps": [
+        "T-001"
+      ],
+      "files_hint": [
+        "domain/src/filters.ts",
+        "domain/src/score.ts",
+        "tests/filters.test.ts",
+        "tests/score.test.ts"
+      ],
       "acceptance": "Allergies, dietary restrictions, explicit exclusions, hard time ceilings and recent-repeat constraints eliminate recipes absolutely before any scoring, and survivors receive a score of 0.32 preference + 0.20 context/interruption + 0.16 inventory + 0.12 cost + 0.10 novelty + 0.10 leftover-usefulness minus explicit penalties, with weights in one config object and a full per-recipe breakdown persisted.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Deterministic recommendation engine"],
-      "dod": [2, 9],
+      "must_haves": [
+        "Deterministic recommendation engine"
+      ],
+      "dod": [
+        2,
+        9
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -127,13 +205,27 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001", "T-006"],
-      "files_hint": ["domain/src/planset.ts", "domain/src/swap.ts", "tests/planset.test.ts", "tests/swap.test.ts"],
+      "deps": [
+        "T-001",
+        "T-006"
+      ],
+      "files_hint": [
+        "domain/src/planset.ts",
+        "domain/src/swap.ts",
+        "tests/planset.test.ts",
+        "tests/swap.test.ts"
+      ],
       "acceptance": "The planset pass optimises the SET of three meals for ingredient overlap, protein and cuisine diversity, total weekly active time and cost, and a swap by explicit reason (faster, less hands-on, fewer dishes, cheaper, more familiar, more adventurous, no pasta, different protein, use what I have) returns at most three alternatives ranked against the two untouched meals — which are provably unchanged.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Deterministic recommendation engine", "Plan screen + one-tap swap"],
-      "dod": [2, 3],
+      "must_haves": [
+        "Deterministic recommendation engine",
+        "Plan screen + one-tap swap"
+      ],
+      "dod": [
+        2,
+        3
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -146,18 +238,30 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
-      "deps": ["T-001"],
-      "files_hint": ["domain/src/catalog.ts", "data/ingredients.json", "tests/catalog.test.ts"],
+      "status": "done",
+      "deps": [
+        "T-001"
+      ],
+      "files_hint": [
+        "domain/src/catalog.ts",
+        "data/ingredients.json",
+        "tests/catalog.test.ts"
+      ],
       "acceptance": "A recipe is ineligible for recommendation unless quantities are complete, steps ordered, servings known, dietary tags verified, and all nine per-step interruption-metadata fields present — and every recipe ingredient id resolves in the registry with its allergen classes consistent with the recipe's dietary tags, so an allergen can never hide behind an unverified tag.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Recipe catalog", "Deterministic recommendation engine"],
-      "dod": [9],
+      "must_haves": [
+        "Recipe catalog",
+        "Deterministic recommendation engine"
+      ],
+      "dod": [
+        9
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "FROZEN CONTRACT (cycle 3, T-001 landed): the nine per-step interruption fields on RecipeStep in domain/src/recipe.ts use two names that DIFFER FROM SPEC.md — `maximum_pause` (a MaximumPause union: {kind:'bounded',seconds} | {kind:'unlimited'}), NOT `maximum_pause_seconds`; and `timer_duration_seconds` (number | null), NOT `timer_duration`. Also `recovery_instruction` is a RecoveryGuidance union ({kind:'instruction',text} | {kind:'none_available'}), not a bare string. Validate against the TYPES, not against the SPEC's field names. Invariant 5 binds: this gate and the ingredient-id/allergen-class cross-check land BEFORE any recipe is authored — otherwise DoD 9 fails via data at 5am. Registry carries curated aliases, densities, per-item weights, allergen classes, store sections. The gate excludes incomplete recipes rather than failing the build, which is what makes a short catalog a graceful degradation."
+      "notes": "FROZEN CONTRACT (cycle 3, T-001 landed): the nine per-step interruption fields on RecipeStep in domain/src/recipe.ts use two names that DIFFER FROM SPEC.md — `maximum_pause` (a MaximumPause union: {kind:'bounded',seconds} | {kind:'unlimited'}), NOT `maximum_pause_seconds`; and `timer_duration_seconds` (number | null), NOT `timer_duration`. Also `recovery_instruction` is a RecoveryGuidance union ({kind:'instruction',text} | {kind:'none_available'}), not a bare string. Validate against the TYPES, not against the SPEC's field names. Invariant 5 binds: this gate and the ingredient-id/allergen-class cross-check land BEFORE any recipe is authored — otherwise DoD 9 fails via data at 5am. Registry carries curated aliases, densities, per-item weights, allergen classes, store sections. The gate excludes incomplete recipes rather than failing the build, which is what makes a short catalog a graceful degradation.",
+      "verified_cycle": 5
     },
     {
       "id": "T-009",
@@ -167,13 +271,26 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-008"],
-      "files_hint": ["data/recipes/r01.json", "data/recipes/r02.json", "data/recipes/r03.json", "data/recipes/r04.json", "data/recipes/r05.json", "data/recipes/r06.json"],
+      "deps": [
+        "T-008"
+      ],
+      "files_hint": [
+        "data/recipes/r01.json",
+        "data/recipes/r02.json",
+        "data/recipes/r03.json",
+        "data/recipes/r04.json",
+        "data/recipes/r05.json",
+        "data/recipes/r06.json"
+      ],
       "acceptance": "Six recipes spanning distinct proteins, cuisines, methods and effort levels pass the full validation gate including complete quantities against registry ids, the full attribute vector, and all nine interruption-metadata fields on every step — establishing the schema-first authoring pattern the bulk batches copy.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Recipe catalog"],
-      "dod": [9],
+      "must_haves": [
+        "Recipe catalog"
+      ],
+      "dod": [
+        9
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "FROZEN CONTRACT (cycle 3): author every step against domain/src/recipe.ts RecipeStep, NOT against SPEC.md's field names. Two differ: `maximum_pause` is a union {kind:'bounded',seconds:n} | {kind:'unlimited'} (NOT `maximum_pause_seconds`), and the timer field is `timer_duration_seconds: number | null` (NOT `timer_duration`). `recovery_instruction` is {kind:'instruction',text:'...'} | {kind:'none_available'} — a real step-specific instruction or the explicit none, never a fabricated string. All nine fields are required on every step. This batch is the template: schema-first data entry against the gate, not prose. Recovery instructions must be real and step-specific (Invariant 6 consumes them verbatim). Owns numeric prefixes r01–r06 only. Include at least one very-low-effort and one adventurous recipe so calibration and swaps have range even if bulk batches slip."
@@ -186,13 +303,33 @@
       "value": "H",
       "effort": "L",
       "status": "todo",
-      "deps": ["T-008", "T-009"],
-      "files_hint": ["data/recipes/r07.json", "data/recipes/r08.json", "data/recipes/r09.json", "data/recipes/r10.json", "data/recipes/r11.json", "data/recipes/r12.json", "data/recipes/r13.json", "data/recipes/r14.json", "data/recipes/r15.json", "data/recipes/r16.json", "data/recipes/r17.json", "data/recipes/r18.json"],
+      "deps": [
+        "T-008",
+        "T-009"
+      ],
+      "files_hint": [
+        "data/recipes/r07.json",
+        "data/recipes/r08.json",
+        "data/recipes/r09.json",
+        "data/recipes/r10.json",
+        "data/recipes/r11.json",
+        "data/recipes/r12.json",
+        "data/recipes/r13.json",
+        "data/recipes/r14.json",
+        "data/recipes/r15.json",
+        "data/recipes/r16.json",
+        "data/recipes/r17.json",
+        "data/recipes/r18.json"
+      ],
       "acceptance": "Twelve additional recipes pass the full validation gate and widen attribute coverage (cost bands, dish counts, unattended-heavy methods like braises/sheet-pan, spice levels) beyond batch 1.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Recipe catalog"],
-      "dod": [9],
+      "must_haves": [
+        "Recipe catalog"
+      ],
+      "dod": [
+        9
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. DESIGN ruling binds: FEWER FULLY-VALID RECIPES BEAT PARTIALLY-VALID ONES — if time pressures, ship fewer complete recipes rather than more incomplete ones; the gate excludes incomplete recipes anyway. Owns prefixes r07–r18 only; do not touch batch-1 or batch-3 files, the registry, or the gate."
@@ -205,13 +342,33 @@
       "value": "H",
       "effort": "L",
       "status": "todo",
-      "deps": ["T-008", "T-009"],
-      "files_hint": ["data/recipes/r19.json", "data/recipes/r20.json", "data/recipes/r21.json", "data/recipes/r22.json", "data/recipes/r23.json", "data/recipes/r24.json", "data/recipes/r25.json", "data/recipes/r26.json", "data/recipes/r27.json", "data/recipes/r28.json", "data/recipes/r29.json", "data/recipes/r30.json"],
+      "deps": [
+        "T-008",
+        "T-009"
+      ],
+      "files_hint": [
+        "data/recipes/r19.json",
+        "data/recipes/r20.json",
+        "data/recipes/r21.json",
+        "data/recipes/r22.json",
+        "data/recipes/r23.json",
+        "data/recipes/r24.json",
+        "data/recipes/r25.json",
+        "data/recipes/r26.json",
+        "data/recipes/r27.json",
+        "data/recipes/r28.json",
+        "data/recipes/r29.json",
+        "data/recipes/r30.json"
+      ],
       "acceptance": "The catalog reaches ~30 gate-valid recipes with deliberate ingredient-overlap clusters (shared herbs, sauces, proteins) so planset's ingredient-overlap and leftover-usefulness terms have real signal to optimise.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Recipe catalog"],
-      "dod": [9],
+      "must_haves": [
+        "Recipe catalog"
+      ],
+      "dod": [
+        9
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. Same graceful-degradation ruling as T-010. Owns prefixes r19–r30 only. Runs in parallel with T-010 — coordinate nothing, just stay inside the assigned file range. If registry ingredients are missing, that is a gap to report, not a license to edit data/ingredients.json (owned by T-008)."
@@ -223,18 +380,28 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
-      "deps": ["T-001"],
-      "files_hint": ["domain/src/cooking.ts", "tests/cooking.test.ts"],
+      "status": "done",
+      "deps": [
+        "T-001"
+      ],
+      "files_hint": [
+        "domain/src/cooking.ts",
+        "tests/cooking.test.ts"
+      ],
       "acceptance": "A cooking session reconstructed purely from its persisted events at any later wall-clock time yields the correct current step, elapsed/remaining timer state, next safe stopping point, and continuous-attention warnings — with recovery guidance drawn only from per-step metadata and an explicit 'unavailable' state when metadata is absent.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Interruption-aware cooking mode"],
-      "dod": [7],
+      "must_haves": [
+        "Interruption-aware cooking mode"
+      ],
+      "dod": [
+        7
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 2 binds: timers are absolute UTC end instants, never remaining-seconds — recovery is arithmetic, not bookkeeping, which is what makes DoD 7 provable. Invariant 6 binds: recovery/panic guidance reads required per-step metadata only, never fabricated. Pure domain: no I/O, no Date.now() inside logic (time is a parameter)."
+      "notes": "Invariant 2 binds: timers are absolute UTC end instants, never remaining-seconds — recovery is arithmetic, not bookkeeping, which is what makes DoD 7 provable. Invariant 6 binds: recovery/panic guidance reads required per-step metadata only, never fabricated. Pure domain: no I/O, no Date.now() inside logic (time is a parameter).",
+      "verified_cycle": 5
     },
     {
       "id": "T-013",
@@ -244,13 +411,25 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001"],
-      "files_hint": ["domain/src/prep.ts", "domain/src/reasons.ts", "tests/prep.test.ts", "tests/reasons.test.ts"],
+      "deps": [
+        "T-001"
+      ],
+      "files_hint": [
+        "domain/src/prep.ts",
+        "domain/src/reasons.ts",
+        "tests/prep.test.ts",
+        "tests/reasons.test.ts"
+      ],
       "acceptance": "For any valid recipe, prep derivation yields ingredients to retrieve, equipment, do-ahead tasks, the first non-interruptible step, the first safe stopping point and expected active-time blocks; and every human-readable time or reason string in the product is produced by this one module with numeric slots, always rendering total and active time as separate values.",
       "packages": [],
       "wave": 1,
-      "must_haves": ["Prep plan", "Plan screen + one-tap swap"],
-      "dod": [6],
+      "must_haves": [
+        "Prep plan",
+        "Plan screen + one-tap swap"
+      ],
+      "dod": [
+        6
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "[Steal C] binds: ONE copy module + ONE shared time renderer makes DoD 6 a property of a single helper instead of a per-screen convention, and a voice review a one-file diff. Copy is concrete and countable ('22 min total, 7 hands-on'), guilt-free, honest about uncertainty. At most three reason codes per meal, rendered as concrete copy."
@@ -263,13 +442,37 @@
       "value": "H",
       "effort": "L",
       "status": "todo",
-      "deps": ["T-001", "T-003", "T-004", "T-005", "T-006", "T-007", "T-008", "T-009", "T-012", "T-013"],
-      "files_hint": ["server/src/http.ts", "server/src/main.ts", "server/src/routes.ts", "tests/routes.test.ts"],
+      "deps": [
+        "T-001",
+        "T-003",
+        "T-004",
+        "T-005",
+        "T-006",
+        "T-007",
+        "T-008",
+        "T-009",
+        "T-012",
+        "T-013"
+      ],
+      "files_hint": [
+        "server/src/http.ts",
+        "server/src/main.ts",
+        "server/src/routes.ts",
+        "tests/routes.test.ts"
+      ],
       "acceptance": "Every product flow (onboarding, calibration, plan, swap, grocery list with preserved user edits and confirmation questions, purchase confirmation writing surplus, prep, cooking session events, feedback, cooked-decrement) is reachable over HTTP as thin routes over domain functions, and the entrypoint accepts port and db-path flags so a test can run it on a temp DB and free port.",
       "packages": [],
       "wave": 2,
-      "must_haves": ["Consolidated grocery list", "Confirmed-only inventory", "Household isolation", "Interruption-aware cooking mode"],
-      "dod": [7, 10],
+      "must_haves": [
+        "Consolidated grocery list",
+        "Confirmed-only inventory",
+        "Household isolation",
+        "Interruption-aware cooking mode"
+      ],
+      "dod": [
+        7,
+        10
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "Invariant 3 binds: all data access through db.ts household-scoped helpers — routes must be unable to express an unscoped query; never inline SQL in routes. User grocery edits go to the separate never-overwritten column; regeneration must not clobber them by construction. Inventory decremented on 'cooked', never 'planned'. [Steal A]: the port/db-path flags are the stated mitigation for kill-test flake — they are first-class, not debug leftovers. node:http only, zero deps."
@@ -282,13 +485,29 @@
       "value": "H",
       "effort": "L",
       "status": "todo",
-      "deps": ["T-001", "T-005"],
-      "files_hint": ["web/index.html", "web/css/app.css", "web/js/api.js", "web/js/router.js", "web/js/ui.js", "web/js/onboarding.js", "web/js/calibrate.js"],
+      "deps": [
+        "T-001",
+        "T-005"
+      ],
+      "files_hint": [
+        "web/index.html",
+        "web/css/app.css",
+        "web/js/api.js",
+        "web/js/router.js",
+        "web/js/ui.js",
+        "web/js/onboarding.js",
+        "web/js/calibrate.js"
+      ],
       "acceptance": "A new user completes household setup (size, restrictions, allergies, never-recommend, proteins, cuisines, time ceilings, novelty, staples) and 8–15 four-reaction calibration cards in a one-handed, under-four-minute mobile flow with one dominant bottom-anchored action per screen and never more than three choices anywhere.",
       "packages": [],
       "wave": 2,
-      "must_haves": ["Onboarding + taste calibration", "Accessibility"],
-      "dod": [1],
+      "must_haves": [
+        "Onboarding + taste calibration",
+        "Accessibility"
+      ],
+      "dod": [
+        1
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "Identity contract binds: tokens-only CSS (app.css consumes tokens.css, no free-hand values); ui.js is the SOLE source of shared components — bottom sheet, undo snackbar (undo everywhere, never a confirmation modal), aria-live timer announcer, reason chips, status-beyond-colour badges. Framework-free vanilla JS. Wave-2 parallel siblings consume ui.js — keep its component API small, boring, and stable."
@@ -301,13 +520,24 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001", "T-007", "T-013"],
-      "files_hint": ["web/js/plan.js"],
+      "deps": [
+        "T-001",
+        "T-007",
+        "T-013"
+      ],
+      "files_hint": [
+        "web/js/plan.js"
+      ],
       "acceptance": "The plan screen shows three dinners each with name, total AND active time separately, interruption profile, effort, at most three concrete reason codes, owned/shared ingredients, cost band and novelty indicator — and swapping one meal by explicit reason takes at most three taps, offers at most three alternatives, and visibly leaves the other two meals untouched.",
       "packages": [],
       "wave": 2,
-      "must_haves": ["Plan screen + one-tap swap"],
-      "dod": [3, 6],
+      "must_haves": [
+        "Plan screen + one-tap swap"
+      ],
+      "dod": [
+        3,
+        6
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "All time strings and reason copy come from the domain reasons/time-renderer module — never hand-rolled here (DoD 6 mechanism). Consume shared components from ui.js per the identity contract; do not create local variants. Builds against the wave-0 route contracts; any needed contract change is an emergency single-agent commit per the contract-drift rule."
@@ -320,13 +550,23 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-001", "T-004"],
-      "files_hint": ["web/js/grocery.js"],
+      "deps": [
+        "T-001",
+        "T-004"
+      ],
+      "files_hint": [
+        "web/js/grocery.js"
+      ],
       "acceptance": "The grocery list renders grouped by store section with tabular numerals, every line expands to answer 'why am I buying this?' by naming each contributing recipe and amount, inventory deducted and expected surplus, estimated packages are labelled estimated, inventory confirmation questions surface inline, and a user-edited quantity visibly survives list regeneration.",
       "packages": [],
       "wave": 2,
-      "must_haves": ["Consolidated grocery list", "Confirmed-only inventory"],
-      "dod": [5],
+      "must_haves": [
+        "Consolidated grocery list",
+        "Confirmed-only inventory"
+      ],
+      "dod": [
+        5
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "Receipt/ledger treatment [steal C]: typography does the trust-building the traceability must-have exists for. User edits live in the separate column — the UI reads and preserves it, never writes generated values over it. Quantity edit gets an undo snackbar from ui.js, not a confirmation modal. Honest uncertainty: 'estimated' stated plainly."
@@ -339,13 +579,22 @@
       "value": "H",
       "effort": "S",
       "status": "todo",
-      "deps": ["T-001", "T-005"],
-      "files_hint": ["web/js/feedback.js"],
+      "deps": [
+        "T-001",
+        "T-005"
+      ],
+      "files_hint": [
+        "web/js/feedback.js"
+      ],
       "acceptance": "After cooking, a user records make-again / it-was-fine / not-again plus one optional reason in at most two taps and under five seconds, with the recorded reaction reflected in stored attribute-level preference signals.",
       "packages": [],
       "wave": 2,
-      "must_haves": ["Post-meal feedback"],
-      "dod": [8],
+      "must_haves": [
+        "Post-meal feedback"
+      ],
+      "dod": [
+        8
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "One dominant action; the optional reason is a second tap at most, never a form. Guilt-free copy from the shared copy module. No streaks, no engagement mechanics of any kind."
@@ -358,13 +607,28 @@
       "value": "H",
       "effort": "L",
       "status": "todo",
-      "deps": ["T-012", "T-013", "T-014", "T-015"],
-      "files_hint": ["web/js/cook.js", "web/js/prep.js"],
+      "deps": [
+        "T-012",
+        "T-013",
+        "T-014",
+        "T-015"
+      ],
+      "files_hint": [
+        "web/js/cook.js",
+        "web/js/prep.js"
+      ],
       "acceptance": "Cooking mode shows one large-text step at a time with one-handed completion, labelled active vs unattended intervals, background-safe timers with accessible announcements, an explicit warning (with required uninterrupted duration) before any continuous-attention step, the next safe stopping point always visible — and reopening the app mid-session after a reload or kill lands the user back on the correct step with timers correct, showing validated recovery guidance or an honest 'no guidance available'.",
       "packages": [],
       "wave": 3,
-      "must_haves": ["Interruption-aware cooking mode", "Prep plan", "Accessibility"],
-      "dod": [6, 7],
+      "must_haves": [
+        "Interruption-aware cooking mode",
+        "Prep plan",
+        "Accessibility"
+      ],
+      "dod": [
+        6,
+        7
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "Invariant 2 binds: render timer state from stored absolute UTC end instants vs now — never count down a local variable as truth. Invariant 6 binds: recovery text comes only from per-step metadata; absent metadata is stated, never fabricated. Prep screen shows retrieve/equipment/do-ahead, first non-interruptible step, first safe stopping point, active-time blocks. Build accessibility in from the start (aria-live announcer from ui.js, 44px targets); the wave-3 a11y pass does not touch these files."
@@ -377,13 +641,23 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-014", "T-019"],
-      "files_hint": ["tests/e2e.cooking.test.ts"],
+      "deps": [
+        "T-014",
+        "T-019"
+      ],
+      "files_hint": [
+        "tests/e2e.cooking.test.ts"
+      ],
       "acceptance": "An automated end-to-end scenario advances a real cooking session with running timers, hard-kills the server process, restarts it against the same database file, and observes identical step progress and arithmetically correct timer state — proving DoD 7 by execution, not claim.",
       "packages": [],
       "wave": 3,
-      "must_haves": ["Interruption-aware cooking mode"],
-      "dod": [7, 11],
+      "must_haves": [
+        "Interruption-aware cooking mode"
+      ],
+      "dod": [
+        7,
+        11
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -397,13 +671,34 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-014", "T-015", "T-016", "T-017", "T-018"],
-      "files_hint": ["tests/e2e.loop.test.ts"],
+      "deps": [
+        "T-014",
+        "T-015",
+        "T-016",
+        "T-017",
+        "T-018"
+      ],
+      "files_hint": [
+        "tests/e2e.loop.test.ts"
+      ],
       "acceptance": "One automated pass through onboarding → calibration → plan → swap → grocery → feedback demonstrates: a plan reached within the interaction budget, at least two of three meals approvable in-app, a swap changing exactly one meal, every grocery line carrying complete recipe-level provenance, total and active time present as separate values in every payload carrying a time, and feedback recorded in two interactions.",
       "packages": [],
       "wave": 3,
-      "must_haves": ["Onboarding + taste calibration", "Plan screen + one-tap swap", "Consolidated grocery list", "Post-meal feedback"],
-      "dod": [1, 2, 3, 5, 6, 8, 11],
+      "must_haves": [
+        "Onboarding + taste calibration",
+        "Plan screen + one-tap swap",
+        "Consolidated grocery list",
+        "Post-meal feedback"
+      ],
+      "dod": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        8,
+        11
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -417,13 +712,28 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-006", "T-007", "T-008", "T-009", "T-010", "T-011"],
-      "files_hint": ["tests/fuzz.plan.test.ts"],
+      "deps": [
+        "T-006",
+        "T-007",
+        "T-008",
+        "T-009",
+        "T-010",
+        "T-011"
+      ],
+      "files_hint": [
+        "tests/fuzz.plan.test.ts"
+      ],
       "acceptance": "Across many seeded, randomly generated households with random allergies, restrictions and exclusions, zero produced plans contain a hard-excluded ingredient — checked at the ingredient-id and allergen-class level via the registry, not by recipe tag alone, with failing seeds reported for reproduction.",
       "packages": [],
       "wave": 3,
-      "must_haves": ["Deterministic recommendation engine", "Recipe catalog"],
-      "dod": [9, 11],
+      "must_haves": [
+        "Deterministic recommendation engine",
+        "Recipe catalog"
+      ],
+      "dod": [
+        9,
+        11
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -437,13 +747,22 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-014"],
-      "files_hint": ["tests/isolation.test.ts"],
+      "deps": [
+        "T-014"
+      ],
+      "files_hint": [
+        "tests/isolation.test.ts"
+      ],
       "acceptance": "With two populated households, no request or query path returns another household's preferences, inventory, plans, grocery lists, cooking sessions or feedback — covering every entity type in the schema, including attempts that pass a foreign household's ids directly.",
       "packages": [],
       "wave": 3,
-      "must_haves": ["Household isolation"],
-      "dod": [10, 11],
+      "must_haves": [
+        "Household isolation"
+      ],
+      "dod": [
+        10,
+        11
+      ],
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
@@ -457,13 +776,31 @@
       "value": "H",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-015", "T-016", "T-017", "T-018"],
-      "files_hint": ["web/index.html", "web/css/app.css", "web/js/ui.js", "web/js/onboarding.js", "web/js/calibrate.js", "web/js/plan.js", "web/js/grocery.js", "web/js/feedback.js"],
+      "deps": [
+        "T-015",
+        "T-016",
+        "T-017",
+        "T-018"
+      ],
+      "files_hint": [
+        "web/index.html",
+        "web/css/app.css",
+        "web/js/ui.js",
+        "web/js/onboarding.js",
+        "web/js/calibrate.js",
+        "web/js/plan.js",
+        "web/js/grocery.js",
+        "web/js/feedback.js"
+      ],
       "acceptance": "Every screen has screen-reader labels on all interactive elements, respects dynamic type without breakage, meets contrast on the dark-first palette, has 44px minimum targets, conveys all status beyond colour alone, announces timers accessibly, requires no gesture-only critical action, offers undo (never a confirmation modal) for every destructive-feeling action, and all copy is concrete, countable and guilt-free.",
       "packages": [],
       "wave": 3,
-      "must_haves": ["Accessibility"],
-      "dod": [11],
+      "must_haves": [
+        "Accessibility"
+      ],
+      "dod": [
+        11
+      ],
       "model": "sonnet",
       "attempts": 0,
       "notes": "Deliberately excludes cook.js/prep.js (owned this wave by T-019, which builds its own accessibility in). Copy fixes go into domain/src/reasons.ts ONLY if a string lives there — if so, that is a one-file diff by design; coordinate via deps, do not fork copy into screens. Tokens-only CSS rule binds: fixes adjust tokens/app.css, never inline styles."
@@ -476,12 +813,23 @@
       "value": "M",
       "effort": "S",
       "status": "todo",
-      "deps": ["T-019", "T-020", "T-021", "T-022", "T-023", "T-024"],
-      "files_hint": ["web/js/cook.js"],
+      "deps": [
+        "T-019",
+        "T-020",
+        "T-021",
+        "T-022",
+        "T-023",
+        "T-024"
+      ],
+      "files_hint": [
+        "web/js/cook.js"
+      ],
       "acceptance": "A single always-reachable control in cooking mode tells an interrupted cook exactly what to do right now — what can wait, what cannot, and for how long — using only the current step's stored interruption metadata.",
       "packages": [],
       "wave": 4,
-      "must_haves": ["Interruption-aware cooking mode (delighter)"],
+      "must_haves": [
+        "Interruption-aware cooking mode (delighter)"
+      ],
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
@@ -495,12 +843,23 @@
       "value": "M",
       "effort": "S",
       "status": "todo",
-      "deps": ["T-016", "T-020", "T-021", "T-022", "T-023", "T-024"],
-      "files_hint": ["web/js/plan.js"],
+      "deps": [
+        "T-016",
+        "T-020",
+        "T-021",
+        "T-022",
+        "T-023",
+        "T-024"
+      ],
+      "files_hint": [
+        "web/js/plan.js"
+      ],
       "acceptance": "Each planned meal can expand to show its persisted score breakdown — every weighted component and penalty with its value — matching the numbers the engine actually stored.",
       "packages": [],
       "wave": 4,
-      "must_haves": ["Deterministic recommendation engine (delighter)"],
+      "must_haves": [
+        "Deterministic recommendation engine (delighter)"
+      ],
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
@@ -514,12 +873,27 @@
       "value": "M",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-004", "T-017", "T-020", "T-021", "T-022", "T-023", "T-024"],
-      "files_hint": ["web/js/grocery.js", "domain/src/useitup.ts", "tests/useitup.test.ts", "server/src/routes.ts"],
+      "deps": [
+        "T-004",
+        "T-017",
+        "T-020",
+        "T-021",
+        "T-022",
+        "T-023",
+        "T-024"
+      ],
+      "files_hint": [
+        "web/js/grocery.js",
+        "domain/src/useitup.ts",
+        "tests/useitup.test.ts",
+        "server/src/routes.ts"
+      ],
       "acceptance": "The grocery list copies to the clipboard as clean plain text grouped by section, and a recorded surplus ingredient surfaces as a guilt-free chip scoring its fit against upcoming plan candidates ('the leftover half-can of coconut milk fits Thursday's curry').",
       "packages": [],
       "wave": 4,
-      "must_haves": ["Consolidated grocery list (delighter)"],
+      "must_haves": [
+        "Consolidated grocery list (delighter)"
+      ],
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
@@ -533,12 +907,26 @@
       "value": "L",
       "effort": "M",
       "status": "todo",
-      "deps": ["T-005", "T-006", "T-020", "T-021", "T-022", "T-023", "T-024"],
-      "files_hint": ["domain/src/preferences.ts", "domain/src/filters.ts", "tests/preferences.test.ts"],
+      "deps": [
+        "T-005",
+        "T-006",
+        "T-020",
+        "T-021",
+        "T-022",
+        "T-023",
+        "T-024"
+      ],
+      "files_hint": [
+        "domain/src/preferences.ts",
+        "domain/src/filters.ts",
+        "tests/preferences.test.ts"
+      ],
       "acceptance": "A household with a second adult holding independent preference signals never receives a plan containing a meal below the minimum acceptable fit for either adult, with both adults' hard restrictions treated as absolute.",
       "packages": [],
       "wave": 4,
-      "must_haves": ["Onboarding + taste calibration (delighter)"],
+      "must_haves": [
+        "Onboarding + taste calibration (delighter)"
+      ],
       "dod": [],
       "model": "sonnet",
       "attempts": 0,

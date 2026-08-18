@@ -1,0 +1,51 @@
+{
+  "wave": [
+    {
+      "itemId": "T-008",
+      "status": "done",
+      "branch": "wave-204400-T-008",
+      "worktree": "/opt/targets/dinner/.wt/T-008",
+      "files_changed": [
+        "domain/src/catalog.ts",
+        "data/ingredients.json",
+        "tests/catalog.test.ts"
+      ],
+      "summary": "Built the catalog validation gate (domain/src/catalog.ts), the curated ingredient registry (data/ingredients.json, 97 entries), and the allergen-class cross-check, committed as ca79c0a on wave-204400-T-008. `validateRecipe`/`gateCatalog` validate RAW post-JSON.parse data against the frozen types in recipe.ts (never SPEC field names, per D-7) and EXCLUDE ineligible recipes with per-recipe structured reasons ({code, path, message}) instead of failing the build: quantities complete (exact/range/to_taste with positive Rationals parsed via qty.ts — floats rejected, ranges ordered), steps strictly ordered/contiguous/unique-id, servings a positive integer, declared total/active times equal to per-step sums (arithmetic via qty.ts add/fromInt/eq), and all eleven members of the nine interruption-metadata fields present in the data with frozen D-7 shapes (maximum_pause union, timer_duration_seconds number|null, recovery_instruction union — SPEC-name variants like maximum_pause_seconds are rejected by test). Cross-check: every ingredient_id must resolve in the registry; every allergen class carried by any ingredient (including optional garnishes) must be declared on the recipe (undeclared_allergen); and no dietary tag may be contradicted by a carried or declared class via the exported complete-by-construction FORBIDDEN_ALLERGEN_CLASSES_BY_DIETARY_TAG table — so an allergen can never hide behind an unverified tag. The registry (single source of truth for T-002 to consume) carries globally-unique ids+aliases, allergen classes, store sections, and exact-rational densities/per-item weights written as qty.ts-parseable strings, with explicit null wherever no curated value exists (e.g. kosher salt density is brand-dependent and null; tests assert both states occur and nulls are honest, never guessed). parseIngredientRegistry throws typed CatalogDataError on a corrupt registry (which cannot be degraded around), while gateCatalog never throws on bad recipe data and also excludes later duplicate recipe ids/slugs. Scope respected: no units.ts/normalize.ts/ingredients.ts imports, no manifest changes. 30 new tests in tests/catalog.test.ts cover every acceptance-criterion clause, run against the real committed registry.",
+      "self_test_output": "✔ plans + plan meals: persisted score breakdown is exact; isolation (7.439904ms)\n✔ grocery lines: provenance, and regeneration cannot clobber a user edit (11.156555ms)\n✔ cooking sessions: timers persist ABSOLUTE UTC end instants; isolation (9.402666ms)\n✔ feedback round trips and is isolated (2.59019ms)\nℹ tests 68\nℹ suites 0\nℹ pass 68\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 368.517357"
+    },
+    {
+      "itemId": "T-012",
+      "status": "done",
+      "branch": "wave-204400-T-012",
+      "worktree": "/opt/targets/dinner/.wt/T-012",
+      "files_changed": [
+        "domain/src/cooking.ts",
+        "tests/cooking.test.ts"
+      ],
+      "summary": "Built the cooking session state machine as a pure fold: reconstructSession(recipe, events, at) turns an ordered CookingEvent log plus a query-instant PARAMETER (no Date.now, no I/O) into a derived view — current step, per-timer elapsed/remaining/overrun computed arithmetically from the persisted ABSOLUTE UTC end instant (Invariant 2; the derived TimerSnapshot is documented never-persisted), next safe stopping point scanned from safe_to_pause_before/during/after + natural_stopping_point (kinds now/before_step/after_step/during_step/end_of_recipe, carrying maximum_pause), continuous-attention warnings (current + first upcoming, with uninterrupted seconds from active+unattended metadata), pause bookkeeping with deadline/overdue derived from paused_at + maximum_pause, and recovery guidance read ONLY from RecipeStep.recovery_instruction with an explicit {kind:'unavailable'} view state when metadata is none_available or no step remains (Invariant 6 — never fabricated). timerForStep constructs the persistable timer by computing the absolute end instant once. Malformed logs (empty, bad first event, recipe/session mismatch, non-monotonic seq, out-of-order steps, unknown timers, events after terminal status, illegal transitions) throw typed CookingError rather than yielding a plausible wrong view. Tests fold the SAME event log at +11m, +20m, and +4h (long after every timer expired), prove determinism, prefix-log (kill mid-write) coherence, pause-overdue arithmetic, boundary rounding, and all rejection paths. Built on the frozen shapes in domain/src/recipe.ts; scope strictly domain/src/cooking.ts + tests/cooking.test.ts; no manifests touched. npm test (tsc --noEmit + node --test): 55 pass, 0 fail.",
+      "self_test_output": "✔ plans + plan meals: persisted score breakdown is exact; isolation (6.899827ms)\n✔ grocery lines: provenance, and regeneration cannot clobber a user edit (15.315384ms)\n✔ cooking sessions: timers persist ABSOLUTE UTC end instants; isolation (10.095742ms)\n✔ feedback round trips and is isolated (2.886959ms)\nℹ tests 55\nℹ suites 0\nℹ pass 55\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 396.526856"
+    }
+  ],
+  "dead_items": [],
+  "timestamp": "2026-08-18T20:44:00Z",
+  "_agents": [
+    {
+      "label": "builder-T-008",
+      "model": "claude-fable-5",
+      "state": "done",
+      "tokens": 114818,
+      "toolCalls": 18,
+      "durationMs": 813794
+    },
+    {
+      "label": "builder-T-012",
+      "model": "claude-fable-5",
+      "state": "done",
+      "tokens": 75847,
+      "toolCalls": 17,
+      "durationMs": 420336
+    }
+  ],
+  "_totalTokens": 190665,
+  "_runId": "wf_982462a2-f9e"
+}

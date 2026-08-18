@@ -526,3 +526,152 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787085083,"next_wakeup_at":1787085173,"pid":2346402,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":3,"gear_target":2,"ratio":0.45,"mode":"thermostat","k_cap":3,"promote":false,"demote":false,"window_tokens":32276561,"window_cost_usd":34.53131875,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":15408356,"projected_depletion_at":1787106518,"last_probe_ts":1787083548,"last_real_probe_ts":1787083548,"probe_failures":0,"probe_note":"Cycle 3 REAL probe via allowlisted npx ccusage (bin/swarm-budget.sh still DENIED, KI-1). BOTH controllers replayed by hand from source. Weekly governor ENGAGED: allocator posture halted, env heat 100/23.26=4.30 > 1.3 => ceiling 2 + promote_blocked; raw account independently hot at 46.0/23.26=1.98. gear_target 5 (rho 0.45) clamped to 2, hysteresis from 4 => applied 3. KI-2 zero-envelope blind spot closed by drift (swarm_used_pct 0 -> 4) but the bug is still real.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":23.26,"weekly_heat":4.30,"opus_heat":4.30,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":3,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 5 | 2026-08-18T22:32:23+0000 | dinner | BUILD
+
+clock: now 1787092343, stop_at 1787140800 (13.5h left), usage_reset_at 1787094000 (28 min).
+Not in the WRAP_UP window; heartbeat.limp false.
+
+budget: gear 2 (gear_target 5, rho 0.077, clamped by the weekly governor to ceiling 2;
+hysteresis from 2 leaves it at 2). Window 18:00-23:00Z used 55,551,168 of a 130,591,250
+max-prior-block limit; 12,529,049 tok/h actual against a 163,032,164 tok/h target — the
+target is inflated because only 1,657s remain in the window, so a low rho here is an
+artefact of the denominator, not evidence of headroom. Wave cap 2, demote=true,
+promote blocked. Projected depletion well past the window close.
+
+KI-1 recurs a third time: `bin/swarm-budget.sh` DENIED, `bin/swarm-notify.sh poll` DENIED.
+Budget replayed by hand from an allowlisted `npx ccusage` probe (runs/cc-probe-c5.json);
+control channel read straight off `runs/control.json` — pending [] and inject [], nothing
+to apply, so the denial cost nothing THIS cycle. It will cost something the cycle a real
+command arrives by push and never reaches the file.
+
+KI-2 RE-OPENED, and this is the interesting one. At cycle 3 I recorded the weekly
+governor's zero-envelope blind spot as "resolved by drift" because `swarm_used_pct` had
+risen 0 -> 4, giving the heat formula a non-zero denominator. It has now fallen back to 0
+with `allow_overall_pct` also 0, so the feeder would once again DISENGAGE the governor —
+at posture "trickle", i.e. exactly when restraint matters most. The ceiling held at 2 only
+because a SECOND, independent signal was hot: the raw account is at 52.0% weekly against
+24.65% week-elapsed (heat 2.11; opus 47% -> 1.91). So the bug did not bite tonight, but it
+was never fixed and "resolved by drift" was the wrong label — I have corrected it to
+re-opened. Fix belongs in bin/swarm-weekly-from-allocator.sh (u+a <= 0 must mean MAXIMUM
+heat, not "unconfigured"); hard rule 5 forbids touching it mid-run.
+
+Noted, not applied: the allocator now advertises dial 0.30 against the runfile's 1.0.
+Pacing is a kickoff-time input; re-tuning it mid-run is not a sanctioned conductor edit.
+
+### ORIENT — cycle 4 crashed between merge and gate
+
+`git status` was CLEAN, which is why this needed care. The tell was arithmetic: master
+carried two commits saying "cycle 4" (860d034 T-008, ade40ef T-012) while state.json still
+said `cycle: 3`, backlog.json still had both items `todo`, the journal had no cycle-4
+block, and `.swarm/runs/cycle-004-build-wave.json` sat untracked. Cycle 4 dispatched its
+wave, merged both branches, and died before step 6.
+
+That is a worse state than a dirty tree. A dirty tree announces itself; merged-but-ungated
+code looks finished — it is committed, on master, with a tidy message — while hard rule 4
+had never actually been checked against it. Had I opened cycle 5 with a fresh wave, two
+unverified items would have become the foundation of everything above them.
+
+So cycle 5 finished cycle 4 instead of starting anything new. One work type, the same one
+cycle 4 chose: build-wave, resumed at its verification gate. Recorded as D-8.
+Salvage: committed the untracked workflow return, pruned both merged worktrees
+(`.wt/T-008`, `.wt/T-012`) and deleted all three merged wave branches.
+
+### VERIFICATION EVIDENCE
+
+The builders returned `status: "done"` for both items. That is a claim. Neither builder saw
+a check, because neither check existed until now — I wrote both gates this cycle, from
+SPEC.md and the frozen types in recipe.ts, never from the items' `acceptance` strings and
+never from the builders' own tests.
+Gate sources (conductor-owned): /opt/swarm/runs/cycle-005-gate-T008.mjs, cycle-005-gate-T012.mjs
+Full output: .swarm/runs/cycle-005-verify-T-008.txt (67 lines), cycle-005-verify-T-012.txt (65)
+
+1. test_cmd, run by me on master AFTER both merges — `npm test`:
+     ℹ tests 97  ℹ pass 97  ℹ fail 0  ℹ duration_ms 563.576041
+   (`tsc --noEmit` gates `test:unit` in the npm script, so 97 passing means strict
+   typecheck passed first.) Hard rule 4 satisfied — retroactively, which is the point:
+   nothing had confirmed it until this run.
+
+2. T-008 catalog gate — 55 checks, GATE PASS, 0 failed. Method: build ONE valid recipe,
+   prove it ELIGIBLE, then mutate one defect at a time and demand the right exclusion code.
+     C1 the valid fixture is ELIGIBLE          :: eligible, 0 issues                    PASS
+     C4 dairy DECLARED, no contradicting tag   :: stays eligible — not "any allergen -> reject" PASS
+     M14.<each of 11 fields> absent on a step  :: interruption_metadata_incomplete       PASS
+     M15 SPEC name maximum_pause_seconds       :: rejected (D-7 drift guard)             PASS
+     A1 milk in a "vegan" recipe, undeclared   :: undeclared_allergen + dietary_tag_contradicted PASS
+     A4 OPTIONAL parmesan garnish betrays vegan:: caught — optional lines are not exempt  PASS
+     A9 registry-wide sweep                    :: 53 (ingredient, class, tag) combos, 0 escaped PASS
+     G2 broken catalog degrades, not throws    :: 1 eligible of 5, aligned reports        PASS
+   A9 is the one I care about most: it does not use hand-picked examples. It walks all 97
+   registry entries, every allergen class each carries, and every dietary tag that class
+   contradicts, and asserts none escapes.
+
+3. T-012 cooking gate — 49 checks, GATE PASS, 0 failed. The claim under attack is
+   Invariant 2 (absolute end instants, never remaining-seconds). The way to falsify it is
+   to fold the SAME persisted log at wildly separated query instants:
+     K3 at +90s   :: 30s elapsed, 570s remaining, not expired                            PASS
+     K5 at +660s  :: exactly at the end instant — expired, 0 remaining, 0 overrun         PASS
+     K6 at +7260s :: expired, remaining clamped 0, overrun 6600s                          PASS
+     K8 41 instants over 3h :: every remaining/overrun equals ends_at - now, exactly      PASS
+     K9 persisted timer keys :: id,step_index,label,started_at_utc,ends_at_utc,duration_seconds PASS
+     K11 same log + same instant, 120ms apart in real time :: byte-identical view         PASS
+     R2 step with none_available :: explicit {kind:'unavailable',step_index:3}, no text    PASS
+     E1-E10 illegal logs :: ten distinct typed CookingError codes, never a plausible view  PASS
+   K6 is the kill-safety proof: a remaining-seconds design has no way to compute a 6,600s
+   overrun after the process was dead for two hours. K9 confirms the persisted record
+   carries no remaining-seconds field for it to have used.
+
+4. MY GATES WERE THEMSELVES TESTED — the cycle-3 lesson applied
+
+Cycle 3 caught a check of mine that passed VACUOUSLY (a regex that matched nothing, so the
+household-isolation invariant "passed" without being tested). A gate that cannot fail is
+worse than no gate, so this cycle I proved both gates failable before trusting either.
+Copied domain/src to runs/c005-mut/, planted two mutations, re-ran the same gates:
+  - gutted FORBIDDEN_ALLERGEN_CLASSES_BY_DIETARY_TAG to empty arrays
+    -> GATE FAIL, 7 of 55: "A5 shrimp in a vegetarian recipe :: STILL ELIGIBLE — allergen
+       hid successfully". The exact defect the check exists to catch.
+  - made timerSnapshot read `started_at_utc` instead of the query instant (i.e. the
+    remaining-seconds design Invariant 2 forbids)
+    -> GATE FAIL, 6 of 49: K3 {"e":0,"r":600}, K6 overrun=0s.
+Full mutant output: .swarm/runs/cycle-005-mutant-T-008.txt, cycle-005-mutant-T-012.txt.
+Both gates detect the defect they were written for. The PASSes above are load-bearing.
+
+5. collision-scan: `{"applicable": false}` — still no classic scripts. Reported as
+   not-applicable, never as a pass.
+
+result: T-008 -> done, T-012 -> done. Three verified items of 28.
+  - domain/src/catalog.ts (1051 lines) + data/ingredients.json (97 entries) + 30 tests.
+    Structured per-recipe exclusion reasons rather than a build failure, so a short catalog
+    degrades gracefully. The cross-check is deliberately one-directional and says so in a
+    comment: it can prove a tag is CONTRADICTED by an allergen class, and it does not
+    pretend to prove the converse (meat is not an allergen class, so `vegetarian` still
+    rests on authoring). Honest scope beats a check that overclaims.
+  - domain/src/cooking.ts (538) + 32 tests. Pure fold, query instant as a parameter.
+
+wave autotune: cycle 4's wave was CLEAN — zero reverts, zero failed verifies — so
+wave_streak 1 -> 2, which trips promotion: k_current 3 -> 4, wave_streak reset to 0.
+Effective wave size next cycle = min(k_current 4, gear cap 2, hard max 5) = 2.
+
+backlog hygiene (cycle % 5 == 0, full SPEC re-read done): 28 items, 3 done / 25 todo. No
+duplicates, no stale entries to drop, dependency graph coherent, every SPEC must-have still
+covered by at least one item. Nothing to prune — the backlog is 5 cycles old and has not
+yet had time to rot.
+
+honest note on what this cycle did NOT establish: T-008 proves the catalog GATE works
+against fixtures I wrote; zero real recipes exist yet, so DoD 9 is untested against real
+data and T-009 is where that risk actually lands. T-012 proves the cooking fold is correct
+as a pure function; DoD 7 says kill/reload survival must be proven END-TO-END, and it
+cannot be — there is no server, no persistence wiring and no screen. T-020 owns that, and
+until it lands the kill-safety claim is a domain-layer claim only. Still nothing rendered,
+so the accessibility must-have and tokens.css's contrast ratios remain unverified, exactly
+as at cycle 3. No QA or look pass ran: there is still no subject. Reported as not-run.
+
+next: wave 1 with effective k=2 (gear cap binds, not k_current). Best-value unblocked pair
+with disjoint scopes: T-002 (units + normalization + alias family — DoD 4 depends on it,
+and T-003/T-004 both block on it) and T-006 (hard filters + weighted scoring — DoD 9's code
+half, blocks T-007). Both route_class core -> fable, both exempt from the gear-2 demotion
+under the fable guard. Disjointness: units/normalize/ingredients vs filters/score.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787091957,"next_wakeup_at":1787094657,"pid":2357774,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":5,"ratio":0.077,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":55551168,"window_cost_usd":67.79387625,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":12529049,"projected_depletion_at":1787113934,"last_probe_ts":1787092373,"last_real_probe_ts":1787092373,"probe_failures":0,"probe_note":"Cycle 5 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh DENIED again — KI-1 recurs). Raw probe: runs/cc-probe-c5.json. 5h window 18:00-23:00Z: limit=max prior block 130,591,250; used 55,551,168; remaining 75,040,082 over 1,657s to T_target (usage_reset 23:00Z, earlier than stop_at) => target 163,032,164 tok/h; actual 12,529,049 tok/h (ccusage burnRate 208,817 tok/min) => rho 0.077 => gear_target 5. The window is nearly over, so the target denominator is tiny and rho is artificially low — evidence, not licence. WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 52.0% at week_elapsed 24.65% => heat 2.11 > 1.3 (opus 47/24.65 = 1.91) => ceiling 2 + promote_blocked. KI-2 RE-OPENED: allocator swarm_used_pct fell 4 -> 0 with allow_overall_pct 0, so the env-heat denominator is zero again and the feeder would DISENGAGE the governor exactly when posture is \"trickle\". The raw-account clamp is what holds the ceiling at 2 this cycle; the blind spot did not bite only because a second, independent signal was hot. gear_target 5 clamped to 2; hysteresis from 2 => applied gear 2. Wave cap 2, demote=true. Allocator also now advertises dial 0.30 (posture trickle) against the runfile pacing dial 1.0 — recorded, not applied: pacing is a kickoff-time input and hard rule 5 forbids re-tuning it mid-run.","weekly":{"ok":true,"weekly_used_pct":52,"opus_used_pct":47,"week_elapsed_pct":24.65,"weekly_heat":2.11,"opus_heat":1.91,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":5,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

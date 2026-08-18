@@ -1,0 +1,65 @@
+
+== P: no hidden clock, no I/O ==
+  PASS  P1 no Date.now()
+  PASS  P2 no argless new Date()
+  PASS  P3 no Math.random()
+  PASS  P4 no node: imports (pure domain)
+  PASS  P5 no process/fs access
+
+== K: fold the SAME persisted log at any later wall-clock time ==
+  PASS  K1 step progress survives the fold :: current_step_index=1, steps_total=5
+  PASS  K2 the current step is the real step object
+  PASS  K3 timer at +90s: 30s elapsed, 570s remaining, not expired :: {"e":30,"r":570,"x":false}
+  PASS  K4 timer at +360s: 300s elapsed, 300s remaining :: {"e":300,"r":300}
+  PASS  K5 timer at its exact end instant: expired, 0 remaining, 0 overrun :: {"r":0,"o":0}
+  PASS  K6 timer 2h after the kill: expired, remaining clamped to 0, overrun 6600s :: overrun=6600s — a remaining-seconds design cannot compute this
+  PASS  K7 elapsed is clamped to the timer duration, never unbounded :: elapsed=600 (duration 600)
+  PASS  K8 remaining/overrun match ends_at−now arithmetic at every instant :: 41 instants over 3h, all exact
+  PASS  K9 nothing remaining-seconds-shaped is PERSISTED on the timer :: persisted keys: id,step_index,label,started_at_utc,ends_at_utc,duration_seconds
+  PASS  K10 the derived snapshot is a different object from the persisted timer :: derived-only, never written back
+  PASS  K11 same log + same instant ⇒ byte-identical view (no hidden clock) :: two calls ~120ms apart in real time
+
+== S: next safe stopping point ==
+  PASS  S1 from step 0 (no safe pause) the stop is after step 1 :: {"kind":"after_step","step_index":1,"maximum_pause":{"kind":"bounded","seconds":900},"natural_stopping_point":true}
+  PASS  S2 it carries step 1's own limit and natural-stopping flag :: {"kind":"bounded","seconds":900}
+  PASS  S3 from step 2 the stop is mid-step 3 :: {"kind":"during_step","step_index":3,"maximum_pause":{"kind":"bounded","seconds":60},"natural_stopping_point":false}
+  PASS  S4 from step 1 the boundary before step 2 is offered :: {"kind":"after_step","step_index":1,"maximum_pause":{"kind":"bounded","seconds":900},"natural_stopping_point":true}
+  PASS  S5 from the last unsafe step: end_of_recipe
+  PASS  S6 past the end: end_of_recipe
+  PASS  S7 CONTROL: flipping step 0 safe_to_pause_during moves the answer to "now" :: {"kind":"now","step_index":0,"maximum_pause":{"kind":"bounded","seconds":120},"natural_stopping_point":false}
+
+== W: continuous-attention warnings ==
+  PASS  W1 current step needing attention is warned :: [{"step_index":0,"phase":"current","uninterrupted_seconds":345},{"step_index":3,"phase":"upcoming","uninterrupted_seconds":300}]
+  PASS  W2 uninterrupted stretch = active + unattended (300+45) :: 345s
+  PASS  W3 the next attention-demanding step is warned BEFORE it starts :: [{"step_index":3,"phase":"upcoming","uninterrupted_seconds":300}]
+  PASS  W4 its stretch is 200+100 = 300s
+  PASS  W5 no warning invented for steps that do not need attention :: step 4 needs no continuous attention
+
+== R: recovery guidance is never fabricated ==
+  PASS  R1 guidance is the metadata text VERBATIM :: {"kind":"instruction","step_index":1,"text":"recover step 1"}
+  PASS  R2 a step with none_available yields an EXPLICIT unavailable :: {"kind":"unavailable","step_index":3}
+  PASS  R3 the unavailable state carries no invented text :: kind,step_index
+  PASS  R4 no current step (recipe finished) is also unavailable, not a crash
+  PASS  R5 end-to-end: the reconstructed view at step 3 reports unavailable :: {"kind":"unavailable","step_index":3}
+
+== U: pause deadline is arithmetic ==
+  PASS  U1 status is paused and seconds_paused is derived :: 300s
+  PASS  U2 deadline = paused_at + step 1 max_pause (900s) :: 2026-08-18T20:28:20.000Z
+  PASS  U3 within the limit: not overdue
+  PASS  U4 past the limit: overdue :: 1000s vs 900s limit
+  PASS  U5 an unpaused session reports not_paused
+
+== E: bad logs fail loudly, never silently ==
+  PASS  E1 empty log :: empty_log
+  PASS  E2 log not starting with session_started :: bad_first_event
+  PASS  E3 non-monotonic seq :: non_monotonic_seq
+  PASS  E4 step completed out of order :: step_out_of_order
+  PASS  E5 event after a terminal status :: event_after_terminal
+  PASS  E6 event from another session :: session_mismatch
+  PASS  E7 timer ending before it starts :: invalid_timer_instants
+  PASS  E8 log for a different recipe :: recipe_mismatch
+  PASS  E9 malformed query instant :: malformed_instant
+  PASS  E10 resume without a pause :: invalid_status_for_event
+  PASS  E11 CONTROL: the legal log does not throw :: clean fold
+
+GATE PASS — 49 passed, 0 failed of 49

@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 3,
+  "cycle": 5,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -66,6 +66,13 @@
       "decision": "RecipeStep's nine required interruption fields use two names that differ from SPEC.md: `maximum_pause` (union {kind:'bounded',seconds} | {kind:'unlimited'}) instead of `maximum_pause_seconds`, and `timer_duration_seconds` (number | null) instead of `timer_duration`. `recovery_instruction` is likewise a union ({kind:'instruction',text} | {kind:'none_available'}) rather than a bare string. ACCEPTED as-is; the notes of T-008, T-009, T-010 and T-011 now carry the real names.",
       "why": "The must-have's substance is that all nine fields exist and are REQUIRED on every step - verified, all nine are non-optional readonly members. The identifiers are internal. Both renames are improvements: an explicit unit suffix, and explicit unions instead of null/sentinel magic, which is exactly what Invariant 6 ('no guidance available must be representable, not absent') asks for. Recorded rather than silently normalised because recipe JSON authored against the SPEC names would fail the catalog gate at 5am - the precise 'DoD 9 fails via data' failure the design panel predicted.",
       "cycle": 3
+    },
+    {
+      "id": "D-8",
+      "topic": "crashed-cycle-salvage",
+      "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work — authored the gates from scratch, ran them, and closed the wave.",
+      "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind — detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
+      "cycle": 5
     }
   ],
   "known_issues": [
@@ -91,9 +98,9 @@
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
-    "k_current": 3,
-    "wave_streak": 1,
-    "window_tokens_attributed": 12303743
+    "k_current": 4,
+    "wave_streak": 0,
+    "window_tokens_attributed": 19263667
   },
   "qa": {
     "last_look_cycle": null,
@@ -101,9 +108,9 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 3,
-    "work": "build-wave (wave 0, T-001 solo, fable)",
-    "outcome": "T-001 done and verified: 57/57 static gate + 22/22 behavioural + 26/26 suite green",
-    "commit": "b050511"
+    "n": 5,
+    "work": "verification gate for the crashed cycle-4 wave (T-008, T-012) + backlog hygiene",
+    "outcome": "both items done and verified: 55/55 catalog gate + 49/49 cooking gate + 97/97 suite green; both gates proven failable against mutants",
+    "commit": ""
   }
 }
