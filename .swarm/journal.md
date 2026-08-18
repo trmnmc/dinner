@@ -206,7 +206,8 @@ next: PLAN gate — inline PLAN pass turning DESIGN.md's waves 0-4 into a backlo
 all 12 SPEC must-haves, then wave 0 (interface freeze) as the first build wave. Wave 0 is
 deliberately ONE agent: every other file imports its type contracts.
 
-commit: (recorded below)
+commit: d006afc "cycle 1: design-panel — direction locked [1 verified]" (pushed to
+  origin/master, fa4d128..d006afc)
 next wakeup: 1787081802 (+90s) — written to heartbeat.next_wakeup_at; on the VPS
 swarm-pacer.timer reads that field and spawns the cycle (cycle.md step 9), so no
 ScheduleWakeup call is made from this headless -p session.

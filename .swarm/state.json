@@ -66,5 +66,5 @@
     }
   ],
   "counters": { "consecutive_no_value": 0, "consecutive_failures": 0, "k_current": 3, "wave_streak": 0, "window_tokens_attributed": 0 },
-  "last_cycle": { "n": 1, "work": "design-panel", "outcome": "design direction locked (candidate B + 6 steals), gate 32/32", "commit": "" }
+  "last_cycle": { "n": 1, "work": "design-panel", "outcome": "design direction locked (candidate B + 6 steals), gate 32/32", "commit": "d006afc" }
 }
