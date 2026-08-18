@@ -1,0 +1,58 @@
+G1 structural
+  PASS  items parse and are non-empty :: 28 items
+  PASS  ids unique and well-formed
+  PASS  every item status todo (fresh plan)
+  PASS  enums valid
+G2 must-have coverage (12 SPEC checkboxes, conductor-authored mechanism probes)
+  PASS  must-have 1 deterministic quantity engine :: 5 mechanism terms present
+  PASS  must-have 2 recipe catalog + interruption metadata :: 4 mechanism terms present
+  PASS  must-have 3 onboarding <4min + taste calibration :: 4 mechanism terms present
+  PASS  must-have 4 deterministic recommendation engine :: 5 mechanism terms present
+  PASS  must-have 5 plan screen + one-tap reasoned swap :: 3 mechanism terms present
+  PASS  must-have 6 consolidated traceable grocery list :: 4 mechanism terms present
+  PASS  must-have 7 interruption-aware cooking mode :: 4 mechanism terms present
+  PASS  must-have 8 prep plan :: 4 mechanism terms present
+  PASS  must-have 9 post-meal feedback <=2 taps :: 3 mechanism terms present
+  PASS  must-have 10 confirmed-only inventory :: 3 mechanism terms present
+  PASS  must-have 11 household isolation server-side :: 3 mechanism terms present
+  PASS  must-have 12 accessibility as part of done :: 5 mechanism terms present
+  PASS  SPEC really has 12 must-have checkboxes :: 12 found
+G3 definition-of-done coverage (all 11)
+  PASS  DoD 1 :: T-015,T-021
+  PASS  DoD 2 :: T-006,T-007,T-021
+  PASS  DoD 3 :: T-007,T-016,T-021
+  PASS  DoD 4 :: T-002,T-003
+  PASS  DoD 5 :: T-003,T-004,T-017,T-021
+  PASS  DoD 6 :: T-013,T-016,T-019,T-021
+  PASS  DoD 7 :: T-012,T-014,T-019,T-020
+  PASS  DoD 8 :: T-005,T-018,T-021
+  PASS  DoD 9 :: T-006,T-008,T-009,T-010,T-011,T-022
+  PASS  DoD 10 :: T-001,T-014,T-023
+  PASS  DoD 11 :: T-001,T-020,T-021,T-022,T-023,T-024
+G4 files_hint pairwise disjoint WITHIN each wave (parallel-dispatch safety)
+  PASS  wave 0 disjoint (1 items) :: no overlaps
+  PASS  wave 1 disjoint (12 items) :: no overlaps
+  PASS  wave 2 disjoint (5 items) :: no overlaps
+  PASS  wave 3 disjoint (6 items) :: no overlaps
+  PASS  wave 4 disjoint (4 items) :: no overlaps
+G5 dependency graph
+  PASS  all deps resolve to real ids :: all resolve
+  PASS  dependency graph acyclic :: no cycles
+  PASS  no item depends on a LATER wave :: none
+G6 non-goal guards
+  PASS  zero runtime dependencies (packages [] everywhere)
+  PASS  manifests owned by exactly ONE item :: T-001
+  PASS  manifest owner is the wave-0 solo item :: T-001 wave 0
+  PASS  no LLM in any planned runtime path
+G7 hard rule 2 — no verify commands leaked to builders
+  PASS  no command-shaped verify instructions in acceptance/notes :: clean
+G8 routing (pick-time, conductor-assigned)
+  PASS  every item has a model from the ladder
+  PASS  route_class core implies fable (fable guard) :: 12 core items
+  PASS  attempts initialized to 0
+G9 wave-4 delighters strictly after DoD green
+  PASS  all wave-4 items are priority 4 :: 4 items
+  PASS  every wave-4 item depends on all four proof tests :: all gated
+  PASS  backlog within ~30 live item cap :: 28
+
+GATE PASS — 0 failed check(s) of 47

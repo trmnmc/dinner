@@ -2,11 +2,14 @@
   "idea": "Dinner decision-and-execution system for a busy parent: onboarding -> taste calibration -> ranked 3-dinner plan -> one-tap reasoned swaps -> consolidated traceable grocery list -> prep plan -> interruption-aware cooking mode -> one-tap feedback. Mobile-first web client over a deterministic TypeScript domain package and node:sqlite, zero runtime dependencies.",
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
-  "phase": "PLAN",
-  "cycle": 1,
+  "phase": "BUILD",
+  "cycle": 2,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
-  "preview": { "launch_name": "", "port": 0 },
+  "preview": {
+    "launch_name": "",
+    "port": 0
+  },
   "spec_digest": [
     "Dinner decision-and-execution system for an interrupted parent: onboarding -> 3-meal plan -> reasoned swap -> traceable grocery list -> interruption-aware cooking -> feedback.",
     "Deterministic core is the product: quantities, units, aggregation, inventory subtraction, dietary filtering and ranking are pure tested code - never an LLM.",
@@ -65,6 +68,17 @@
       "cycle": 1
     }
   ],
-  "counters": { "consecutive_no_value": 0, "consecutive_failures": 0, "k_current": 3, "wave_streak": 0, "window_tokens_attributed": 0 },
-  "last_cycle": { "n": 1, "work": "design-panel", "outcome": "design direction locked (candidate B + 6 steals), gate 32/32", "commit": "d006afc" }
+  "counters": {
+    "consecutive_no_value": 0,
+    "consecutive_failures": 0,
+    "k_current": 3,
+    "wave_streak": 0,
+    "window_tokens_attributed": 7156345
+  },
+  "last_cycle": {
+    "n": 2,
+    "work": "PLAN (inline)",
+    "outcome": "backlog written: 28 items covering 12/12 must-haves + 11/11 DoD; conductor gate 47/47",
+    "commit": "PENDING"
+  }
 }

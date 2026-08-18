@@ -215,3 +215,97 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787081712,"next_wakeup_at":1787081802,"pid":2341030,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1.0},"budget":{"source":"probe","gear":3,"gear_target":5,"ratio":0.48,"mode":"thermostat","k_cap":3,"promote":false,"demote":false,"window_tokens":19972818,"window_cost_usd":17.908393250000014,"api_cap_usd":null,"api_spend_usd":0.0,"tokens_per_hour":14611177,"projected_depletion_at":1787108276,"last_probe_ts":1787081022,"last_real_probe_ts":1787081022,"probe_failures":0,"weekly":{"ok":false,"weekly_used_pct":0,"opus_used_pct":0,"week_elapsed_pct":0,"weekly_heat":0,"opus_heat":0,"ceiling":5,"promote_blocked":false}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":1,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"parse DENIED at kickoff (KI-2 recurrence); apply_mode read directly as auto; no directives staged"},"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 2 | 2026-08-18T19:56:27+0000 | dinner | PLAN -> BUILD
+
+work: PLAN (inline) — step-4 gate 2. The DESIGN gate closed last cycle (decision D-5
+exists), and backlog.json was an empty items list, so PLAN was the first open gate and
+no build work was reachable until it closed.
+
+budget: gear 4 (up one from 3 by hysteresis; gear_target 5), rho 0.49, k_cap 4.
+window 27,129,163 tokens / $27.42 in the 18:00-23:00Z block; 258,612 tokens/min =
+15,516,716 tokens/hour; projected depletion 1787106253 (2026-08-19T02:24Z, past the
+23:00Z reset, so the window resets before it bites). probe REAL, probe_failures 0.
+governor still DISENGAGED — KI-2 unchanged, zero-envelope blind spot.
+
+probe method (same deviation as cycle 1, journaled not hidden): `bin/swarm-budget.sh` is
+still NOT allowlisted (KI-1 recurrence), so the probe ran via the allowlisted
+`npx ccusage@latest blocks --json --token-limit max` and the gear was computed by
+replaying the script controller: T_target = usage_reset 23:00Z; remaining =
+130,591,250 - 27,129,163 = 103,462,087 tokens over 195.85 min => target 528,272
+tok/min; actual 258,612 => rho 0.49 => gear_target 5; one-step hysteresis from 3 =>
+applied gear 4. Read-only measurement with sanctioned tools; the denied WRITE is still
+not routed around. `bin/swarm-notify.sh poll` was likewise DENIED (KI-1 family), so the
+control channel was read directly from disk instead — a failed poll is non-fatal by
+cycle.md step 2, and the file is the same source the poll would have merged into.
+
+control: runs/control.json present, pending [] and applied [] — control idle, nothing to
+apply. No `inject` array on the file, so no injection triage this cycle.
+
+burn attribution: window_tokens delta 27,129,163 - 19,972,818 = +7,156,345 credited to
+cycle 1 target dinner (positive delta, no window reset in between).
+
+agent: ONE Plan-type subagent via Agent, model claude-fable-5. Planning is a judgment
+call about coverage and correctness, and cheap-tiering a judgment call is how a night
+quietly goes wrong; gear 4 is "table as-is" so no promote/demote applied.
+raw return -> .swarm/runs/cycle-002-plan.json
+
+result: backlog.json written — 28 items, sequenced along DESIGN.md waves 0-4.
+  wave 0: T-001 interface freeze, SOLO (owns the manifests, blocks everything)
+  wave 1: T-002..T-013, twelve parallel-safe items (quantity / planning / content / cooking)
+  wave 2: T-014..T-018 server + web screens
+  wave 3: T-019 cook+prep, T-020..T-023 the four proof tests, T-024 a11y+voice pass
+  wave 4: T-025..T-028 delighters, every one gated behind all four proof tests
+
+routing assigned by the CONDUCTOR at pick time, not by the PLAN agent (which was told
+not to set a model): 12 items flagged route_class "core" -> fable (the Rational
+arithmetic chain T-001..T-004, hard-exclusion filters/scoring T-006, planset+swap
+T-007, the catalog gate T-008, the cooking state machine T-012, and the four DoD
+proof tests T-020..T-023 — a hallucinated pass on a proof test is the single most
+expensive failure available tonight). Remaining 16 -> sonnet. No haiku: the only
+polish item, T-024, is effort M, and the haiku rung is polish/docs at effort S.
+
+VERIFICATION EVIDENCE:
+  Gate authored AT VERIFY TIME by the conductor (/opt/swarm/runs/cycle-002-gate.mjs);
+  the PLAN agent never saw it, and it deliberately IGNORES the agent's own `coverage`
+  block — that block is the agent's claim, not evidence. Full 58-line output:
+  .swarm/runs/cycle-002-verify-plan.txt. Excerpt:
+    G2 must-have 1 deterministic quantity engine :: 5 mechanism terms present   PASS
+    G2 must-have 7 interruption-aware cooking mode :: 4 mechanism terms present PASS
+    G2 must-have 11 household isolation server-side :: 3 mechanism terms present PASS
+    G2 SPEC really has 12 must-have checkboxes :: 12 found                      PASS
+    G3 DoD 7 :: T-012,T-014,T-019,T-020 | DoD 9 :: T-006,T-008..T-011,T-022     PASS
+    G4 wave 1 disjoint (12 items) :: no overlaps                                PASS
+    G4 wave 3 disjoint (6 items) :: no overlaps                                 PASS
+    G5 dependency graph acyclic :: no cycles | no item depends on a LATER wave  PASS
+    G6 zero runtime dependencies (packages [] everywhere)                       PASS
+    G6 manifest owner is the wave-0 solo item :: T-001 wave 0                   PASS
+    G7 no command-shaped verify instructions in acceptance/notes :: clean       PASS
+    G8 route_class core implies fable (fable guard) :: 12 core items            PASS
+    GATE PASS — 0 failed check(s) of 47
+  Coverage was NOT taken on trust: G2 probes the MECHANISM each must-have demands
+  (e.g. must-have 10 requires the literal terms "confirmed", "assumed_staple" and
+  "confirmation question" to appear in the item corpus), so an item that named a
+  must-have without planning its mechanism would fail even though the agent listed it.
+  test_cmd: NOT RUN. `npm test --prefix /opt/targets/dinner` -> "npm error enoent Could
+    not read package.json". There is no package.json and no source yet — T-001 creates
+    them. Reported as not-run, never as passed.
+
+honest note on what this cycle did NOT establish: a backlog that passes 47 mechanical
+checks is still a list of intentions. Nothing has been compiled or run. The gate proves
+coverage, disjointness, acyclicity and non-goal compliance — it cannot prove the effort
+estimates are right, and the two L-effort catalog batches (T-010, T-011: 24 recipes x 9
+interruption-metadata fields per step) are exactly the work the design panel flagged as
+most likely to overrun. They are priority 2 and independently droppable precisely so
+that an overrun degrades the catalog instead of the night. Also unproven: that the
+wave-2 route contracts T-001 freezes will actually satisfy the three screens built
+against them — the contract-drift rule exists because that is the predicted failure.
+
+next: BUILD gate — wave 0, T-001 interface freeze, dispatched SOLO per DESIGN.md
+(every other file imports its type contracts, so it cannot share a wave). Effective
+wave size would otherwise be min(k_current 3, gear cap 4, hard max 5) = 3; wave 0
+overrides it to 1 by construction.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787082987,"next_wakeup_at":1787083077,"pid":2343160,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":4,"gear_target":5,"ratio":0.49,"mode":"thermostat","k_cap":4,"promote":false,"demote":false,"window_tokens":27129163,"window_cost_usd":27.41898725,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":15516716,"projected_depletion_at":1787106253,"last_probe_ts":1787082351,"last_real_probe_ts":1787082351,"probe_failures":0,"probe_note":"Cycle 2 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh still DENIED, KI-1 recurrence). Gear computed by replaying the script controller: T_target=usage_reset 23:00Z; remaining=130591250-27129163=103462087 over 195.85min => target 528272 tok/min; actual 258612 => rho 0.49 => gear_target 5; one-step hysteresis from 3 => applied gear 4. Governor still DISENGAGED (KI-2).","weekly":{"ok":false,"weekly_used_pct":0,"opus_used_pct":0,"week_elapsed_pct":0,"weekly_heat":0,"opus_heat":0,"ceiling":5,"promote_blocked":false}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":2,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-2 recurrence); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

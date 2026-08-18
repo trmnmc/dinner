@@ -1,0 +1,53 @@
+{
+  "cycle": 2,
+  "work": "PLAN (inline)",
+  "agent": "Plan-type subagent via Agent, model claude-fable-5",
+  "dispatched_at": 1787082351,
+  "returned": {
+    "item_count": 28,
+    "ids": [
+      "T-001",
+      "T-002",
+      "T-003",
+      "T-004",
+      "T-005",
+      "T-006",
+      "T-007",
+      "T-008",
+      "T-009",
+      "T-010",
+      "T-011",
+      "T-012",
+      "T-013",
+      "T-014",
+      "T-015",
+      "T-016",
+      "T-017",
+      "T-018",
+      "T-019",
+      "T-020",
+      "T-021",
+      "T-022",
+      "T-023",
+      "T-024",
+      "T-025",
+      "T-026",
+      "T-027",
+      "T-028"
+    ]
+  },
+  "agent_coverage_claim": "12/12 must-haves, 11/11 DoD, gaps: []  (AGENT CLAIM — independently re-derived by the conductor gate, see cycle-002-verify-plan.txt)",
+  "agent_risks": [
+    "Catalog authoring overrun (T-010,T-011): 24 bulk recipes x 9 interruption-metadata fields per step. Mitigated by gate-first sequencing (T-008), a proven 6-recipe template batch (T-009), and two independently droppable parallel batches.",
+    "Kill-test flake (T-020): most environment-sensitive test in the suite. Structural mitigations are absolute-UTC-instant timers (Invariant 2) and the ephemeral-port/db-path entrypoint flags (T-014).",
+    "Wave-2 contract drift (T-014..T-018): three parallel tracks build against wave-0 route contracts while ui.js is written concurrently in T-015.",
+    "Float leakage into authoritative paths (T-002,T-003,T-004,T-006): one bare + on a number can pass rounding-lucky tests and violate Invariant 1 silently."
+  ],
+  "conductor_gate": {
+    "result": "PASS",
+    "checks": 47,
+    "failed": 0,
+    "file": ".swarm/runs/cycle-002-verify-plan.txt"
+  },
+  "conductor_routing": "models assigned at pick time by the conductor, not the PLAN agent: 12 route_class=core items -> fable, remainder sonnet. Gear 4 = routing table as-is (no promote, no demote)."
+}
