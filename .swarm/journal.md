@@ -309,3 +309,30 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787082987,"next_wakeup_at":1787083077,"pid":2343160,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":4,"gear_target":5,"ratio":0.49,"mode":"thermostat","k_cap":4,"promote":false,"demote":false,"window_tokens":27129163,"window_cost_usd":27.41898725,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":15516716,"projected_depletion_at":1787106253,"last_probe_ts":1787082351,"last_real_probe_ts":1787082351,"probe_failures":0,"probe_note":"Cycle 2 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh still DENIED, KI-1 recurrence). Gear computed by replaying the script controller: T_target=usage_reset 23:00Z; remaining=130591250-27129163=103462087 over 195.85min => target 528272 tok/min; actual 258612 => rho 0.49 => gear_target 5; one-step hysteresis from 3 => applied gear 4. Governor still DISENGAGED (KI-2).","weekly":{"ok":false,"weekly_used_pct":0,"opus_used_pct":0,"week_elapsed_pct":0,"weekly_heat":0,"opus_heat":0,"ceiling":5,"promote_blocked":false}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":2,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-2 recurrence); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+### addendum — cycle 2 steps 8-9
+
+commit: 0c80bb2 "cycle 2: PLAN — backlog covering 12/12 must-haves [1 verified]"
+  pushed to origin/master, 3a3ae10..0c80bb2.
+
+dashboard: re-rendered to runs/dashboard.html, 23,683 bytes, VERIFIED 0 unreplaced
+placeholders by the renderer's own exit-code check (the cycle-0 replaceAll lesson is
+now encoded in the renderer, not just remembered). Stations region rendered as the
+empty string deliberately — the template says render "" before wave 1, and no builder
+has been dispatched yet, so any crew row would be decoration rather than a claim from
+the journal. Artifact publish SKIPPED, not failed: this is a headless -p session with
+no Artifact tool, and on the VPS the file write IS the publication (cycle.md step 8).
+publish_failures stays 0.
+
+notification NOT SENT: the phase-change push (dinner PLAN -> BUILD) was due per
+cycle.md step 8, and `bin/swarm-notify.sh send phase-change ...` was DENIED. Root cause
+is narrower than KI-1 but the same family: this session's cwd is /opt/targets/dinner,
+not /opt/swarm, so the allowlisted RELATIVE form does not resolve and the absolute form
+is not allowlisted. Not worked around. Notifications are observability, not a gate — the
+dashboard and journal both carry the phase change. Filed for the morning report
+alongside KI-1.
+
+next wakeup: 1787083242 (2026-08-18T20:00:42Z, +90s) written to
+heartbeat.next_wakeup_at and clamp-verified against stop_at (wake + 900 <= stop_at).
+No ScheduleWakeup call is made from this headless -p session — on the VPS
+swarm-pacer.timer reads that field every 5 min and spawns the cycle (cycle.md step 9).

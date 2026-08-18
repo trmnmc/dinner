@@ -79,6 +79,6 @@
     "n": 2,
     "work": "PLAN (inline)",
     "outcome": "backlog written: 28 items covering 12/12 must-haves + 11/11 DoD; conductor gate 47/47",
-    "commit": "PENDING"
+    "commit": "0c80bb2"
   }
 }
