@@ -7,7 +7,7 @@
       "priority": 1,
       "value": "H",
       "effort": "L",
-      "status": "todo",
+      "status": "done",
       "deps": [],
       "files_hint": ["package.json", "tsconfig.json", "domain/src/qty.ts", "domain/src/recipe.ts", "server/src/db.ts", "web/css/tokens.css", "tests/qty.test.ts", "tests/smoke.sqlite.test.ts"],
       "acceptance": "All downstream modules can import a frozen contract surface — Rational quantity type, recipe/step/score-breakdown/cooking-event shapes, household-scoped DB helpers over a real SQLite file, and the design tokens — with the repo typechecking strictly and running .ts directly on Node 24 with zero runtime dependencies.",
@@ -157,7 +157,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 5 binds: this gate and the ingredient-id/allergen-class cross-check land BEFORE any recipe is authored — otherwise DoD 9 fails via data at 5am. Registry carries curated aliases, densities, per-item weights, allergen classes, store sections. The gate excludes incomplete recipes rather than failing the build, which is what makes a short catalog a graceful degradation."
+      "notes": "FROZEN CONTRACT (cycle 3, T-001 landed): the nine per-step interruption fields on RecipeStep in domain/src/recipe.ts use two names that DIFFER FROM SPEC.md — `maximum_pause` (a MaximumPause union: {kind:'bounded',seconds} | {kind:'unlimited'}), NOT `maximum_pause_seconds`; and `timer_duration_seconds` (number | null), NOT `timer_duration`. Also `recovery_instruction` is a RecoveryGuidance union ({kind:'instruction',text} | {kind:'none_available'}), not a bare string. Validate against the TYPES, not against the SPEC's field names. Invariant 5 binds: this gate and the ingredient-id/allergen-class cross-check land BEFORE any recipe is authored — otherwise DoD 9 fails via data at 5am. Registry carries curated aliases, densities, per-item weights, allergen classes, store sections. The gate excludes incomplete recipes rather than failing the build, which is what makes a short catalog a graceful degradation."
     },
     {
       "id": "T-009",
@@ -176,7 +176,7 @@
       "dod": [9],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "This batch is the template: schema-first data entry against the gate, not prose. Recovery instructions must be real and step-specific (Invariant 6 consumes them verbatim). Owns numeric prefixes r01–r06 only. Include at least one very-low-effort and one adventurous recipe so calibration and swaps have range even if bulk batches slip."
+      "notes": "FROZEN CONTRACT (cycle 3): author every step against domain/src/recipe.ts RecipeStep, NOT against SPEC.md's field names. Two differ: `maximum_pause` is a union {kind:'bounded',seconds:n} | {kind:'unlimited'} (NOT `maximum_pause_seconds`), and the timer field is `timer_duration_seconds: number | null` (NOT `timer_duration`). `recovery_instruction` is {kind:'instruction',text:'...'} | {kind:'none_available'} — a real step-specific instruction or the explicit none, never a fabricated string. All nine fields are required on every step. This batch is the template: schema-first data entry against the gate, not prose. Recovery instructions must be real and step-specific (Invariant 6 consumes them verbatim). Owns numeric prefixes r01–r06 only. Include at least one very-low-effort and one adventurous recipe so calibration and swaps have range even if bulk batches slip."
     },
     {
       "id": "T-010",
@@ -195,7 +195,7 @@
       "dod": [9],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "DESIGN ruling binds: FEWER FULLY-VALID RECIPES BEAT PARTIALLY-VALID ONES — if time pressures, ship fewer complete recipes rather than more incomplete ones; the gate excludes incomplete recipes anyway. Owns prefixes r07–r18 only; do not touch batch-1 or batch-3 files, the registry, or the gate."
+      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. DESIGN ruling binds: FEWER FULLY-VALID RECIPES BEAT PARTIALLY-VALID ONES — if time pressures, ship fewer complete recipes rather than more incomplete ones; the gate excludes incomplete recipes anyway. Owns prefixes r07–r18 only; do not touch batch-1 or batch-3 files, the registry, or the gate."
     },
     {
       "id": "T-011",
@@ -214,7 +214,7 @@
       "dod": [9],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Same graceful-degradation ruling as T-010. Owns prefixes r19–r30 only. Runs in parallel with T-010 — coordinate nothing, just stay inside the assigned file range. If registry ingredients are missing, that is a gap to report, not a license to edit data/ingredients.json (owned by T-008)."
+      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. Same graceful-degradation ruling as T-010. Owns prefixes r19–r30 only. Runs in parallel with T-010 — coordinate nothing, just stay inside the assigned file range. If registry ingredients are missing, that is a gap to report, not a license to edit data/ingredients.json (owned by T-008)."
     },
     {
       "id": "T-012",

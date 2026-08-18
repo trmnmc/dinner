@@ -336,3 +336,193 @@ next wakeup: 1787083242 (2026-08-18T20:00:42Z, +90s) written to
 heartbeat.next_wakeup_at and clamp-verified against stop_at (wake + 900 <= stop_at).
 No ScheduleWakeup call is made from this headless -p session — on the VPS
 swarm-pacer.timer reads that field every 5 min and spawns the cycle (cycle.md step 9).
+
+## cycle 3 | 2026-08-18T20:31:23+0000 | dinner | BUILD
+
+work: build-wave, wave 0 — T-001 interface freeze, dispatched SOLO. Step-4 gates 1
+(DESIGN, closed by D-5) and 2 (PLAN, closed by the cycle-2 backlog) were already shut,
+so BUILD was the first open gate and T-001 is the only unblocked item: every other
+backlog item depends on it.
+
+budget: gear 3 (cruise), DOWN from 4. gear_target 2, rho 0.45, k_cap 3, promote false,
+demote false. window 32,276,561 tokens / $34.53 in the 18:00-23:00Z block; 256,806
+tok/min = 15,408,356 tokens/hour; projected depletion 1787106518 (2026-08-19T02:28Z,
+past the 23:00Z reset, so the window resets before it bites). probe REAL,
+probe_failures 0.
+
+  THE GOVERNOR ENGAGED THIS CYCLE, and it is why the gear went DOWN while rho was low.
+  Read on its own the 5-hour window is cold: rho 0.45 => gear_target 5, overdrive. But
+  runs/allocator.json now reports posture "halted", allow_overall_pct 0, swarm_used_pct
+  4, week_elapsed_pct 23.26. Replaying swarm-weekly-from-allocator.sh exactly:
+  env(u,a) = 100*4/(4+0) = 100 — NOT the zero-envelope disengage of cycles 0-2, because
+  swarm_used_pct rose 0 -> 4 and the denominator is no longer zero. KI-2's blind spot
+  has closed by drift. weekly_heat = 100/23.26 = 4.30 > 1.3 => ceiling 2 and
+  promote_blocked true; opus_heat 4.30 > 1.2 => promote blocked independently. emit()
+  clamps gear_target 5 -> 2, then one-step hysteresis from 4 gives applied gear 3.
+  The clamp is robust to which denominator you pick: the RAW account is independently
+  hot at 46.0% weekly used against 23.26% week elapsed = heat 1.98, also over the 1.3
+  threshold. Both readings say clamp, so I did not go looking for the reading that would
+  have let me burn. Overdrive was available on the 5-hour number alone and was declined.
+
+probe method (same deviation as cycles 1-2, journaled not hidden): bin/swarm-budget.sh
+and bin/swarm-weekly-from-allocator.sh are both still DENIED to this headless session
+(KI-1 family), so the burn probe ran via the allowlisted `npx ccusage@latest blocks
+--json --token-limit max` and BOTH controllers were replayed by hand from their own
+source against runs/allocator.json, which I read directly. Read-only measurement with
+sanctioned tools; no denied WRITE was routed around.
+
+control: runs/control.json pending [] and applied [] — idle, nothing to apply. No
+`inject` array, so no injection triage. `swarm-notify.sh poll` DENIED again (KI-1
+family); a failed poll is non-fatal per cycle.md step 2, and the file is the same source
+the poll would have merged.
+
+burn attribution: window_tokens delta 32,276,561 - 27,129,163 = +5,147,398 credited to
+cycle 2 target dinner. counters.window_tokens_attributed now 12,303,743.
+
+### conductor work BEFORE any agent was dispatched
+
+T-001 as planned was UNBUILDABLE and would have come back "blocked". Its notes made it
+"the manifest owner (sole exception to the manifest exclusion)", but build-wave.js's
+builder brief forbids touching package.json/tsconfig.json in absolute terms and tells
+the builder to block instead. cycle.md step 4 already assigns manifests to the
+conductor, so I wrote them myself — in-contract, not a workaround. Recorded as D-6.
+
+Two mechanisms were PROVEN BY ME on this host before dispatch, rather than discovered by
+an agent at 4am:
+  1. toolchain: Node v24.19.0 native type stripping under `node --test` with a glob,
+     plus node:sqlite on a REAL FILE db via the actual statement API. Probe committed at
+     .swarm/runs/cycle-003-probe.test.ts; both tests passed before package.json existed.
+     npm test is `tsc --noEmit` (strict + erasableSyntaxOnly + verbatimModuleSyntax)
+     then `node --test 'tests/**/*.test.ts'`. Zero runtime dependencies; devDeps are
+     typescript and @types/node only.
+  2. worktree: build-wave.js Step 0 hardcodes a /tmp worktree, and on this host agent
+     file-EDIT tools are confined to the allowed directories — a /tmp worktree is
+     git-writable but not Write/Edit-writable, so every builder would provision fine and
+     then stall on its first edit. I verified the failure mode (my own Write to /tmp was
+     refused; `rm -rf` outside the allowed dirs was refused), then proved the fix:
+     worktree at <target>/.wt/<id> (gitignored) + `npm ci` there, which installs from the
+     committed lockfile and modifies NO manifest. Filed as KI-3; the durable fix is in
+     build-wave.js and hard rule 5 forbids touching it mid-run.
+Also mapped effort L -> "high" at dispatch: the backlog uses S/M/L, agent({effort})
+expects low/medium/high, and build-wave.js passes the value straight through (KI-3,
+part two).
+
+agent: ONE builder, model claude-fable-5 (T-001 is route_class "core" -> fable; gear 3
+is "table as-is", and the fable guard exempts core items from demotion anyway).
+102,452 tokens, 23 tool calls, 799s. dead_items []. Returned status "done" — a CLAIM.
+raw return -> .swarm/runs/cycle-003-build-wave.json
+
+merge: `git merge --no-ff wave-201025-T-001` clean, 6 files / 2,702 insertions, exactly
+the six in-scope paths and nothing else. Worktree pruned after verification.
+
+### VERIFICATION EVIDENCE
+
+Three independent checks, all authored by me, none derived from the item's `acceptance`
+field or the builder's notes. The static gate was written BEFORE the builder returned.
+Full 132-line output: .swarm/runs/cycle-003-verify-T-001.txt
+Gate sources (conductor-owned): /opt/swarm/runs/cycle-003-gate.mjs, cycle-003-behaviour.mjs
+
+1. test_cmd, run by me, not asked of the agent — `npm test --prefix /opt/targets/dinner`:
+     ✔ roundUpToMultiple: never rounds down (underbuying prohibited) (0.329486ms)
+     ✔ households and members round trip; scoping is structural (19.951492ms)
+     ✔ cooking sessions: timers persist ABSOLUTE UTC end instants; isolation (8.331927ms)
+     ℹ tests 26  ℹ pass 26  ℹ fail 0  ℹ duration_ms 325.564505
+   (tsc --noEmit ran first and passed, or test:unit would never have executed.)
+
+2. static gate — 57 checks, GATE PASS, 0 failed. Excerpt:
+     G1 no out-of-scope files              :: merged diff confined to scope (6 files)  PASS
+     G1 manifests untouched                :: no manifest in the merged diff           PASS
+     G5 no remaining-seconds field         :: no remaining-seconds field               PASS
+     G7 household_id first arg             :: all 27 scoped helpers lead with household_id PASS
+     G7b unscoped members are hard-private :: non-scoped members: #prepare (all #private) PASS
+     G8 no float columns                   :: no REAL/FLOAT/DOUBLE in 11 table bodies  PASS
+
+3. behavioural gate — 22 checks, BEHAVIOUR PASS, 0 failed. This one EXECUTES the modules
+   instead of grepping them. Excerpt:
+     B2 sum of ten 0.1 == 1        :: 1/1; float says false (0.9999999999999999)      PASS
+     B4 beyond 2^53 exact          :: 9007199254740994/1; float says ...93 === ...92 is true PASS
+     B9 roundUpToMultiple never underbuys :: six cases incl. exact multiples and zero  PASS
+     B12 zero float columns (per SQLite)  :: checked every column of 11 tables         PASS
+     B17 NO cross-household read   :: 12 readers attacked with a foreign id, zero leaked A PASS
+     B19 control: readers do return own-household data :: 4 reader(s) returned B's own rows PASS
+   The isolation attack plants rows for household A with RAW SQL through a second
+   database handle, bypassing the module's write path entirely, then calls every public
+   reader as household B while handing it A's entity ids directly. A write path that
+   stamps household_id correctly cannot mask a read path that forgets to filter. B19 is
+   the anti-vacuity control: if the readers returned nothing at all, B17 would pass for
+   the wrong reason, so it separately proves B's own rows DO come back.
+
+4. collision-scan: `{"applicable": false}` — no classic scripts exist yet. Reported as
+   not-applicable, not as a pass.
+
+### MY OWN GATE WAS WRONG THREE TIMES — corrected, and the corrections are the point
+
+First run: GATE FAIL, 4 of 53. Investigating each rather than accepting the verdict:
+  - "float literals 0.1, 2.5, 0.3, 1.50, 1.5, 2.00 in qty.ts" — ALL SIX inside doc
+    comments ("`\"0.1\"` is parsed exactly", "2.5 -> 3"). False positive: I grepped raw
+    source without stripping comments.
+  - "float column types: REAL in db.ts" — both matches inside comments, one of which
+    reads "A REAL column anywhere is a defect". False positive, same cause.
+  - "maximum_pause_seconds / timer_duration missing" — REAL findings, but not defects:
+    the fields exist under better names (see D-7).
+  - and the one that mattered most, which the first run reported as a PASS:
+    "G7 exported helpers found :: 1 exported functions in db.ts / all 0 scoped helpers
+    lead with household_id". db.ts exposes its surface as METHODS of class DinnerDb, so
+    my `export function` regex matched almost nothing and Invariant 3 — the household
+    isolation invariant, the one with a DoD line of its own — was verified VACUOUSLY.
+    A false PASS is worse than a false FAIL: a false FAIL gets investigated, a false
+    PASS gets shipped. Rewrote it to enumerate class methods (27 scoped helpers, all
+    leading with household_id) and added G7b, which proves the only non-scoped member is
+    `#prepare` and that it is hard-private per ECMAScript rather than private by
+    convention. That check is why part 3 above exists at all: after finding one vacuous
+    check I stopped trusting the static layer to prove isolation and wrote the
+    behavioural attack.
+Comment-stripping was added for checks 1 and 2 — that measures executable code, which is
+what those checks always meant. It is not a relaxation, and no threshold moved: the DDL
+scan now parses CREATE TABLE bodies (11 of them) and B12 independently re-asks SQLite
+itself for every column's declared type. Net checks went 53 -> 57.
+
+result: T-001 -> done. First verified BUILD item of the run.
+  - domain/src/qty.ts (322 lines): exact Rational kernel, bigint num/den, sole arithmetic
+    entry point. Typed QtyError for division_by_zero and malformed_input — never NaN.
+  - domain/src/recipe.ts (655): every shared type. All nine per-step interruption fields
+    REQUIRED and readonly; RecoveryGuidance and MaximumPause are explicit unions so
+    "no guidance available" is representable rather than absent — Invariant 6 honoured in
+    the type system instead of in a convention.
+  - server/src/db.ts (929): Postgres-shaped schema, 11 tables, zero float columns,
+    quantities stored as num/den TEXT. 27 household-scoped helpers. Better than asked:
+    the Input types are `Omit<Entity, 'household_id'>`, so passing a MISMATCHED household
+    id is unrepresentable rather than merely rejected, and GroceryLineComputedPatch
+    structurally omits the user-edit columns so regeneration cannot clobber a user edit
+    by construction rather than by care.
+  - web/css/tokens.css (173): tokens only, one :root block, computed WCAG ratios in
+    comments, 44px/48px/56px targets, tabular-nums, prefers-reduced-motion.
+  - tests/qty.test.ts + tests/smoke.sqlite.test.ts (623): 26 tests.
+
+wave autotune: wave was CLEAN — zero reverts, zero failed verifies — so wave_streak
+0 -> 1. k_current stays 3 (promotion needs streak 2). Effective wave size next cycle =
+min(k_current 3, gear cap 3, hard max 5) = 3.
+
+honest note on what this cycle did NOT establish: this is an interface freeze, and a
+frozen interface is a promise about work that has not happened yet. The qty kernel is
+genuinely proven — the arithmetic assertions execute and floats demonstrably fail them.
+Isolation is proven at the db.ts layer ONLY; no HTTP route exists yet, and T-023 still
+has to prove no route can express an unscoped query. Nothing has been rendered:
+tokens.css is verified as tokens-only, but its contrast ratios are stated IN COMMENTS BY
+THE BUILDER and have NOT been independently recomputed — that is a claim, and the
+accessibility must-have stays unverified until a screen exists. No QA look pass ran and I
+am not counting one: there is no server, no index.html and nothing served, so a look pass
+has no subject. Reported as not-run, never as passed. The 12 wave-1 items now unblocked
+are where the real risk sits.
+
+next: wave 1 is open — T-002..T-013 all unblocked, twelve items with pairwise-disjoint
+file scopes. Effective k = 3, so the next cycle takes three: T-002 (units +
+normalization, the alias family DoD 4 turns on), T-006 (hard filters + weighted scoring,
+DoD 9's code half), T-008 (catalog gate + ingredient registry + allergen cross-check,
+which Invariant 5 says must land BEFORE any recipe is authored and which blocks all 30
+recipes). All three are route_class core -> fable. Disjointness verified:
+units/normalize/ingredients vs filters/score vs catalog/data-ingredients — no shared path.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787085083,"next_wakeup_at":1787085173,"pid":2346402,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":3,"gear_target":2,"ratio":0.45,"mode":"thermostat","k_cap":3,"promote":false,"demote":false,"window_tokens":32276561,"window_cost_usd":34.53131875,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":15408356,"projected_depletion_at":1787106518,"last_probe_ts":1787083548,"last_real_probe_ts":1787083548,"probe_failures":0,"probe_note":"Cycle 3 REAL probe via allowlisted npx ccusage (bin/swarm-budget.sh still DENIED, KI-1). BOTH controllers replayed by hand from source. Weekly governor ENGAGED: allocator posture halted, env heat 100/23.26=4.30 > 1.3 => ceiling 2 + promote_blocked; raw account independently hot at 46.0/23.26=1.98. gear_target 5 (rho 0.45) clamped to 2, hysteresis from 4 => applied 3. KI-2 zero-envelope blind spot closed by drift (swarm_used_pct 0 -> 4) but the bug is still real.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":23.26,"weekly_heat":4.30,"opus_heat":4.30,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":3,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

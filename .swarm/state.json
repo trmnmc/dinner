@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 2,
+  "cycle": 3,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -52,6 +52,20 @@
       "decision": "ADOPT design-panel candidate B, 'Three Good Dinners' (AMBITIOUS brief), with six ideas grafted from the losers. Locked to .swarm/DESIGN.md, which is BINDING on every builder. Architecture: three strict layers (domain/ pure + server/ node:http+node:sqlite + web/ framework-free) run directly by Node 24 native type stripping, tsc --noEmit as the strict gate and never a build step. Six invariants are non-negotiable: (1) Rational bigint num/den is the only arithmetic type on authoritative paths, qty.ts the sole entry point; (2) timers stored as absolute UTC end instants, never remaining-seconds, so DoD 7 recovery is arithmetic; (3) every db.ts helper takes household_id as a required first argument and appends the WHERE itself, making an unscoped query inexpressible; (4) swap re-ranks against the frozen remaining two meals and never re-runs planset; (5) the catalog validation gate plus the ingredient-id/allergen-class cross-check land BEFORE the recipes, not in the proof wave; (6) recovery/panic guidance reads required per-step metadata only, never fabricated. Grafted steals: single copy module with numeric slots + one shared total-vs-active time renderer (makes DoD 6 a property of one helper); user grocery edits in a separate never-overwritten column; DESIGN.md as binding contract + tokens-only CSS rule; wave-0 node:sqlite smoke check on a real file DB; receipt/ledger grocery treatment; broadened e2e.loop asserting DoD 2 and DoD 6; ephemeral-port and db-path flags on the server entrypoint as test affordances against kill-test flake.",
       "why": "Blind judge scored B 45/50 vs C 42 and A 40 across must_haves/buildability/value/coherence/depth. B was the only candidate whose calibration module deliberately SELECTS attribute-spread cards (the spec demands deliberate variance, not just reactions), and the only one to catch that DoD 9 can fail via data rather than code - an allergen present but the dietary tag unverified - forcing the cross-check early. Its delighters are additive leaves on data the spec already forces it to persist, sequenced strictly after DoD is green and individually droppable, so they cannot compromise the core. C won coherence 10 for making aesthetics enforceable as code, which is exactly right for a headless build nobody can look at - hence four of the six steals come from C. Conductor gate re-derived all three judge totals from their axes, confirmed the declared winner is the argmax, probed the winning file plan for all 17 must-have surfaces, and checked the non-goal guards (zero runtime deps, no LLM on the authoritative path): 32/32 checks passed.",
       "cycle": 1
+    },
+    {
+      "id": "D-6",
+      "topic": "toolchain-ownership",
+      "decision": "The CONDUCTOR authors and commits the manifests (package.json, tsconfig.json, .gitignore) and runs the installs; builders never touch them. npm test = `tsc --noEmit` then `node --test 'tests/**/*.test.ts'`. Builder worktrees are provisioned at <target>/.wt/<item-id>, NOT under /tmp, and each builder runs `npm ci` there.",
+      "why": "T-001's plan notes made it 'the manifest owner (sole exception)', but build-wave.js's builder brief hard-forbids touching manifests and instructs blocking instead - the item as planned was unbuildable, and the builder would have returned blocked. cycle.md step 4 already assigns manifests to the conductor, so the conductor writing them is in-contract, not a workaround. Separately: agent file-edit tools are confined to the session's allowed directories, so build-wave.js Step 0's /tmp worktree is git-writable but NOT edit-writable - every builder would stall part-way. Both mechanisms (in-repo worktree + npm ci, and the full tsc/node --test/node:sqlite pipeline) were proven BY THE CONDUCTOR on this host before any agent was dispatched; the wave then ran first-try clean.",
+      "cycle": 3
+    },
+    {
+      "id": "D-7",
+      "topic": "frozen-contract-deviation",
+      "decision": "RecipeStep's nine required interruption fields use two names that differ from SPEC.md: `maximum_pause` (union {kind:'bounded',seconds} | {kind:'unlimited'}) instead of `maximum_pause_seconds`, and `timer_duration_seconds` (number | null) instead of `timer_duration`. `recovery_instruction` is likewise a union ({kind:'instruction',text} | {kind:'none_available'}) rather than a bare string. ACCEPTED as-is; the notes of T-008, T-009, T-010 and T-011 now carry the real names.",
+      "why": "The must-have's substance is that all nine fields exist and are REQUIRED on every step - verified, all nine are non-optional readonly members. The identifiers are internal. Both renames are improvements: an explicit unit suffix, and explicit unions instead of null/sentinel magic, which is exactly what Invariant 6 ('no guidance available must be representable, not absent') asks for. Recorded rather than silently normalised because recipe JSON authored against the SPEC names would fail the catalog gate at 5am - the precise 'DoD 9 fails via data' failure the design panel predicted.",
+      "cycle": 3
     }
   ],
   "known_issues": [
@@ -64,21 +78,32 @@
     {
       "id": "KI-2",
       "severity": "low",
-      "desc": "Weekly governor blind spot (SWARM-side, observation only). bin/swarm-weekly-from-allocator.sh computes heat ENVELOPE-relative: 100*swarm_used/(swarm_used+allow_overall). runs/allocator.json currently reports posture 'trickle' with allow_overall_pct 0 and swarm_used_pct 0, so the denominator is zero, the feeder returns week_elapsed_pct 0, and the governor DISENGAGES (ceiling 5) at exactly the moment its posture is most restrictive. The raw account is meanwhile hot: 42 pct weekly used at 22.83 pct week elapsed = heat 1.84. Cycle 1 was protected only by one-step hysteresis (gear 2 -> 3, not 2 -> 5). A zero envelope should clamp harder, not disengage. Hard rule 5 forbids the fix mid-run; morning report.",
+      "desc": "RESOLVED-BY-DRIFT at cycle 3, kept for the morning report. The weekly governor's zero-envelope blind spot (heat computed as 100*swarm_used/(swarm_used+allow_overall); denominator 0 -> disengage) closed on its own once swarm_used_pct rose 0 -> 4, so the feeder now returns weekly_used_pct 100 at week_elapsed 23.26 => heat 4.30 and the governor clamps the ceiling to 2. The BUG IS STILL REAL: a zero envelope should clamp hardest, and it disengaged instead for cycles 0-2, exactly when the allocator posture was most restrictive. The fix belongs in bin/swarm-weekly-from-allocator.sh (treat u+a<=0 as maximum heat, not as unconfigured). Hard rule 5 forbids the fix mid-run.",
       "cycle": 1
+    },
+    {
+      "id": "KI-3",
+      "severity": "medium",
+      "desc": "SWARM-side, workflows/build-wave.js. Its builder Step 0 hardcodes a /tmp worktree (mktemp -d \"${TMPDIR:-/tmp}/wave-<id>.XXXXXX\"). On this host, agent file-edit tools are confined to the session's allowed directories (/opt/swarm, /opt/targets/<target>), so a /tmp worktree is writable by git but NOT by the builder's own Write/Edit tools: every builder would provision successfully, then stall or fail part-way through its first edit. Worked around this cycle by a conductor `context` override pointing the worktree at <target>/.wt/<item-id> (gitignored) plus an `npm ci` there; the wave then ran clean first try. The durable fix is to derive the worktree root from projectDir in build-wave.js rather than TMPDIR. Second, smaller gap in the same file: it passes the backlog's effort value straight to agent({effort}), but the backlog uses S/M/L while the harness expects low/medium/high - the conductor mapped L->high at dispatch. Hard rule 5 forbids editing the script mid-run; both belong in the morning report.",
+      "cycle": 3
     }
   ],
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 3,
-    "wave_streak": 0,
-    "window_tokens_attributed": 7156345
+    "wave_streak": 1,
+    "window_tokens_attributed": 12303743
+  },
+  "qa": {
+    "last_look_cycle": null,
+    "last_full_qa_cycle": null,
+    "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 2,
-    "work": "PLAN (inline)",
-    "outcome": "backlog written: 28 items covering 12/12 must-haves + 11/11 DoD; conductor gate 47/47",
-    "commit": "0c80bb2"
+    "n": 3,
+    "work": "build-wave (wave 0, T-001 solo, fable)",
+    "outcome": "T-001 done and verified: 57/57 static gate + 22/22 behavioural + 26/26 suite green",
+    "commit": ""
   }
 }

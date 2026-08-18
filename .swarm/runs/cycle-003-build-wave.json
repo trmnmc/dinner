@@ -1,0 +1,31 @@
+{
+  "wave": [
+    {
+      "itemId": "T-001",
+      "status": "done",
+      "branch": "wave-201025-T-001",
+      "worktree": "/opt/targets/dinner/.wt/T-001",
+      "files_changed": [
+        "domain/src/qty.ts",
+        "domain/src/recipe.ts",
+        "server/src/db.ts",
+        "web/css/tokens.css",
+        "tests/qty.test.ts",
+        "tests/smoke.sqlite.test.ts"
+      ],
+      "summary": "Froze the wave-0 contract surface, committed as 63995ed. domain/src/qty.ts: fully implemented exact Rational (bigint num/den) kernel — the sole arithmetic entry point — with construction from integers/decimal strings/fractions/mixed numbers, add/sub/mul/div/neg/abs/min/max/compare/eq/sign/isZero/isInteger, canonical lowest-terms normalisation (den>0, zero=0/1), typed QtyError ('division_by_zero'|'malformed_input', never NaN), explicit rounding helpers (ceilToInt/floorToInt, roundNearestInt half-away-from-zero, roundUp/roundNearestToMultiple), display strings (toDecimalString rounds once then trims, toMixedString exact) and a lossless RationalJson codec. domain/src/recipe.ts: all shared types — ingredient quantity as exact|range|explicit to_taste union, steps with the nine REQUIRED interruption-metadata fields (RecoveryGuidance has an explicit none_available; MaximumPause has explicit unlimited), eight-axis attribute vector, dietary/allergen tags, all-Rational ScoreBreakdown with the six weighted components and six penalties, plan/plan-meal/reason/swap-reason types, grocery ledger with per-line GroceryContribution provenance and a separate never-overwritten user_edited_quantity, inventory confidence states (confirmed/assumed_staple/inferred), preference signals (value/confidence/durability), household/member, cooking session/timer/event shapes storing ABSOLUTE UTC end instants, and feedback. server/src/db.ts: Postgres-shaped node:sqlite schema (UUID TEXT pks, UTC ISO instants, quantities as num/den base-10 TEXT columns — zero REAL columns) covering all 11 entities, wrapped in a DinnerDb class whose #private handle exposes no raw query escape hatch; every helper takes household_id as required first argument and appends the WHERE clause itself; updateGroceryLineComputed structurally cannot write the user-edit columns; db file path is a required openDb parameter. web/css/tokens.css: tokens only — warm dark-first palette with computed (not estimated) WCAG ratios in comments plus a light-scheme override, 4px grid, 12–40px type scale, 44px/48px/56px target tokens, layered shadows, focus-ring tokens, tabular-nums token, motion tokens collapsed under prefers-reduced-motion. Tests: qty.test.ts proves float-hostile exactness (thirds, 0.1 sums, 2^53+1), canonical signs, every rounding boundary incl. exact .5 cases, and typed failures; smoke.sqlite.test.ts runs against a real file DB under tmp/ (cleaned up), proving round trips of exact Rationals and absolute timer instants, upsert behavior, the user-edit column surviving regeneration, and cross-household isolation on every entity. No manifests touched; npm ci was the only install.",
+      "self_test_output": "✔ plans + plan meals: persisted score breakdown is exact; isolation (6.7521ms)\n✔ grocery lines: provenance, and regeneration cannot clobber a user edit (11.158617ms)\n✔ cooking sessions: timers persist ABSOLUTE UTC end instants; isolation (7.857321ms)\n✔ feedback round trips and is isolated (2.731739ms)\nℹ tests 26\nℹ suites 0\nℹ pass 26\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 314.773122"
+    }
+  ],
+  "dead_items": [],
+  "timestamp": "2026-08-18T20:10:25Z",
+  "_conductor_note": "Raw workflow return, saved verbatim per cycle.md step 5. EVERY FIELD HERE IS A CLAIM. Verification is cycle-003-gate.mjs + cycle-003-behaviour.mjs + the conductor's own npm test run; see the journal's VERIFICATION EVIDENCE block. Workflow run id wf_078f8c85-111, agent a8e4d1f4e9915c7a7, model claude-fable-5, 102452 tokens, 23 tool calls, 799s.",
+  "_agent_meta": {
+    "runId": "wf_078f8c85-111",
+    "agentId": "a8e4d1f4e9915c7a7",
+    "model": "claude-fable-5",
+    "tokens": 102452,
+    "toolCalls": 23,
+    "durationMs": 799258
+  }
+}
