@@ -77,6 +77,84 @@ function isZero(qty) {
   return qty.n === '0';
 }
 
+// ---------------------------------------------------------------------------
+// Display rounding (T-052) — every quantity on this screen arrives as an
+// EXACT rational `{n, d}` (the domain never rounds authoritative amounts).
+// `formatQuantity()` in api.js can render that exactly as a mixed fraction
+// ("4 25176473/32000000") or, given `maxFracDigits`, as a round-to-nearest
+// decimal. Neither option alone is enough here:
+//   - The exact mixed-fraction form is what a parent actually saw on the
+//     live list — unshoppable.
+//   - Round-to-nearest can round a "how much to buy" amount DOWN (e.g.
+//     44.483 ml -> "44 ml"), which understates what to purchase.
+// `formatQuantity` has no ceiling mode, so `formatPurchaseQty` below
+// implements ceiling-to-N-decimals locally with the same BigInt technique
+// api.js uses, over the same exact {n, d} wire value — it never rounds or
+// rewrites the authoritative quantity, only the string shown on screen.
+// Canonical units on this screen are always exactly "g", "ml", or "count"
+// (domain/src/units.ts converts every recipe/inventory unit to one of
+// these before a grocery line is built), so three buckets cover every case.
+const UNIT_DISPLAY_DECIMALS = { g: 0, ml: 0, count: 1 };
+const INFO_ZERO_GUARD_MAX_DECIMALS = 3;
+
+function unitDisplayDecimals(unit) {
+  return UNIT_DISPLAY_DECIMALS[unit] ?? 1;
+}
+
+/**
+ * Format a quantity that represents "how much to buy" (the line's
+ * effective purchase amount, the suggested/reset amount, or a
+ * just-saved edit that becomes the new effective amount). Always rounds
+ * UP to the unit's display precision so display rounding can never
+ * introduce underbuying, and — because ceiling of any positive amount at
+ * N decimals is at least one unit in the last place — a genuinely nonzero
+ * amount can never display as a false "0".
+ * @param {Qty} q
+ * @param {string} unit
+ * @returns {string}
+ */
+function formatPurchaseQty(q, unit) {
+  const num = BigInt(q.n);
+  if (num === 0n) return '0';
+  const negative = num < 0n;
+  const magNum = negative ? -num : num;
+  const den = BigInt(q.d); // wire quantities are always normalised with den > 0
+  const decimals = unitDisplayDecimals(unit);
+  const pow = 10n ** BigInt(decimals);
+  const scaled = magNum * pow;
+  const roundedUp = (scaled + den - 1n) / den; // ceiling division on magnitude
+  const whole = roundedUp / pow;
+  let frac = (roundedUp % pow).toString().padStart(decimals, '0');
+  frac = frac.replace(/0+$/, '');
+  const body = frac === '' ? whole.toString() : `${whole}.${frac}`;
+  return negative ? `-${body}` : body;
+}
+
+/**
+ * Format a quantity that is purely informational — a recipe's
+ * contribution, inventory already deducted, or expected surplus. These
+ * are never a purchase decision, so ordinary round-to-nearest display
+ * (via `formatQuantity`'s `maxFracDigits`) is appropriate. Still guards
+ * against a genuinely nonzero amount (e.g. a small "to taste"-adjacent
+ * measure) rounding all the way down to a bare "0", which would falsely
+ * read as "this recipe uses none of this" — that violates the product's
+ * honesty rule against dishonest display precision, so on that edge case
+ * only, more decimals are shown (never more than three) until a nonzero
+ * digit appears.
+ * @param {Qty} q
+ * @param {string} unit
+ * @returns {string}
+ */
+function formatInfoQty(q, unit) {
+  let decimals = unitDisplayDecimals(unit);
+  let text = formatQuantity(q, { maxFracDigits: decimals });
+  while (!isZero(q) && Number(text) === 0 && decimals < INFO_ZERO_GUARD_MAX_DECIMALS) {
+    decimals += 1;
+    text = formatQuantity(q, { maxFracDigits: decimals });
+  }
+  return text;
+}
+
 /**
  * Mount the grocery list into `container`.
  * @param {HTMLElement} container
@@ -222,7 +300,7 @@ export function renderGrocery(container, _params) {
 
   function buildLineRow(line) {
     const effective = line.user_edited_quantity || line.purchase_quantity;
-    const qtyText = formatQuantity(effective);
+    const qtyText = formatPurchaseQty(effective, line.unit);
     const metaBits = [];
     if (line.package_label) {
       metaBits.push(line.is_estimate ? `${line.package_label} — estimated` : line.package_label);
@@ -289,7 +367,7 @@ export function renderGrocery(container, _params) {
       current.provenance.contributions.map((c) =>
         h('li', { class: 'grocery-drawer__contribution' }, [
           h('span', { class: 'grocery-drawer__contribution-name' }, [c.recipe_name]),
-          h('span', { class: 'grocery-drawer__contribution-amount num' }, [`${formatQuantity(c.amount)} ${c.unit}`]),
+          h('span', { class: 'grocery-drawer__contribution-amount num' }, [`${formatInfoQty(c.amount, c.unit)} ${c.unit}`]),
         ]),
       ),
     );
@@ -301,7 +379,7 @@ export function renderGrocery(container, _params) {
       statLines.push(
         h('p', { class: 'grocery-drawer__stat' }, [
           'Already had on hand: ',
-          h('span', { class: 'num' }, [`${formatQuantity(deducted)} ${current.unit}`]),
+          h('span', { class: 'num' }, [`${formatInfoQty(deducted, current.unit)} ${current.unit}`]),
           ' — deducted from what you need to buy.',
         ]),
       );
@@ -310,7 +388,7 @@ export function renderGrocery(container, _params) {
       statLines.push(
         h('p', { class: 'grocery-drawer__stat' }, [
           'Expected surplus after this shop: ',
-          h('span', { class: 'num' }, [`${formatQuantity(surplus)} ${current.unit}`]),
+          h('span', { class: 'num' }, [`${formatInfoQty(surplus, current.unit)} ${current.unit}`]),
           current.is_estimate ? ' (estimated, from package size).' : '.',
         ]),
       );
@@ -331,7 +409,7 @@ export function renderGrocery(container, _params) {
         type: 'text',
         inputmode: 'decimal',
         autocomplete: 'off',
-        '.value': formatQuantity(effective),
+        '.value': formatPurchaseQty(effective, current.unit),
         'aria-label': `Amount of ${current.display_name} to buy, in ${current.unit}`,
       })
     );
@@ -363,7 +441,7 @@ export function renderGrocery(container, _params) {
             applyLineUpdate(updated);
             closeSheet();
             snackbarHandle = showUndoSnackbar({
-              message: `Set ${capitalize(current.display_name)} to ${formatQuantity(parsed)} ${current.unit}.`,
+              message: `Set ${capitalize(current.display_name)} to ${formatPurchaseQty(parsed, current.unit)} ${current.unit}.`,
               onUndo: () => revertQuantity(current.line_id, previous, current.display_name),
             });
           } catch (err) {
@@ -407,7 +485,7 @@ export function renderGrocery(container, _params) {
               }
             },
           },
-          [`Reset to suggested (${formatQuantity(current.purchase_quantity)} ${current.unit})`],
+          [`Reset to suggested (${formatPurchaseQty(current.purchase_quantity, current.unit)} ${current.unit})`],
         )
       : null;
 

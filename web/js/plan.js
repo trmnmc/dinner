@@ -42,8 +42,16 @@ import {
   createEmptyState,
   announce,
 } from './ui.js';
-import { getCurrentPlan, createPlan, offerSwap, acceptSwap, ApiError } from './api.js';
+import { getCurrentPlan, createPlan, offerSwap, acceptSwap, createCookingSession, getCookingSession, getHousehold, ApiError } from './api.js';
 import { navigate } from './router.js';
+
+/**
+ * Matches the `tgd.` prefix convention `api.js` uses for
+ * `household_id`/`calibration_done`. Not added to `api.js` itself — that
+ * file is outside T-019's scope — so `cook.js` and this file each define
+ * the same literal key locally instead of sharing an import.
+ */
+const COOKING_SESSION_ID_KEY = 'tgd.cooking_session_id';
 
 // ---------------------------------------------------------------------------
 // Local view types — the frozen contract's JSON shapes (routes.ts
@@ -203,9 +211,10 @@ function metaBadgeRow(meal) {
  * @param {MealView} meal
  * @param {readonly MealView[]} allMeals
  * @param {(meal: MealView) => void} onSwap
+ * @param {(meal: MealView) => void} onCook
  * @returns {HTMLElement}
  */
-function buildMealCard(meal, allMeals, onSwap) {
+function buildMealCard(meal, allMeals, onSwap, onCook) {
   const sections = [
     h('span', { class: 'card__eyebrow' }, [`Dinner ${String(meal.slot + 1)} of ${String(MEALS_PER_PLAN)}`]),
     h('h2', { class: 'card__title' }, [meal.name]),
@@ -229,6 +238,19 @@ function buildMealCard(meal, allMeals, onSwap) {
       h('p', { class: 'meal-card__body-text' }, [ownedIngredientsText(meal)]),
       h('p', { class: 'meal-card__body-text' }, [sharedIngredientsText(meal, allMeals)]),
     ]),
+  );
+
+  sections.push(
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'btn btn--secondary meal-card__cook',
+        'aria-label': `Start cooking ${meal.name}`,
+        onClick: () => onCook(meal),
+      },
+      ['Start cooking'],
+    ),
   );
 
   sections.push(
@@ -295,6 +317,13 @@ export function renderPlan(container, params) {
   /** @type {PlanView|null} */
   let plan = null;
   let closeActiveSheet = null;
+  /** Cached only after the first "Start cooking" tap — most visits never
+   * need it, so this avoids an extra request on every plan load. */
+  let cachedHouseholdSize = null;
+  /** Set once `checkResumable` resolves; drives the resume banner in
+   * `drawPlan`. `undefined` = not checked yet (render nothing extra),
+   * `null` = checked, nothing to resume. */
+  let resumeInfo = undefined;
 
   function unmountPrimary() {
     if (primaryBar) {
@@ -395,6 +424,9 @@ export function renderPlan(container, params) {
 
     const meals = plan.meals;
     const body = [];
+    if (resumeInfo) {
+      body.push(buildResumeBanner(resumeInfo));
+    }
     if (plan.is_partial) {
       const shortfall = plan.shortfall;
       body.push(
@@ -404,13 +436,103 @@ export function renderPlan(container, params) {
       );
     }
     for (const meal of meals) {
-      body.push(buildMealCard(meal, meals, (m) => openSwapSheet(m)));
+      body.push(buildMealCard(meal, meals, (m) => openSwapSheet(m), (m) => startCooking(m)));
     }
 
     container.replaceChildren(screenShell(body));
 
     if (meals.length > 0) {
       primaryBar = mountPrimaryAction({ label: 'Continue to grocery list', onClick: () => navigate('/grocery') });
+    }
+  }
+
+  /**
+   * The resume affordance (T-019): "you're cooking X, step N of M". Shown
+   * above the meal cards, never as the one dominant bottom-anchored action
+   * (that stays reserved for "Continue to grocery list") — a secondary
+   * button here is enough to get back into cooking mode.
+   * @param {{sessionId: string, mealName: string, stepIndex: number, totalSteps: number}} info
+   * @returns {HTMLElement}
+   */
+  function buildResumeBanner(info) {
+    const stepText =
+      info.totalSteps > 0 ? `step ${String(Math.min(info.stepIndex + 1, info.totalSteps))} of ${String(info.totalSteps)}` : 'getting started';
+    return h('div', { class: 'card plan-resume' }, [
+      h('span', { class: 'card__eyebrow' }, ['Still cooking']),
+      h('p', { class: 'plan-resume__text' }, [`You're cooking ${info.mealName} — ${stepText}.`]),
+      h(
+        'button',
+        { type: 'button', class: 'btn btn--secondary', onClick: () => navigate(`/cook/${info.sessionId}`) },
+        ['Resume cooking'],
+      ),
+    ]);
+  }
+
+  /** Reads the cooking-session id `cook.js` persists to localStorage
+   * (Invariant 6) and, if it points at a still-in-progress session, sets
+   * `resumeInfo` and redraws. Never blocks the initial plan render — this
+   * runs after `drawPlan()` has already shown the meals. */
+  async function checkResumable() {
+    const storedId = localStorage.getItem(COOKING_SESSION_ID_KEY);
+    if (!storedId) {
+      resumeInfo = null;
+      return;
+    }
+    try {
+      const { session } = await getCookingSession(storedId);
+      if (destroyed) return;
+      if (session.status !== 'active' && session.status !== 'paused') {
+        // Terminal session left behind by a tab that never got to clean up
+        // its own key — an honest, harmless cleanup, not this file's data.
+        if (localStorage.getItem(COOKING_SESSION_ID_KEY) === storedId) {
+          localStorage.removeItem(COOKING_SESSION_ID_KEY);
+        }
+        resumeInfo = null;
+        return;
+      }
+      const matchedMeal = plan && !plan.is_empty ? plan.meals.find((m) => m.recipe_id === session.recipe_id) : undefined;
+      resumeInfo = {
+        sessionId: storedId,
+        mealName: matchedMeal ? matchedMeal.name : 'this dinner',
+        stepIndex: session.current_step_index,
+        totalSteps: session.total_steps,
+      };
+    } catch {
+      // A stale/foreign session id (e.g. 404) is not worth surfacing as an
+      // error on the plan screen — just stop offering to resume it.
+      if (destroyed) return;
+      resumeInfo = null;
+    }
+    if (destroyed) return;
+    drawPlan();
+  }
+
+  /**
+   * Tap 1 of the entry-into-cooking flow: create a session for this meal
+   * and go straight to cooking mode. `target_servings` is not part of the
+   * frozen `MealView` shape, so this mirrors how `POST /api/plans` itself
+   * sets a plan meal's target servings (`server/src/routes.ts`:
+   * `target_servings: household.household_size`) rather than guessing.
+   * @param {MealView} meal
+   */
+  async function startCooking(meal) {
+    try {
+      if (cachedHouseholdSize === null) {
+        const { household } = await getHousehold();
+        if (destroyed) return;
+        cachedHouseholdSize = household.household_size;
+      }
+      const { session } = await createCookingSession({
+        plan_meal_id: meal.plan_meal_id,
+        recipe_id: meal.recipe_id,
+        target_servings: cachedHouseholdSize,
+      });
+      if (destroyed) return;
+      localStorage.setItem(COOKING_SESSION_ID_KEY, session.session_id);
+      navigate(`/cook/${session.session_id}`);
+    } catch (err) {
+      if (destroyed) return;
+      announce(err instanceof ApiError ? err.message : 'Could not start cooking. Try again.', { assertive: true });
     }
   }
 
@@ -559,6 +681,7 @@ export function renderPlan(container, params) {
       if (destroyed) return;
       plan = /** @type {PlanView} */ (p);
       drawPlan();
+      checkResumable(); // non-blocking: redraws again once/if it finds a session to resume
     } catch (err) {
       if (destroyed) return;
       if (err instanceof ApiError && err.code === 'no_current_plan') {

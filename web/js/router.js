@@ -25,6 +25,7 @@ import { renderOnboarding } from './onboarding.js';
 import { renderCalibrate } from './calibrate.js';
 import { renderPlan } from './plan.js';
 import { renderGrocery } from './grocery.js';
+import { renderCook } from './cook.js';
 
 /**
  * @typedef {Object} Route
@@ -55,7 +56,7 @@ const ROUTES = [
   { pattern: '/plan', render: renderPlan, label: 'Plan' },
   { pattern: '/grocery', render: renderGrocery, label: 'Grocery' },
   { pattern: '/prep/:slot', render: notBuiltYet('Prep'), label: 'Prep' },
-  { pattern: '/cook/:sessionId', render: notBuiltYet('Cooking mode'), label: 'Cook' },
+  { pattern: '/cook/:sessionId', render: renderCook, label: 'Cook' },
   { pattern: '/feedback/:planMealId', render: notBuiltYet('Feedback'), label: 'Feedback' },
 ];
 

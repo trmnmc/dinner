@@ -1,0 +1,164 @@
+/* cook.css — screen-specific styles for cook.js (T-019), composed entirely
+ * from tokens.css custom properties (same rule every other stylesheet
+ * follows: no raw hex, no raw px font-size, no magic spacing number).
+ * Everything already available from app.css/plan.css (.screen,
+ * .screen-header, .card__eyebrow, .card__meta, .badge, .btn, .btn--primary,
+ * .btn--secondary, .btn--danger-quiet, .back-link, .state-panel, .stack,
+ * .meal-card__body-text, .num) is reused as-is; only genuinely new
+ * structures get a class here.
+ *
+ * Two rules near the bottom (`.meal-card__cook`, `.plan-resume`) style
+ * markup added to `plan.js` by this same item (the "entry into cooking" /
+ * "resume cooking" affordances). They live here, not in `plan.css`, only
+ * because `plan.css` is outside this item's file scope — `index.html`
+ * loads every screen stylesheet on every route, so this is not a functional
+ * problem, just a filing one, and it is called out here so a future reader
+ * is not confused about why plan.js markup is styled from this file.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* The one large-text step — the star of the screen.                     */
+/* ---------------------------------------------------------------------- */
+
+.cook-step__text {
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-tight);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Continuous-attention warning — urgent, but state is icon + text        */
+/* together, never colour alone.                                         */
+/* ---------------------------------------------------------------------- */
+
+.cook-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+}
+
+.cook-warning p {
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-medium);
+}
+
+.cook-warning .icon {
+  color: var(--color-danger);
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Next safe stop — always visible, calm and informational (not a         */
+/* warning), matching plan.js's plan-shortfall banner idiom.              */
+/* ---------------------------------------------------------------------- */
+
+.cook-safe-stop {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+
+.cook-safe-stop .icon {
+  color: var(--color-accent);
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Timers — rendered from an absolute end instant, ticked client-side.    */
+/* ---------------------------------------------------------------------- */
+
+.cook-timers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cook-timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.cook-timer[data-expired="true"] {
+  border-color: var(--color-accent);
+}
+
+.cook-timer__info {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.cook-timer__label {
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cook-timer__clock {
+  font-size: var(--text-title);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.cook-timer__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Secondary controls — pause / stop. Never competes with the one         */
+/* dominant bottom-anchored primary action.                               */
+/* ---------------------------------------------------------------------- */
+
+.cook-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ---------------------------------------------------------------------- */
+/* plan.js additions: entry-into-cooking + resume affordances             */
+/* (see file header for why these live here, not in plan.css).            */
+/* ---------------------------------------------------------------------- */
+
+.meal-card__cook {
+  width: 100%;
+}
+
+.plan-resume {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.plan-resume__text {
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+}
