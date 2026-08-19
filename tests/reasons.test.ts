@@ -402,21 +402,44 @@ test('renderSwapNoAlternatives: no_candidates_in_pool — empty pool, honest cat
   assert.equal(out.code, 'no_candidates_in_pool');
   assert.equal(
     out.text,
-    "The catalog has 0 other recipes to offer for this slot right now — that's a catalog gap, not something about your preferences.",
+    "There are no other recipes in the catalog to offer for this slot right now — that's a catalog gap, not something about your preferences.",
   );
 });
 
-test('renderSwapNoAlternatives: all_candidates_already_in_plan — plural count', () => {
+test('renderSwapNoAlternatives: no_candidates_in_pool — catalog-gap clause survives verbatim', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 0, already_in_plan: 0, ineligible_for_reason: 0, eligible: 0 };
+  const out = renderSwapNoAlternatives('no_candidates_in_pool', counts);
+  assert.ok(
+    out.text.includes("that's a catalog gap, not something about your preferences."),
+    `catalog-gap clause missing or reworded: "${out.text}"`,
+  );
+});
+
+test('renderSwapNoAlternatives: all_candidates_already_in_plan — plural count (n=3, regression pin)', () => {
   const counts: SwapNoAlternativesCounts = { pool_size: 3, already_in_plan: 3, ineligible_for_reason: 0, eligible: 0 };
   const out = renderSwapNoAlternatives('all_candidates_already_in_plan', counts);
   assert.equal(out.code, 'all_candidates_already_in_plan');
   assert.equal(out.text, 'All 3 recipes that could fill this slot are already in this plan.');
 });
 
-test('renderSwapNoAlternatives: all_candidates_already_in_plan — singular count gets singular grammar', () => {
+test('renderSwapNoAlternatives: all_candidates_already_in_plan — plural count (n=2, regression pin)', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 2, already_in_plan: 2, ineligible_for_reason: 0, eligible: 0 };
+  const out = renderSwapNoAlternatives('all_candidates_already_in_plan', counts);
+  assert.equal(out.text, 'All 2 recipes that could fill this slot are already in this plan.');
+});
+
+test('renderSwapNoAlternatives: all_candidates_already_in_plan — plural count (n=7, regression pin, n > 2)', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 7, already_in_plan: 7, ineligible_for_reason: 0, eligible: 0 };
+  const out = renderSwapNoAlternatives('all_candidates_already_in_plan', counts);
+  assert.equal(out.text, 'All 7 recipes that could fill this slot are already in this plan.');
+});
+
+test('renderSwapNoAlternatives: all_candidates_already_in_plan — n===1 renders grammatical singular copy (T-038 defect 1 fix)', () => {
   const counts: SwapNoAlternativesCounts = { pool_size: 1, already_in_plan: 1, ineligible_for_reason: 0, eligible: 0 };
   const out = renderSwapNoAlternatives('all_candidates_already_in_plan', counts);
-  assert.equal(out.text, 'All 1 recipe that could fill this slot is already in this plan.');
+  assert.equal(out.text, 'The one recipe that could fill this slot is already in this plan.');
+  assert.ok(!out.text.includes('All 1 '), `ungrammatical "All 1 " construction leaked back in: "${out.text}"`);
+  assert.ok(!/\b1 recipe\b.*\bis\b/.test(out.text), `ungrammatical "1 recipe ... is" construction leaked back in: "${out.text}"`);
 });
 
 test('renderSwapNoAlternatives: no_candidate_satisfies_reason — says how many were looked at and ruled out', () => {
@@ -432,7 +455,7 @@ test('renderSwapNoAlternatives: no_candidate_satisfies_reason — singular count
   assert.equal(out.text, "1 recipe was available for this slot, and it doesn't deliver that reason.");
 });
 
-test('renderSwapNoAlternatives: every rendered sentence carries at least one digit (voice: concrete and countable)', () => {
+test('renderSwapNoAlternatives: every rendered sentence is a complete sentence (voice: concrete and countable)', () => {
   const fixtures: readonly [import('../domain/src/reasons.ts').SwapNoAlternativesCode, SwapNoAlternativesCounts][] = [
     ['no_candidates_in_pool', { pool_size: 0, already_in_plan: 0, ineligible_for_reason: 0, eligible: 0 }],
     ['all_candidates_already_in_plan', { pool_size: 2, already_in_plan: 2, ineligible_for_reason: 0, eligible: 0 }],
@@ -440,8 +463,15 @@ test('renderSwapNoAlternatives: every rendered sentence carries at least one dig
   ];
   for (const [code, counts] of fixtures) {
     const text = renderSwapNoAlternatives(code, counts).text;
-    assert.match(text, /\d/, `${code} rendered no digit: "${text}"`);
     assert.ok(text.endsWith('.'), `${code} did not render a full sentence`);
+    // no_candidates_in_pool is the sole exception: validateSwapNoAlternativesCounts
+    // forces pool_size === 0 on this arm, so a digit there would be decorative
+    // rather than countable (T-038 defect 2) — every other arm still counts.
+    if (code === 'no_candidates_in_pool') {
+      assert.ok(!/\d/.test(text), `no_candidates_in_pool rendered a dead-count digit: "${text}"`);
+    } else {
+      assert.match(text, /\d/, `${code} rendered no digit: "${text}"`);
+    }
   }
 });
 

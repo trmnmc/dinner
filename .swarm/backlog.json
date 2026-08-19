@@ -553,7 +553,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-001",
         "T-004"
@@ -573,7 +573,7 @@
       ],
       "model": "opus",
       "attempts": 1,
-      "notes": "Receipt/ledger treatment [steal C]: typography does the trust-building the traceability must-have exists for. User edits live in the separate column — the UI reads and preserves it, never writes generated values over it. Quantity edit gets an undo snackbar from ui.js, not a confirmation modal. Honest uncertainty: 'estimated' stated plainly. CYCLE 14: 11 of 12 conductor gate checks PASSED (all 7 sections + all 22 lines render; DoD 5 provenance 29/29 line->recipe links readable; inventory deduction 2/2; user edit survives regeneration and is displayed). The ONE failure is R21: quantities render as raw rationals, e.g. \"Olive oil 44 12376473/25600000 ml\". Root cause is a single call site - api.js formatQuantity() only rounds when passed {maxFracDigits}, and grocery.js omits it. Do NOT rebuild the screen; fix the formatting and re-run .swarm/runs/cycle-014-gate-rev2.mjs."
+      "notes": "Receipt/ledger treatment [steal C]: typography does the trust-building the traceability must-have exists for. User edits live in the separate column — the UI reads and preserves it, never writes generated values over it. Quantity edit gets an undo snackbar from ui.js, not a confirmation modal. Honest uncertainty: 'estimated' stated plainly. CYCLE 14: 11 of 12 conductor gate checks PASSED (all 7 sections + all 22 lines render; DoD 5 provenance 29/29 line->recipe links readable; inventory deduction 2/2; user edit survives regeneration and is displayed). The ONE failure is R21: quantities render as raw rationals, e.g. \"Olive oil 44 12376473/25600000 ml\". Root cause is a single call site - api.js formatQuantity() only rounds when passed {maxFracDigits}, and grocery.js omits it. Do NOT rebuild the screen; fix the formatting and re-run .swarm/runs/cycle-014-gate-rev2.mjs. | CYCLE 23 VERIFIED DONE. Conductor authored a fresh 18-check gate (.swarm/runs/cycle-023-gate-T-017-rev2.mjs, never seen by any builder, expectations derived from the live wire at run time) against the FULL acceptance sentence, not just the R21 clause cycle 14 failed on. Result 15 PASSED / 0 FAILED / 3 NOT RUN. Evidence cycle-023-verify-T-017-rev2-run2.txt. R21 is dead: no raw rationals anywhere in list, drawer, or post-edit re-render (T-052 fixed it at cycle 15; nobody had re-run T-017 since). Provenance drawer names 1/1 contributing recipes and renders 1/1 amounts; inventory deduction stated in words AND numbers; quantity editor reachable; user edit visibly survives a full regeneration on a separate column (edited 1234 shown, generated 18.48 not shown as the buy amount); tabular figures confirmed via app.css .num rule applied to the rendered quantity node. THE 3 NOT-RUN CHECKS ARE UNREACHABLE-BY-DESIGN, NOT DEFECTS OF THIS SCREEN, and are reported as not-run: (a) inline confirmation questions require an inferred inventory entry and the only HTTP write path (assumed_staples) stores confidence assumed_staple, which subtracts and never asks - unreachable by D-2 confirmed-only inventory; (b) estimated-package labelling and (c) expected surplus both need package options, and data/ingredients.json ships ZERO for all 97 ingredients - filed as T-065."
     },
     {
       "id": "T-018",
@@ -1211,7 +1211,7 @@
       "priority": 2,
       "value": "M",
       "effort": "S",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-007"
       ],
@@ -1227,7 +1227,7 @@
       "model": "sonnet",
       "attempts": 1,
       "route_class": "core",
-      "notes": "Raised by the T-007 builder unprompted (cycle 11). swap.ts returns a typed SwapNoAlternativesCode (no_candidates_in_pool | all_candidates_already_in_plan | no_candidate_satisfies_reason) with honest pool counts, but reasons.ts — the SINGLE copy module — has no ReasonFact for \"nothing to offer\", so the code has no rendered copy. The plan screen (T-016) needs this; without it a swap that legitimately has no answer looks like a bug. reasons.ts is a frozen module, so this is a deliberate small unfreeze, not a refactor. | CYCLE 21: RE-SCOPED and PARTIALLY LANDED, gate FAILED 13/14. The item's premise was stale: routes.ts had grown a private noAlternativesMessage() with three hardcoded count-free sentences and plan.js carried a fourth copy of one of them, so the user was already told something — just in the wrong layer, in triplicate, throwing away all four SwapCounts. Landed (committed, suite green 391/391): renderSwapNoAlternatives() in reasons.ts declaring its counts/code shape locally (no swap.ts import — swap.ts already imports reasons.ts, so the back-import would be a real cycle), routes.ts delegating, plan.js fallback demoted to a generic failure line, 14 new tests. FAILS ON: all_candidates_already_in_plan at n=1 renders \"All 1 recipe that could fill this slot is already in this plan.\" — ungrammatical, reachable (validation permits pool_size=1 fully already-in-plan, and a 6-recipe catalog with dietary filtering hits it), and user-visible in exactly the outcome this item exists to word. Fix is the n===1 branch only; do not touch the n>1 strings, which the committed tests pin. SECOND, smaller nit to fix in the same pass: the empty-pool arm renders \"The catalog has 0 other recipes to offer\" — the 0 is countable but stilted, and validation proves that count can only ever be 0, so the substitution is decorative; \"There are no other recipes in the catalog to offer for this slot right now\" says the same thing in plain English. Keep the \"that's a catalog gap, not something about your preferences\" clause (mutant M2 pins it)."
+      "notes": "Raised by the T-007 builder unprompted (cycle 11). swap.ts returns a typed SwapNoAlternativesCode (no_candidates_in_pool | all_candidates_already_in_plan | no_candidate_satisfies_reason) with honest pool counts, but reasons.ts — the SINGLE copy module — has no ReasonFact for \"nothing to offer\", so the code has no rendered copy. The plan screen (T-016) needs this; without it a swap that legitimately has no answer looks like a bug. reasons.ts is a frozen module, so this is a deliberate small unfreeze, not a refactor. | CYCLE 21: RE-SCOPED and PARTIALLY LANDED, gate FAILED 13/14. The item's premise was stale: routes.ts had grown a private noAlternativesMessage() with three hardcoded count-free sentences and plan.js carried a fourth copy of one of them, so the user was already told something — just in the wrong layer, in triplicate, throwing away all four SwapCounts. Landed (committed, suite green 391/391): renderSwapNoAlternatives() in reasons.ts declaring its counts/code shape locally (no swap.ts import — swap.ts already imports reasons.ts, so the back-import would be a real cycle), routes.ts delegating, plan.js fallback demoted to a generic failure line, 14 new tests. FAILS ON: all_candidates_already_in_plan at n=1 renders \"All 1 recipe that could fill this slot is already in this plan.\" — ungrammatical, reachable (validation permits pool_size=1 fully already-in-plan, and a 6-recipe catalog with dietary filtering hits it), and user-visible in exactly the outcome this item exists to word. Fix is the n===1 branch only; do not touch the n>1 strings, which the committed tests pin. SECOND, smaller nit to fix in the same pass: the empty-pool arm renders \"The catalog has 0 other recipes to offer\" — the 0 is countable but stilted, and validation proves that count can only ever be 0, so the substitution is decorative; \"There are no other recipes in the catalog to offer for this slot right now\" says the same thing in plain English. Keep the \"that's a catalog gap, not something about your preferences\" clause (mutant M2 pins it). | CYCLE 23 VERIFIED DONE. Conductor gates cycle-023-gate-T-038.mjs (13/14) + cycle-023-gate-T-038-rev2.mjs (4/4) = 17/17. Both defects fixed: n===1 now renders \"The one recipe that could fill this slot is already in this plan.\", and the empty-pool arm renders \"There are no other recipes in the catalog to offer for this slot right now — that's a catalog gap, not something about your preferences.\" with the reassurance clause byte-intact. The n>1 string is byte-identical at n=2, 3 and 7, and the untouched third arm still counts and agrees at n=1 and n=3. MUTATION KILLS prove the guarding tests are not vacuous: reverting defect 1 fails 1 test, reverting defect 2 fails 2, deleting the catalog-gap clause fails 2, and reasons.ts is byte-identical after mutation testing. WIRE REACHABILITY: rev1's G14 could not drive the API into a no-alternatives outcome, which was MY error, not the product's — handleSwap already filters candidates to survivors NOT in the plan, and a swap that is never accepted does not change the plan, so repeating the request can never empty the pool. The reachable route is to make survivors == planned: a VEGETARIAN household has exactly that, so candidates is empty. Live POST returns 200 with alternatives:[], none_reason no_candidates_in_pool, and a message BYTE-IDENTICAL to what reasons.ts renders — proving routes.ts delegates rather than carrying its own copy (the triplicated private copy cycle 21 found is gone for real). Suite 394/394 and tsc --noEmit clean, both run by the conductor."
     },
     {
       "id": "T-039",
@@ -1626,7 +1626,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-014"
       ],
@@ -1646,7 +1646,7 @@
       "model": "sonnet",
       "attempts": 0,
       "created_cycle": 15,
-      "notes": "Split out of T-019 at cycle 15. T-043 is DONE as of cycle 17 — handleGetPrep now scales to the plan meal's target_servings and the conductor gate proved prep agrees with grocery on 15 wire pairs, so the prep screen will no longer render numbers that contradict the list the parent shopped from. Still soft-blocked on T-040 (active_time_blocks ship no time_label, forcing the screen to hand-format minutes) — that is presentation, not arithmetic, so T-057 can proceed if T-040 is taken in the same wave. UNBLOCKED as of cycle 18: T-040 is done, so every active_time_block now ships a time_label and the prep screen must render that string verbatim rather than compute minutes itself. Both soft blocks are cleared (T-043 the arithmetic, T-040 the formatting); T-057 needs gear 2+ for its M effort."
+      "notes": "Split out of T-019 at cycle 15. T-043 is DONE as of cycle 17 — handleGetPrep now scales to the plan meal's target_servings and the conductor gate proved prep agrees with grocery on 15 wire pairs, so the prep screen will no longer render numbers that contradict the list the parent shopped from. Still soft-blocked on T-040 (active_time_blocks ship no time_label, forcing the screen to hand-format minutes) — that is presentation, not arithmetic, so T-057 can proceed if T-040 is taken in the same wave. UNBLOCKED as of cycle 18: T-040 is done, so every active_time_block now ships a time_label and the prep screen must render that string verbatim rather than compute minutes itself. Both soft blocks are cleared (T-043 the arithmetic, T-040 the formatting); T-057 needs gear 2+ for its M effort. | CYCLE 23 VERIFIED DONE. Conductor gate cycle-023-gate-T-057.mjs: 12 passed / 1 failed / 1 not run, plus the P11 addendum gate 8/8. ALL SIX required elements render against a real plan: 8/8 required ingredients, 3/3 equipment items, 4/4 do-ahead tasks, the first-non-interruptible-step region (null on this recipe — and the screen SAYS SO rather than rendering an empty region), the first safe stopping point, and 1/1 active-time blocks rendering time_label VERBATIM (T-040 honoured). DoD 6 satisfied: total and active present as separate values (\"56 min total, 18 min hands-on\"). No raw rationals anywhere. The route is live: router.js resolves #/prep/:slot to renderPrep and the notBuiltYet placeholder is gone. An out-of-range slot renders an honest message rather than a crash or a blank screen. The P11 addendum extended the quantity check to ALL THREE plan meals: 8/8, 10/10 and 11/11 exact quantities rendered exactly as the wire states them, and every to-taste ingredient stays non-numeric on all three (no fabricated numbers). The ONE gate failure (P9) is NOT an acceptance failure and is filed separately as T-067. NOTE: the builder could not run any of this itself — the agent sandbox denies ad-hoc POST, so it never created a household or a plan and verified by source reading plus existing route tests. This gate is the first time prep.js ever executed."
     },
     {
       "id": "T-058",
@@ -1805,6 +1805,105 @@
       "created_cycle": 18,
       "acceptance": "The T-040 routes test no longer fails when a recipe yields more than one active_time_block. Its genuine non-vacuity guard (at least one block actually asserted on) is kept; the assertion that no meal has more than one block is replaced by something that cannot break on a correct catalog change.",
       "notes": "Found by the cycle-18 conductor while reading the T-040 test diff. tests/routes.test.ts asserts maxBlocksInOneMeal === 1 to document that today six recipes all have every step active, so deriveActiveTimeBlocks always coalesces to one block per recipe. The builder flagged the catalog limitation honestly and this assertion was a good-faith attempt to make the gap visible rather than silently assumed — but it pins a fact that is SUPPOSED to change: T-010 and T-011 author recipes 7-30, and any recipe with an unattended step (unattended time being this product stated differentiator) produces a second block and turns this test red for an entirely correct change. The blocksSeen > 0 assertion above it already does the anti-vacuity job. Deliberately NOT fixed during cycle 18: the conductor does not edit a builder tests inside its own verification gate, because a gate that rewrites the thing it is judging is not a gate."
+    },
+    {
+      "id": "T-065",
+      "title": "Catalog ships zero package options, so package-size selection, estimate labelling and surplus are all dead code",
+      "kind": "fix",
+      "priority": 1,
+      "value": "H",
+      "effort": "M",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "data/ingredients.json",
+        "tests/packaging.test.ts"
+      ],
+      "acceptance": "Every ingredient a catalog recipe can require carries at least one package option with a yield, and generic fallbacks are flagged is_estimate. A grocery list for a real plan then contains at least one line with a non-null package_label, at least one is_estimate line, and at least one line with non-zero expected_surplus - so the grocery screen renders the package, the estimate label and the surplus it was built to render.",
+      "packages": [],
+      "must_haves": [
+        "Consolidated grocery list"
+      ],
+      "dod": [
+        5
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 23,
+      "notes": "FOUND BY THE CYCLE-23 T-017 GATE, not by a builder. domain/src/packaging.ts is fully implemented and unit-tested (package selection, integer package counts, generic-fallback is_estimate flagging, surplus arithmetic), and routes.ts encodes package_label / is_estimate / expected_surplus onto every grocery line. But data/ingredients.json carries only id, display_name, aliases, allergen_classes, store_section, density_g_per_ml, per_item_weight_g for all 97 ingredients - NO package options at all. Conductor-measured on a live 22-line grocery list for a 3-meal plan: 0 lines estimated, 0 lines with non-zero surplus, package_label null on every line checked. Consequence: three separate clauses of T-017 acceptance are unrenderable, and D-4 named package-size selection and leftover optimization as two of the three differentiators prior-art scouting found UNOCCUPIED across all five competitor products. The moat is written but has no data behind it. This is data authoring plus a validation gate, not new engine code - the engine is done. Add the catalog gate check that every required ingredient has >=1 package option so this cannot silently regress (same shape as the existing ingredient-id/allergen-class cross-check, DESIGN.md invariant 5)."
+    },
+    {
+      "id": "T-066",
+      "title": "Inventory confirmation questions are unreachable through any user-facing path",
+      "kind": "fix",
+      "priority": 3,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "server/src/routes.ts",
+        ".swarm/SPEC.md"
+      ],
+      "acceptance": "Either the product exposes a write path that produces an inferred inventory entry (so confirmation questions can actually surface and the grocery screen clause is testable), or SPEC.md records explicitly that confirmation questions are out of scope for this build under D-2 and the T-017 acceptance clause is struck. One or the other - the current state, where the spec promises a surface no input can reach, is the thing to fix.",
+      "packages": [],
+      "dod": [
+        5
+      ],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 23,
+      "notes": "FOUND BY THE CYCLE-23 T-017 GATE. inventoryMath.ts raises a ConfirmationQuestion only for an inferred entry against a line with a positive purchase requirement (questions subset of inferred x positive-purchase lines, per its own header comment). The ONLY HTTP write path into inventory is assumed_staples on POST /api/households, which routes.ts stores at confidence assumed_staple - and usableInventoryIds treats assumed_staple as usable, so it SUBTRACTS and never asks. D-2 deliberately cut the inference layer (confirmed-only inventory), so this is a consequence of an accepted scope cut rather than a bug. The domain logic is correct and unit-tested. RECOMMENDATION: take the spec-side branch, not the code-side one - adding an inference layer at this point reopens a cut D-2 made deliberately and the user endorsed. Prefer striking the clause and saying so plainly in REPORT.md."
+    },
+    {
+      "id": "T-067",
+      "title": "Prep screen tells a parent to \"Pause up to 418 minutes\"",
+      "kind": "polish",
+      "priority": 2,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-057"
+      ],
+      "files_hint": [
+        "web/js/prep.js",
+        "server/src/routes.ts"
+      ],
+      "acceptance": "A bounded maximum_pause renders in humane units — \"about 7 hours\", not \"418 minutes\" — and duration formatting lives in ONE shared place rather than a second private helper inside prep.js.",
+      "packages": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 23,
+      "notes": "FOUND BY THE CYCLE-23 T-057 GATE (check P9), root-caused at web/js/prep.js:182-188 durationWords() and :206-212 safeStopText(). Two things in one finding. (1) COPY: durationWords divides by 60 and stops, so a bounded pause of 25,080s renders \"Pause up to 418 minutes\". No parent reads 418 minutes; SPEC.md asks for concrete COUNTABLE copy, and a count nobody can hold in their head is not countable. Wants hours-and-minutes above some threshold. (2) ARCHITECTURE: this is a SECOND time-formatting path in the client. DESIGN.md grafted the single shared total-vs-active time renderer precisely so DoD 6 would be a property of ONE helper, and T-040 put time_label on the wire so screens never compute minutes themselves. maximum_pause ships raw seconds with no label, so prep.js had no local choice — which means the RIGHT fix is the wire-side one: give maximum_pause a time_label exactly as T-040 did for active_time_blocks, and delete durationWords. Prefer that over a client-side helper, for consistency with the invariant that already exists. NOT an acceptance failure for T-057 (all six required elements and the T-040 verbatim rule pass), which is why T-057 is done and this is filed separately rather than reopening it."
+    },
+    {
+      "id": "T-068",
+      "title": "Prep screen copy and accessibility pass (6 findings from the cycle-23 look pass)",
+      "kind": "fix",
+      "priority": 2,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-057"
+      ],
+      "files_hint": [
+        "web/js/prep.js"
+      ],
+      "acceptance": "All six findings below are fixed in prep.js: the safe-stop line no longer says \"right now\" on a screen shown before cooking starts; the \"pause anywhere\" line claims only what a null first_non_interruptible_step actually proves; the decorative \"Prep plan\" status badge is gone or carries a real fact; the empty state does not say \"slot\"; the two statically-rendered panels drop their live-region roles; and the optional-ingredients list carries a programmatic label.",
+      "packages": [],
+      "must_haves": [
+        "Accessibility"
+      ],
+      "dod": [
+        11
+      ],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 23,
+      "notes": "FROM THE CYCLE-23 QA LOOK PASS — DEGRADED (browserless: no Chromium and no browse CLI on this host, so nothing below is a judgment about rendered pixels). Six findings consolidated into ONE item because they are all small edits to a single file; filing eight separate items would have pushed the live backlog past the ~30 cap for no gain. (1) SAFE-STOP TENSE, certain: prep.js:201 renders \"Safe to stop right now, during step 1.\" — phrasing lifted verbatim from cook.js:187 where \"right now\" is true mid-session. On the prep screen the parent has not started cooking, so it asserts a state that is not happening. Wants a pre-cook phrasing for kind \"now\". (2) \"PAUSE ANYWHERE\" OVERCLAIM, real but LATENT — conductor-verified both ways. The agent is right that prep.ts:154-158 derives first_non_interruptible_step from requires_continuous_attention ALONE, while safe_to_pause_before/during/after and maximum_pause are independent fields (recipe.ts:117-125), so a null does NOT prove \"pause anywhere\". BUT the conductor also checked the shipped data: across all 35 steps in the 6-recipe catalog, ZERO steps are not-continuous-attention yet not fully pausable, so the copy is not wrong for any recipe that exists today. It becomes wrong the first time such a step is authored, and D-2 plans a 30-recipe catalog. Fix the copy to claim only what the null proves, and/or add the invariant to the catalog validation gate. Recorded as latent rather than active so nobody re-derives this at 5am. (3) DECORATIVE BADGE, certain: prep.js:446 renders a static \"Prep plan\" status badge restating the h1 — the rendered screen opens \"PrepPrep planEverything to line up…\". Elsewhere badges carry real status (cook.js \"Paused\", plan.js \"Safe to pause anytime\"); a decorative one dilutes the pattern and contradicts tokens.css's \"nothing decorating harder than the numbers\". (4) JARGON, certain: prep.js:428 empty state says \"This slot doesn't have an active dinner in your current plan.\" plan.js keeps \"slot\" internal and says \"Dinner N of 3\" to users. (5) LIVE-REGION ROLES, certain: prep.js:301 and :317 put role=\"status\" on panels rendered ONCE at mount, copied from cook.js:308,313 where those panels update during a live session (and where the attention warning is role=\"alert\", not \"status\"). On static content they do nothing useful and some screen readers announce them on insertion. (6) OPTIONAL LIST UNLABELLED, certain: prep.js:242-243 introduces the optional ingredients with a bare <p> subhead over an unlabelled <ul>, so a screen-reader user navigating by list meets a second ingredient list with nothing distinguishing it from the required one — blurring exactly the must-have/nice-to-have split the code comment says must never blur. DELIBERATELY NOT FILED, with reasons: the \"N count\" unit rendering (\"Lemons 3 count\") is stilted but is the SAME convention grocery.js:334 uses, so a prep-only fix would create the cross-screen divergence this pass exists to prevent — it belongs in a shared helper or nowhere; and the raw 2px icon margins at prep.css:147,174 are pre-existing shared debt identical to cook.css:55,78 and plan.css:41, so the only accurate local fix is amending prep.css's own header comment, which currently claims \"no raw px\". The pass found NO token violations otherwise: every colour, size, radius and duration in prep.css is a var() token, and the section/list/warning vocabulary deliberately reuses grocery/cook/plan rather than inventing new patterns. STILL UNVERIFIED BY ANYONE (what a browser pass would need): real wrapping of long ingredient names against the nowrap quantity column, rendered contrast of the danger-bordered attention panel in both colour schemes, true 44px hit areas on a small viewport, whether six stacked sections scan as a checklist or a wall at real phone height, and screen-reader behaviour on load."
     }
   ]
 }

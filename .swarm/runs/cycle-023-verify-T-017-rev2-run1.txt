@@ -1,0 +1,37 @@
+listening on http://127.0.0.1:42773
+
+--- c23 rev2 ground truth: 7 sections, 22 lines (22 measured), 0 confirmation questions, 0 estimated, 0 with surplus ---
+
+=== the list as a ledger ===
+PASS R1  screen renders (871 chars)
+PASS R2  all 7 wire sections appear as headings
+PASS R3  all 22 measured lines rendered
+PASS R4  no raw rationals (the cycle-14 R21 regression)
+FAIL R5  tabular figures: app.css declares font-variant-numeric on {num, tabular} and the quantity node carries class="grocery-line__qty text-muted"
+NOT RUN R6  estimated-package labelling — data/ingredients.json ships ZERO package options for all 97 ingredients, so no line can ever be an estimate. Product gap filed separately; not a T-017 screen defect.
+NOT RUN R7  inline confirmation questions — questions require an `inferred` inventory entry, and the only HTTP write path (assumed_staples) stores `assumed_staple`, which subtracts and never asks. Unreachable by D-2 (confirmed-only inventory). Domain logic is unit-tested; the UI clause is not user-reachable.
+
+=== the provenance drawer ===
+probe: olive oil — 1 contribution(s), deducted 12.5 ml, purchase 42.9503679296875 ml
+PASS R8  the "why am I buying …?" affordance exists on the olive oil line
+PASS R9  1/1 contributing recipes named by name
+PASS R10  1/1 contributing amounts rendered (wire: Greek Sheet-Pan Chicken =55.4503679296875)
+FAIL R11  the 12.5 ml inventory deduction is stated in words AND numbers
+NOT RUN R12  expected surplus — surplus is produced by package selection, and with zero package options in the catalog it is 0 on every line. Same root cause as R6.
+PASS R13  no raw rationals in the drawer
+PASS R14  the quantity editor is reachable from the drawer
+
+=== protected user edits ===
+PASS R15  PATCH user_edited_quantity on "honey" → 200
+PASS R16  the edit and the generated value are SEPARATE columns after regeneration (edited=1234, generated=18.4834559765625)
+PASS R17  the edited amount is VISIBLE on the honey row after a full re-render, marked as edited, and the generated 18.48 is NOT shown as the buy amount — row reads "Honeyedited1234 mlOlive oil43 mlRice vinegar37 mlSoy sauce74"
+PASS R18  still no raw rationals after the edit round-trip
+
+=== T-017 GATE rev2: 13 passed, 2 failed, 3 not run (unreachable) ===
+failures:
+  - R5: tabular figures: app.css declares font-variant-numeric on {num, tabular} and the quantity node carries class="grocery-line__qty text-muted"
+  - R11: the 12.5 ml inventory deduction is stated in words AND numbers
+not run:
+  - R6: estimated-package labelling — data/ingredients.json ships ZERO package options for all 97 ingredients, so no line can ever be an estimate. Product gap filed separately; not a T-017 screen defect.
+  - R7: inline confirmation questions — questions require an `inferred` inventory entry, and the only HTTP write path (assumed_staples) stores `assumed_staple`, which subtracts and never asks. Unreachable by D-2 (confirmed-only inventory). Domain logic is unit-tested; the UI clause is not user-reachable.
+  - R12: expected surplus — surplus is produced by package selection, and with zero package options in the catalog it is 0 on every line. Same root cause as R6.

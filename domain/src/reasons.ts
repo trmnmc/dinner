@@ -736,12 +736,17 @@ function validateSwapNoAlternativesCounts(code: SwapNoAlternativesCode, counts: 
 function renderSwapNoAlternativesSentence(code: SwapNoAlternativesCode, counts: SwapNoAlternativesCounts): string {
   switch (code) {
     case 'no_candidates_in_pool': {
-      const n = counts.pool_size;
-      return `The catalog has ${String(n)} other recipe${pluralS(n)} to offer for this slot right now — that's a catalog gap, not something about your preferences.`;
+      // `validateSwapNoAlternativesCounts` forces pool_size === 0 for this
+      // code, so substituting the count would just render a dead "0" —
+      // stated plainly instead.
+      return `There are no other recipes in the catalog to offer for this slot right now — that's a catalog gap, not something about your preferences.`;
     }
     case 'all_candidates_already_in_plan': {
       const n = counts.already_in_plan;
-      return `All ${String(n)} recipe${pluralS(n)} that could fill this slot ${n === 1 ? 'is' : 'are'} already in this plan.`;
+      if (n === 1) {
+        return 'The one recipe that could fill this slot is already in this plan.';
+      }
+      return `All ${String(n)} recipe${pluralS(n)} that could fill this slot are already in this plan.`;
     }
     case 'no_candidate_satisfies_reason': {
       const n = counts.ineligible_for_reason;

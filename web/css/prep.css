@@ -1,0 +1,175 @@
+/* prep.css — screen-specific styles for prep.js (T-057), the prep plan a
+ * parent checks before starting to cook one dinner: ingredients to
+ * retrieve, equipment, tasks doable earlier, the first step that needs
+ * full attention, the first safe stopping point, and active-time blocks.
+ *
+ * Everything reachable from app.css/tokens.css is reused as-is: .screen,
+ * .screen-header, .card, .card__eyebrow, .card__title, .card__meta,
+ * .state-panel, .btn, .badge, .stack, .stack--tight, .num, .text-secondary,
+ * .text-muted, .time-info (mounted by ui.js's renderTimeInfo). This file
+ * only adds the section/list structures those have no vocabulary for.
+ * Every value below traces to a token in tokens.css — no raw hex, no raw
+ * px, no invented spacing constant (DESIGN.md identity contract).
+ *
+ * `.prep-attention` / `.prep-safe-stop__panel` intentionally mirror
+ * cook.css's `.cook-warning` / `.cook-safe-stop` — the same two concepts
+ * (a continuous-attention warning, a calm "you can pause here" fact) reused
+ * across prep and cooking mode should look identical, not like two
+ * screens' independent inventions.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Sections — one deliberate uppercase tracked title per section, the same */
+/* single all-caps treatment grocery.css uses for its store-section        */
+/* headers (this screen's own equivalent grouping label).                  */
+/* ---------------------------------------------------------------------- */
+
+.prep-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.prep-section__title {
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  padding: 0 var(--space-1);
+}
+
+.prep-section__subhead {
+  font-size: var(--text-caption);
+  padding: 0 var(--space-1);
+}
+
+.prep-section__note {
+  font-size: var(--text-caption);
+  padding: 0 var(--space-1);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Ingredient list — receipt-style rows, matching grocery-section__list's  */
+/* bordered/rounded group treatment so the two "things to gather" lists   */
+/* (grocery, prep) read as the same visual family.                        */
+/* ---------------------------------------------------------------------- */
+
+.prep-list {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.prep-ingredient {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--touch-target-min);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.prep-ingredient:last-child {
+  border-bottom: none;
+}
+
+.prep-ingredient__name {
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.prep-ingredient__qty {
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* Plain rows — equipment, do-ahead tasks, active-time blocks. Same
+ * container language as .prep-list but simpler row content (no quantity
+ * column), so a slightly tighter left/right rhythm than the ingredient
+ * rows above. */
+.prep-list--plain li {
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.prep-list--plain li:last-child {
+  border-bottom: none;
+}
+
+.prep-block {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.prep-block__steps {
+  color: var(--color-text);
+}
+
+.prep-block__time {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Continuous-attention warning — mirrors cook.css's .cook-warning: state  */
+/* conveyed by icon + text together, never colour alone.                  */
+/* ---------------------------------------------------------------------- */
+
+.prep-attention {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+}
+
+.prep-attention .icon {
+  color: var(--color-danger);
+  flex: none;
+  margin-top: 2px;
+}
+
+.prep-attention__text {
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---------------------------------------------------------------------- */
+/* First safe stopping point — calm and informational, mirrors cook.css's */
+/* .cook-safe-stop.                                                        */
+/* ---------------------------------------------------------------------- */
+
+.prep-safe-stop__panel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+
+.prep-safe-stop__panel .icon {
+  color: var(--color-accent);
+  flex: none;
+  margin-top: 2px;
+}

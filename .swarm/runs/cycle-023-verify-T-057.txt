@@ -1,0 +1,34 @@
+listening on http://127.0.0.1:46663
+--- ground truth: slot 0, 8 required ingredient(s), 2 optional, 3 equipment, 4 do-ahead, 1 active block(s), first_non_interruptible=null, first_safe_stop=now ---
+
+=== the six required elements ===
+PASS P1  the screen renders for a real plan meal (785 chars)
+PASS P2  all 8 required ingredients listed
+PASS P3  all 3 equipment items listed
+PASS P4  all 4 do-ahead tasks listed
+PASS P5  no step needs continuous attention, and the screen SAYS SO rather than rendering an empty region
+PASS P6  the first safe stopping point (kind=now) is spoken to
+PASS P7  all 1 active-time blocks render time_label VERBATIM (T-040)
+
+=== the invariants this screen is exposed to ===
+PASS P8  total and active time are both present as separate values (wire time_label="56 min total, 18 min hands-on", total=3360s active=1080s)
+FAIL P9  every minutes string on screen comes from a server-sent label — HAND-FORMATTED: 418 min (server sent: 56 min total, 18 min hands-on | 18 min hands-on)
+PASS P10  no raw rationals in the prep screen
+
+=== quantities agree with the grocery list (the acceptance says so explicitly) ===
+NOT RUN P11  no exact-quantity required ingredient shared a unit with a grocery line on this meal
+
+=== reachability and honest failure ===
+PASS P12  router.js resolves #/prep/:slot to renderPrep, not notBuiltYet
+PASS P13  the "not built yet" placeholder for Prep is gone
+PASS P14  an out-of-range slot renders an honest message rather than a crash or a blank screen ("PrepPrep planEverything to line up before you start cooking.No prep plan for thi")
+
+--- rendered prep screen (first 600 chars) ---
+PrepPrep planEverything to line up before you start cooking.Dinner 1 of 3Greek Sheet-Pan Chicken Thighs with Potatoes and Feta56 min total, 18 min hands-onPrep planIngredients to retrieveBoneless skinless chicken thighs1350 gRusset potatoes6 countLemons3 countGarlic cloves6 countOlive oil4.5 tbspDried oregano3 tspKosher saltTo tasteBlack pepperTo tasteOptionalFeta113 gFlat-leaf parsley3 tbspEquipment neededSheet panOvenMixing bowlTasks you can do earlierRusset potatoes — cut into wedgesGarlic cloves — mincedFeta — crumbledFlat-leaf parsley — choppedNeeds your full attention firstNo step in thi
+
+
+=== T-057 GATE: 12 passed, 1 failed, 1 not run ===
+failures:
+  - P9: every minutes string on screen comes from a server-sent label — HAND-FORMATTED: 418 min (server sent: 56 min total, 18 min hands-on | 18 min hands-on)
+not run:
+  - P11: no exact-quantity required ingredient shared a unit with a grocery line on this meal

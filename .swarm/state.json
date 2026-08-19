@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 22,
+  "cycle": 23,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -241,6 +241,20 @@
       "decision": "A RECYCLE cycle does not increment counters.consecutive_no_value. It stays at 1 (earned by cycle 21's failed T-038 gate) rather than rising to 2 at cycle 22.",
       "why": "The churn breaker exists to detect a TARGET thrashing - repeated attempts at value that produce none. A recycle cycle is conductor context hygiene mandated by hard rule 7 at cycles_since_recycle>=25; it dispatches no agent and attempts no item, so counting it as a failed attempt would corrupt the signal with the conductor's own bookkeeping. Concretely it would have tripped the >=2 forced work-type switch at cycle 23, banning a build wave for a reason that has nothing to do with the target. Recorded rather than applied silently because it is a deliberate deviation from the mechanical reading of cycle.md's churn-breaker sentence ('a cycle with no verified-value outcome increments it'), and a conductor loosening its own thrash detector should be auditable.",
       "cycle": 22
+    },
+    {
+      "id": "D-33",
+      "topic": "verification-method",
+      "cycle": 23,
+      "decision": "T-017 is CLOSED as done on a fresh 18-check conductor gate, of which 3 checks are recorded NOT RUN (unreachable by design) rather than passed or failed. The item is done at 15/15 of what is reachable, and REPORT.md must carry the 3 unreachable clauses as unverified surface.",
+      "why": "T-017 sat todo with attempts:1 for nine cycles on the strength of ONE cycle-14 failure (R21, raw rationals) that T-052 had already fixed at cycle 15 — nobody re-ran the item. Re-running it cost one cycle-slot of conductor time and closed a p1/H must-have that was gating T-021, T-024 and T-062. The three not-run checks are the honest part: two need catalog package data that does not exist (T-065) and one needs an inferred-inventory write path that D-2 deliberately cut (T-066). Rendering them as PASS would have been a fake gate; rendering them as FAIL would have blamed the screen for a data and scope gap it cannot fix. cycle.md step 6.5 says a check you could not run is reported as not-run, and this is what that looks like in practice."
+    },
+    {
+      "id": "D-34",
+      "topic": "scope-gap",
+      "cycle": 23,
+      "decision": "Package-size selection, estimate labelling and leftover/surplus optimisation are IMPLEMENTED IN THE ENGINE AND UNREACHABLE IN THE PRODUCT, because data/ingredients.json ships zero package options for all 97 ingredients. Filed as T-065 at priority 1.",
+      "why": "D-4 named package-size selection and leftover optimization as two of the three differentiators the prior-art scout found unoccupied across all five competitor products checked. packaging.ts implements both and is unit-tested; routes.ts encodes package_label, is_estimate and expected_surplus onto every grocery line. But the catalog has no package data, so a live 22-line grocery list measured this cycle had 0 estimated lines, 0 lines with surplus and null package labels throughout. The moat is written and switched off. This was invisible to every prior cycle because the unit tests supply their own package fixtures — only a gate driving the REAL catalog through the REAL server could see it, which is exactly why the conductor authors gates against live data rather than fixtures."
     }
   ],
   "known_issues": [
@@ -330,26 +344,30 @@
     }
   ],
   "counters": {
-    "consecutive_no_value": 1,
+    "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 0,
-    "window_tokens_attributed": 141578956
+    "wave_streak": 1,
+    "window_tokens_attributed": 411729
   },
   "qa": {
-    "last_look_cycle": 12,
+    "last_look_cycle": 23,
     "last_full_qa_cycle": null,
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 22,
-    "work": "RECYCLE cycle (cycles_since_recycle 24 -> 25, hard rule 7): no new work, handoff note, counter reset",
-    "outcome": "0 verified (by design - recycle dispatches nothing)",
-    "verified": [],
+    "n": 23,
+    "work": "build-wave (D-11 direct foreground/background Agent dispatch, 2 builders, disjoint scopes) + a third item closed by conductor verification alone",
+    "outcome": "3 verified (T-017, T-038, T-057) — the largest verified-value cycle of this run",
+    "verified": [
+      "T-017",
+      "T-038",
+      "T-057"
+    ],
     "failed": [],
-    "test_cmd": "not re-run this cycle - tree clean and unchanged since cycle 21 committed 391/391",
-    "gate": "n/a - no item gated",
-    "note": "last_cycle was stale at n=19 for two cycles (20 and 21 never wrote it); their journal blocks and commits f430990 / 5c3647f are the record of those cycles."
+    "test_cmd": "npm test → 394/394 pass, 0 fail (run by the conductor, not by an agent); npx tsc --noEmit clean",
+    "gate": "T-017 15/15 reachable + 3 unreachable-by-design (cycle-023-gate-T-017-rev2.mjs); T-038 13/14 + 4/4 wire reachability incl. 3 mutation kills (cycle-023-gate-T-038.mjs, -rev2.mjs); T-057 12/13 + 8/8 quantity addendum (cycle-023-gate-T-057.mjs, -p11.mjs). collision-scan: not applicable (no classic scripts — ES modules throughout).",
+    "note": "Three NEW findings came out of verification rather than out of a builder: T-065 (catalog ships zero package options, so package-size selection, estimate labelling and surplus are all dead code — two of D-4's three named differentiators are switched off), T-066 (confirmation questions unreachable by any user-facing path, a consequence of D-2), T-067 (prep screen renders \"Pause up to 418 minutes\"). None was visible to unit tests, because unit tests supply their own fixtures; only gates driving the REAL catalog through the REAL server could see them."
   },
-  "updated_at": "2026-08-19T08:46:35.000Z"
+  "updated_at": "2026-08-19T09:25:49.196Z"
 }

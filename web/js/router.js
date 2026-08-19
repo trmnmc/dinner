@@ -25,6 +25,7 @@ import { renderOnboarding } from './onboarding.js';
 import { renderCalibrate } from './calibrate.js';
 import { renderPlan } from './plan.js';
 import { renderGrocery } from './grocery.js';
+import { renderPrep } from './prep.js';
 import { renderCook } from './cook.js';
 import { renderFeedback } from './feedback.js';
 
@@ -56,7 +57,7 @@ const ROUTES = [
   { pattern: '/calibrate', render: renderCalibrate, label: 'Taste calibration' },
   { pattern: '/plan', render: renderPlan, label: 'Plan' },
   { pattern: '/grocery', render: renderGrocery, label: 'Grocery' },
-  { pattern: '/prep/:slot', render: notBuiltYet('Prep'), label: 'Prep' },
+  { pattern: '/prep/:slot', render: renderPrep, label: 'Prep' },
   { pattern: '/cook/:sessionId', render: renderCook, label: 'Cook' },
   { pattern: '/feedback/:planMealId', render: renderFeedback, label: 'Feedback' },
 ];

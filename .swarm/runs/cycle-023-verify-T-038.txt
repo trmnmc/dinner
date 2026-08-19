@@ -1,0 +1,32 @@
+=== T-038: the copy itself ===
+  n=1  → "The one recipe that could fill this slot is already in this plan."
+PASS G1  the ungrammatical "All 1 …" construction is gone
+PASS G2  the ungrammatical "1 recipe … is" construction is gone
+PASS G3  n=1 still says the thing it exists to say, as a full sentence
+PASS G4  subject/verb agreement holds in the n=1 sentence
+  pool=0 → "There are no other recipes in the catalog to offer for this slot right now — that's a catalog gap, not something about your preferences."
+PASS G5  the catalog-gap clause survives VERBATIM (mutant M2 from cycle 21 pinned this)
+PASS G6  the dead "0" count is gone — the validator proves pool_size can only be 0 here
+PASS G7  the arm now opens in plain English
+  n=2  → "All 2 recipes that could fill this slot are already in this plan."
+  n=3  → "All 3 recipes that could fill this slot are already in this plan."
+  n=7  → "All 7 recipes that could fill this slot are already in this plan."
+PASS G8  the n>1 string is byte-identical to the cycle-21 committed copy at n=2,3,7
+PASS G9  the untouched third arm still counts and still agrees (n=1 "1 recipe was available for this sl…", n=3 "3 recipes were available for this …")
+
+=== T-038: mutation kills (is the suite vacuous?) ===
+  mutant "M1 — restore the ungrammatical "All 1 recipe … is"": KILLED (1 failing test(s))
+PASS G10  reverting defect 1 breaks the suite — the n=1 fix is genuinely test-guarded, not decorative
+  mutant "M2 — restore the dead "0" count on the empty-pool arm": KILLED (2 failing test(s))
+PASS G11  reverting defect 2 breaks the suite
+  mutant "M3 — drop the catalog-gap reassurance clause": KILLED (2 failing test(s))
+PASS G12  deleting the catalog-gap clause breaks the suite (the clause is pinned, not incidental)
+PASS G13  reasons.ts is byte-identical after mutation testing
+
+=== T-038: does this copy reach a user? ===
+listening on http://127.0.0.1:37041
+FAIL G14  NOT EXERCISED — could not drive the live API into a no-alternatives outcome in 12 swap attempts
+
+=== T-038 GATE: 13 passed, 1 failed ===
+failures:
+  - G14: NOT EXERCISED — could not drive the live API into a no-alternatives outcome in 12 swap attempts
