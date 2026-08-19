@@ -22,7 +22,7 @@ import type { StartedServer } from '../server/src/main.ts';
 import { rational, eq } from '../domain/src/qty.ts';
 import { canonicalizeQuantity } from '../domain/src/units.ts';
 import type { IngredientQuantity, Unit } from '../domain/src/recipe.ts';
-import { renderActiveTimeLabel } from '../domain/src/reasons.ts';
+import { renderActiveTimeLabel, renderSwapNoAlternatives } from '../domain/src/reasons.ts';
 
 // ---------------------------------------------------------------------------
 // JSON navigation helpers (unknown, never any)
@@ -549,6 +549,19 @@ test('a genuinely SHORT (1-meal) plan, produced the way the product produces one
     // silent lie, and (this is the point of this test) not a 409 either.
     assert.equal(alternatives.length, 0);
     assert.equal(jStr(body['none_reason']), 'no_candidates_in_pool');
+    // T-038: the route delegates to reasons.ts's renderSwapNoAlternatives
+    // rather than a hardcoded, count-free sentence — this scenario's pool
+    // really is empty (comment above), so the rendered message must match
+    // the domain renderer called with pool_size 0, not some other literal.
+    assert.equal(
+      jStr(body['message']),
+      renderSwapNoAlternatives('no_candidates_in_pool', {
+        pool_size: 0,
+        already_in_plan: 0,
+        ineligible_for_reason: 0,
+        eligible: 0,
+      }).text,
+    );
   } finally {
     await stopTestServer(ts);
   }

@@ -1,0 +1,58 @@
+PASS H1  renderSwapNoAlternatives exported as a function
+        typeof = function
+PASS H2a  all_candidates_already_in_plan text moves with already_in_plan
+        n=2: All 2 recipes that could fill this slot are already in this plan.
+        n=7: All 7 recipes that could fill this slot are already in this plan.
+PASS H2b  no_candidate_satisfies_reason text moves with ineligible_for_reason
+        n=3: 3 recipes were available for this slot, and none of them deliver that reason.
+        n=9: 9 recipes were available for this slot, and none of them deliver that reason.
+PASS H3  all three outcomes render distinct sentences
+          [0] The catalog has 0 other recipes to offer for this slot right now — that's a catalog gap, not something about your preferences.
+          [1] All 2 recipes that could fill this slot are already in this plan.
+          [2] 3 recipes were available for this slot, and none of them deliver that reason.
+FAIL H4  no ungrammatical count/verb agreement in any reachable arm
+          already_in_plan n=1    All 1 recipe that could fill this slot is already in this plan.
+          already_in_plan n=2    All 2 recipes that could fill this slot are already in this plan.
+          already_in_plan n=5    All 5 recipes that could fill this slot are already in this plan.
+          no_satisfies n=1       1 recipe was available for this slot, and it doesn't deliver that reason.
+          no_satisfies n=2       2 recipes were available for this slot, and none of them deliver that reason.
+          no_satisfies n=5       5 recipes were available for this slot, and none of them deliver that reason.
+          empty_pool             The catalog has 0 other recipes to offer for this slot right now — that's a catalog gap, not something about your preferences.
+PASS H5  no exclamation marks / apology / blame language
+PASS H6  all 7 incoherent count combinations throw ReasonsError
+        7/7 threw
+PASS H7a  swap.ts still exports swapMeal
+PASS H8  ReasonFact union still has exactly 11 members (frozen contract intact)
+        11: matches_taste,quick_total_time,low_active_time,interruption_friendly,uses_owned_ingredients,shares_ingredients,budget_friendly,few_dishes,familiar_favourite,adjacent_novelty,leftover_friendly
+PASS H9  reasons.ts imports nothing from swap.ts (grep)
+        import type { Allergen, CostBand, DietaryTag, PreferenceAttribute, ReasonCode, RecoveryGuidance, Uuid } from './recipe.ts'; | import type { Rational } from './qty.ts'; | import { rational, roundNearestInt } from './qty.ts'; | import type { HardExclusionReason, RecipeExclusion } from './filters.ts';
+PASS H10a  routes.ts: private noAlternativesMessage deleted (grep)
+PASS H10b  routes.ts: the three old hardcoded sentences are gone (grep)
+PASS H10c  routes.ts: calls renderSwapNoAlternatives (grep)
+PASS H10d  plan.js: no longer carries a competing rendition of the server sentence (grep)
+
+GATE 13/14
+M1 no_candidate_satisfies_reason reports pool_size instead of ineligible_for_reason — the two differ whenever some candidates were already in the plan, so this is a real reporting lie.
+     reasons.test.ts -> RED (killed), fail=1
+     routes.test.ts  -> GREEN (no delegation coverage)
+
+M2 the empty-pool arm loses its "not your fault" clause — the one guilt-free guarantee the spec names for this outcome.
+     reasons.test.ts -> RED (killed), fail=1
+     routes.test.ts  -> GREEN (no delegation coverage)
+
+M3 the all_candidates_already_in_plan count is frozen to a constant — proves the committed suite pins substitution, not just the sentence shape.
+     reasons.test.ts -> RED (killed), fail=2
+     routes.test.ts  -> GREEN (no delegation coverage)
+
+source restored byte-identical: true
+call site: renderSwapNoAlternatives(swapResult.explanation, swapResult.counts).text
+
+M4 routes.ts reverts to the OLD hardcoded sentence (delegation broken):
+     routes.test.ts -> RED (killed) — delegation IS pinned
+✔ a 2-meal plan still returns real, populated alternatives over HTTP — the generalised route path actually ranks candidates, not just avoids 409 (86.35358ms)
+ℹ fail 1
+  + actual - expected
+    actual: 'There are no other eligible recipes to offer right now.',
+    expected: "The catalog has 0 other recipes to offer for this slot right now — that's a catalog gap, not something about your preferences.",
+
+source restored byte-identical: true

@@ -628,6 +628,144 @@ export function derivePlanShortfall(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Swap no-alternatives — WHY a swap slot has nothing to offer (T-038).
+//
+// `swapMeal` (swap.ts) already computes four honest counts — pool_size,
+// already_in_plan, ineligible_for_reason, eligible — specifically so this
+// copy can be countable rather than a bare "nothing to offer". Modelled on
+// `PlanShortfallExplanation` / `derivePlanShortfall` above: same shape of
+// API (a typed code plus rendered text), same voice, same level of rigor.
+//
+// This is a SEPARATE, parallel export — it does NOT extend `ReasonFact`
+// (that union is frozen against the eleven-member `ReasonCode` and its
+// `default: assertNever(fact)` arm; a twelfth member there is meant to be a
+// compile error, not a place to bolt this on).
+//
+// `swap.ts` already imports this module (`ReasonFact`,
+// `MAX_REASON_CODES_PER_MEAL`), so importing `SwapCounts` /
+// `SwapNoAlternativesCode` back from swap.ts would be a real module cycle.
+// The counts interface and code union are therefore declared locally here,
+// structurally — exactly as `PlanShortfallConstraint` is declared locally
+// rather than imported from filters.ts. swap.ts's own `SwapCounts` /
+// `SwapNoAlternativesCode` are structurally identical, so callers can pass
+// them straight through with no adapter and no import in either direction.
+// ---------------------------------------------------------------------------
+
+/** Structurally identical to swap.ts's `SwapCounts` — declared locally to
+ * avoid importing swap.ts from here (see module-cycle note above). */
+export interface SwapNoAlternativesCounts {
+  readonly pool_size: number;
+  readonly already_in_plan: number;
+  readonly ineligible_for_reason: number;
+  readonly eligible: number;
+}
+
+/** Structurally identical to swap.ts's `SwapNoAlternativesCode`. */
+export type SwapNoAlternativesCode =
+  | 'no_candidates_in_pool'
+  | 'all_candidates_already_in_plan'
+  | 'no_candidate_satisfies_reason';
+
+export interface SwapNoAlternativesExplanation {
+  readonly code: SwapNoAlternativesCode;
+  /** Rendered, ready-to-show copy — concrete, countable, guilt-free. */
+  readonly text: string;
+}
+
+/** Every combination below is checked against exactly how `swapMeal`
+ * derives `explanation` from these same four counts (swap.ts), not an
+ * invented constraint:
+ *
+ * - `eligible` is always 0 here: this renderer only ever covers the
+ *   "nothing to offer" outcome, and `swapMeal` only produces one of these
+ *   three codes when `eligible.length === 0`. A positive `eligible` count
+ *   paired with a no-alternatives code cannot arise honestly.
+ * - `already_in_plan + ineligible_for_reason + eligible === pool_size`:
+ *   the pool splits into "already in the plan" and "not in the plan", and
+ *   "not in the plan" splits again into "ineligible" and "eligible" — the
+ *   same two-step partition `swapMeal` performs, so the counts must sum
+ *   back to the pool they were partitioned from.
+ * - `no_candidates_in_pool` requires `pool_size === 0` — `swapMeal` only
+ *   picks this code when the pool itself was empty.
+ * - `all_candidates_already_in_plan` requires a non-empty pool fully
+ *   accounted for by `already_in_plan` (so `ineligible_for_reason === 0`)
+ *   — `swapMeal` only picks this code when every non-empty pool member was
+ *   already in the plan.
+ * - `no_candidate_satisfies_reason` requires `ineligible_for_reason > 0` —
+ *   `swapMeal` only picks this code when there was at least one candidate
+ *   not already in the plan that still failed the reason check.
+ */
+function validateSwapNoAlternativesCounts(code: SwapNoAlternativesCode, counts: SwapNoAlternativesCounts): void {
+  const pool_size = nonNegInt(counts.pool_size, 'pool_size');
+  const already_in_plan = nonNegInt(counts.already_in_plan, 'already_in_plan');
+  const ineligible_for_reason = nonNegInt(counts.ineligible_for_reason, 'ineligible_for_reason');
+  const eligible = nonNegInt(counts.eligible, 'eligible');
+  if (eligible !== 0) {
+    throw new ReasonsError(
+      'malformed_input',
+      `a no-alternatives outcome cannot have a positive eligible count, got ${String(eligible)}`,
+    );
+  }
+  if (already_in_plan + ineligible_for_reason + eligible !== pool_size) {
+    throw new ReasonsError(
+      'malformed_input',
+      `already_in_plan (${String(already_in_plan)}) + ineligible_for_reason (${String(ineligible_for_reason)}) + eligible (${String(eligible)}) must equal pool_size (${String(pool_size)})`,
+    );
+  }
+  if (code === 'no_candidates_in_pool' && pool_size !== 0) {
+    throw new ReasonsError(
+      'malformed_input',
+      `no_candidates_in_pool requires pool_size 0, got ${String(pool_size)}`,
+    );
+  }
+  if (code === 'all_candidates_already_in_plan' && (pool_size === 0 || ineligible_for_reason !== 0)) {
+    throw new ReasonsError(
+      'malformed_input',
+      `all_candidates_already_in_plan requires a non-empty pool fully accounted for by already_in_plan, got pool_size ${String(pool_size)}, ineligible_for_reason ${String(ineligible_for_reason)}`,
+    );
+  }
+  if (code === 'no_candidate_satisfies_reason' && ineligible_for_reason === 0) {
+    throw new ReasonsError(
+      'malformed_input',
+      'no_candidate_satisfies_reason requires a positive ineligible_for_reason count',
+    );
+  }
+}
+
+function renderSwapNoAlternativesSentence(code: SwapNoAlternativesCode, counts: SwapNoAlternativesCounts): string {
+  switch (code) {
+    case 'no_candidates_in_pool': {
+      const n = counts.pool_size;
+      return `The catalog has ${String(n)} other recipe${pluralS(n)} to offer for this slot right now — that's a catalog gap, not something about your preferences.`;
+    }
+    case 'all_candidates_already_in_plan': {
+      const n = counts.already_in_plan;
+      return `All ${String(n)} recipe${pluralS(n)} that could fill this slot ${n === 1 ? 'is' : 'are'} already in this plan.`;
+    }
+    case 'no_candidate_satisfies_reason': {
+      const n = counts.ineligible_for_reason;
+      const verdict = n === 1 ? "it doesn't deliver" : "none of them deliver";
+      return `${String(n)} recipe${pluralS(n)} ${n === 1 ? 'was' : 'were'} available for this slot, and ${verdict} that reason.`;
+    }
+    default:
+      return assertNever(code);
+  }
+}
+
+/** Render WHY a swap slot has nothing to offer, from the same honest counts
+ * `swapMeal` (swap.ts) computed. Throws `malformed_input` when the counts
+ * are incoherent with each other or with the code — see
+ * `validateSwapNoAlternativesCounts` for exactly which combinations are
+ * impossible and why. */
+export function renderSwapNoAlternatives(
+  code: SwapNoAlternativesCode,
+  counts: SwapNoAlternativesCounts,
+): SwapNoAlternativesExplanation {
+  validateSwapNoAlternativesCounts(code, counts);
+  return { code, text: renderSwapNoAlternativesSentence(code, counts) };
+}
+
 // Re-exported so callers needn't import qty.ts just to hand this module a
 // Rational-typed input in the future without a second arithmetic path.
 export type { Rational };

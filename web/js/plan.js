@@ -598,7 +598,12 @@ export function renderPlan(container, params) {
         createEmptyState({
           iconName: 'info',
           title: 'No alternatives right now',
-          message: message || 'No other recipe satisfies that reason right now.',
+          // The server always sends `message` for this outcome, rendered
+          // from the real counts (domain/src/reasons.ts). This fallback is
+          // only reachable for a malformed/missing response and is
+          // deliberately generic — it must never compete with the server's
+          // countable copy by guessing at a reason.
+          message: message || 'Could not determine why there are no alternatives right now.',
         }),
         h('button', { type: 'button', class: 'btn btn--secondary', onClick: drawReasonPicker }, [
           'Choose a different reason',

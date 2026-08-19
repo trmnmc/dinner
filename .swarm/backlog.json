@@ -1217,14 +1217,17 @@
       ],
       "files_hint": [
         "domain/src/reasons.ts",
-        "tests/reasons.test.ts"
+        "server/src/routes.ts",
+        "web/js/plan.js",
+        "tests/reasons.test.ts",
+        "tests/routes.test.ts"
       ],
       "acceptance": "When a swap can offer nothing, the user is told WHY in plain language — separately for an empty pool, for every candidate already being in the plan, and for no candidate satisfying the chosen reason — rather than seeing an empty list.",
       "packages": [],
       "model": "sonnet",
-      "attempts": 0,
+      "attempts": 1,
       "route_class": "core",
-      "notes": "Raised by the T-007 builder unprompted (cycle 11). swap.ts returns a typed SwapNoAlternativesCode (no_candidates_in_pool | all_candidates_already_in_plan | no_candidate_satisfies_reason) with honest pool counts, but reasons.ts — the SINGLE copy module — has no ReasonFact for \"nothing to offer\", so the code has no rendered copy. The plan screen (T-016) needs this; without it a swap that legitimately has no answer looks like a bug. reasons.ts is a frozen module, so this is a deliberate small unfreeze, not a refactor."
+      "notes": "Raised by the T-007 builder unprompted (cycle 11). swap.ts returns a typed SwapNoAlternativesCode (no_candidates_in_pool | all_candidates_already_in_plan | no_candidate_satisfies_reason) with honest pool counts, but reasons.ts — the SINGLE copy module — has no ReasonFact for \"nothing to offer\", so the code has no rendered copy. The plan screen (T-016) needs this; without it a swap that legitimately has no answer looks like a bug. reasons.ts is a frozen module, so this is a deliberate small unfreeze, not a refactor. | CYCLE 21: RE-SCOPED and PARTIALLY LANDED, gate FAILED 13/14. The item's premise was stale: routes.ts had grown a private noAlternativesMessage() with three hardcoded count-free sentences and plan.js carried a fourth copy of one of them, so the user was already told something — just in the wrong layer, in triplicate, throwing away all four SwapCounts. Landed (committed, suite green 391/391): renderSwapNoAlternatives() in reasons.ts declaring its counts/code shape locally (no swap.ts import — swap.ts already imports reasons.ts, so the back-import would be a real cycle), routes.ts delegating, plan.js fallback demoted to a generic failure line, 14 new tests. FAILS ON: all_candidates_already_in_plan at n=1 renders \"All 1 recipe that could fill this slot is already in this plan.\" — ungrammatical, reachable (validation permits pool_size=1 fully already-in-plan, and a 6-recipe catalog with dietary filtering hits it), and user-visible in exactly the outcome this item exists to word. Fix is the n===1 branch only; do not touch the n>1 strings, which the committed tests pin. SECOND, smaller nit to fix in the same pass: the empty-pool arm renders \"The catalog has 0 other recipes to offer\" — the 0 is countable but stilted, and validation proves that count can only ever be 0, so the substitution is decorative; \"There are no other recipes in the catalog to offer for this slot right now\" says the same thing in plain English. Keep the \"that's a catalog gap, not something about your preferences\" clause (mutant M2 pins it)."
     },
     {
       "id": "T-039",

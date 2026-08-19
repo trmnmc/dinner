@@ -64,7 +64,7 @@ import { CALIBRATION_CONFIG, selectCalibrationCards } from '../../domain/src/cal
 import { applyCalibrationReaction, applyFeedbackEvent, mergeSignal } from '../../domain/src/preferences.ts';
 import type { PreferenceSignalUpdate } from '../../domain/src/preferences.ts';
 import { SWAP_CONFIG, SWAP_RANK_TERM_NAMES, familiarityOf, swapMeal } from '../../domain/src/swap.ts';
-import type { SwapAlternative, SwapMealInput, SwapNoAlternativesCode, SwapRankBreakdown } from '../../domain/src/swap.ts';
+import type { SwapAlternative, SwapMealInput, SwapRankBreakdown } from '../../domain/src/swap.ts';
 import { aggregateRequirements } from '../../domain/src/aggregate.ts';
 import { subtractInventory } from '../../domain/src/inventoryMath.ts';
 import { selectPackages } from '../../domain/src/packaging.ts';
@@ -84,6 +84,7 @@ import {
   derivePlanShortfall,
   renderActiveTimeLabel,
   renderMealReasons,
+  renderSwapNoAlternatives,
   renderTotalActiveTime,
   renderTotalActiveTimeFor,
 } from '../../domain/src/reasons.ts';
@@ -863,12 +864,6 @@ function handleGetCurrentPlan(deps: Deps, ctx: JsonRouteContext): RouteResult {
 // Route: POST /api/plans/:planId/meals/:slot/swap
 // ---------------------------------------------------------------------------
 
-function noAlternativesMessage(code: SwapNoAlternativesCode): string {
-  if (code === 'no_candidates_in_pool') return 'There are no other eligible recipes to offer right now.';
-  if (code === 'all_candidates_already_in_plan') return 'Every eligible recipe is already in this plan.';
-  return 'No other recipe satisfies that reason right now.';
-}
-
 function encodeSwapRankBreakdown(rank: SwapRankBreakdown): Record<string, unknown> {
   const terms: Record<string, unknown> = {};
   for (const name of SWAP_RANK_TERM_NAMES) {
@@ -979,7 +974,11 @@ function handleSwap(deps: Deps, ctx: JsonRouteContext): RouteResult {
     if (swapResult.kind === 'no_alternatives') {
       return {
         status: 200,
-        body: { alternatives: [], none_reason: swapResult.explanation, message: noAlternativesMessage(swapResult.explanation) },
+        body: {
+          alternatives: [],
+          none_reason: swapResult.explanation,
+          message: renderSwapNoAlternatives(swapResult.explanation, swapResult.counts).text,
+        },
       };
     }
     const alternatives = swapResult.alternatives.map((alt) => encodeSwapAlternative(alt, slot, frozenMeals, aux));

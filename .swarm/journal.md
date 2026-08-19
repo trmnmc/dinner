@@ -3337,3 +3337,145 @@ runfile-mirror:
 - pick: **T-038** (S, fix, sonnet) — swap no-alternatives copy. RE-SCOPED, see below.
 - single foreground Agent (headless -p session: Workflow is review-gated, cycle.md
   failure-table fallback), sonnet, wave of 1 per the gear cap.
+
+
+## cycle 21 — T-038 swap no-alternatives copy → GATE FAILED 13/14, work landed anyway
+
+work: **build-wave, k=1** (gear-1 cap). Single foreground sonnet Agent — headless `-p`
+session, so Workflow is review-gated and the cycle.md failure-table fallback applies.
+
+### the item was stale — say so before claiming anything
+
+T-038 was filed at cycle 11 as *"a swap that legitimately has no answer looks like a bug"*:
+swap.ts returns a typed `SwapNoAlternativesCode`, and reasons.ts — the single copy module —
+had no copy for it. **That premise no longer held.** Reading the code before dispatch:
+`server/src/routes.ts:866` had grown a private `noAlternativesMessage()` with three
+hardcoded, count-free sentences, and `web/js/plan.js:596` `drawNoAlternatives` carried a
+FOURTH copy of one of them as a fallback. So the user was already being told something.
+
+The real defect, re-scoped and dispatched as such: the copy lives **outside the single copy
+module, in triplicate**, and throws away every one of the four `SwapCounts`
+(`pool_size`, `already_in_plan`, `ineligible_for_reason`, `eligible`) that swap.ts computes
+*specifically so this copy can be countable* — against a locked taste rule that says
+"concrete countable copy". files_hint widened from 2 files to 5 to cover the delegation.
+Wave of 1, so no disjointness cost.
+
+### what landed (committed, suite green — but the item is NOT done)
+
+- `renderSwapNoAlternatives(code, counts)` in reasons.ts, modelled on the existing
+  `PlanShortfallExplanation` machinery. Counts interface + code union declared **locally**,
+  structurally: swap.ts already imports reasons.ts (`ReasonFact`,
+  `MAX_REASON_CODES_PER_MEAL`), so importing back would be a real module cycle.
+- `ReasonFact` NOT extended — still exactly 11 members, `assertNever` arm intact (H8).
+- routes.ts delegates; `noAlternativesMessage` deleted; plan.js fallback demoted to a
+  generic failure line instead of a competing rendition.
+- 14 new tests. Full suite **391/391**, `tsc --noEmit` clean — **run by me**, not reported.
+
+### VERIFICATION EVIDENCE — conductor gate, authored at verification time
+
+```
+PASS H2a  all_candidates_already_in_plan text moves with already_in_plan
+        n=2: All 2 recipes that could fill this slot are already in this plan.
+        n=7: All 7 recipes that could fill this slot are already in this plan.
+PASS H3   all three outcomes render distinct sentences
+FAIL H4   no ungrammatical count/verb agreement in any reachable arm
+          already_in_plan n=1    All 1 recipe that could fill this slot is already in this plan.
+          already_in_plan n=2    All 2 recipes that could fill this slot are already in this plan.
+          no_satisfies   n=1     1 recipe was available for this slot, and it doesn't deliver that reason.
+          empty_pool             The catalog has 0 other recipes to offer for this slot right now — ...
+PASS H6   all 7 incoherent count combinations throw ReasonsError    7/7 threw
+PASS H8   ReasonFact union still has exactly 11 members (frozen contract intact)
+PASS H10a/b/c/d  noAlternativesMessage deleted; 3 old sentences gone; renderer called; plan.js clean
+GATE 13/14
+```
+
+Mutation, non-vacuity (`runs/c021-mutate.mjs`, `c021-mutate2.mjs`):
+
+```
+M1 no_candidate_satisfies_reason reports pool_size instead of ineligible_for_reason
+     reasons.test.ts -> RED (killed), fail=1
+M2 empty-pool arm loses its "not your fault" clause
+     reasons.test.ts -> RED (killed), fail=1
+M3 already_in_plan count frozen to a constant
+     reasons.test.ts -> RED (killed), fail=2
+M4 routes.ts reverts to the OLD hardcoded sentence (delegation broken)
+     routes.test.ts -> RED (killed) — delegation IS pinned
+    actual:   'There are no other eligible recipes to offer right now.'
+    expected: "The catalog has 0 other recipes to offer for this slot right now — ..."
+```
+
+Full output: `.swarm/runs/cycle-021-verify-T-038.txt`.
+
+**A correction to my own first reading of M1–M3:** all three left `routes.test.ts` GREEN, and
+I nearly journaled that as "the delegation test is vacuous — it reads the renderer back the
+way T-031's penalty test reads the engine back". It is not the same bug. That test compares
+the wire `message` to `renderSwapNoAlternatives()` output, so it is deliberately
+copy-agnostic (copy is pinned in reasons.test.ts) while pinning the property it exists for.
+M4 mutated the delegation itself and killed it over real HTTP. Claim withdrawn before it
+became a finding.
+
+### T-038 → todo, attempts 1. NOT done.
+
+`all_candidates_already_in_plan` at n=1 renders **"All 1 recipe that could fill this slot is
+already in this plan."** That is reachable — the validator permits `pool_size` 1 fully
+accounted for by `already_in_plan`, and a 6-recipe catalog under dietary filtering gets
+there easily — and it is user-visible in precisely the outcome this item exists to word. The
+acceptance is "told WHY **in plain language**". "All 1 recipe" is not plain language.
+
+13 of 14 passing and all the architecture delivered is not a reason to open the gate. The
+honest disposition is: keep the work (green, strictly better than the triplicated status
+quo, and hard rule 4 is satisfied — 391/391), and leave the item **todo with attempts 1**
+and the exact one-line fix named in its notes. Marking it done would be recording an item as
+verified whose own acceptance clause fails.
+
+Routing: attempts ≥ 1 escalates one rung sonnet→opus; gear 1 `demote:true` drops it back —
+net **sonnet**, recorded rather than silently cancelled.
+
+### not run, stated as not run
+
+- **No qa-verify look pass — seventh cycle.** `qa.last_look_cycle` stays **12**. This cycle
+  DID touch a user-visible file (`web/js/plan.js`), so the post-merge look pass genuinely
+  applied and I skipped it: look/taste are judgment seats, exempt from demotion, so a look
+  pass costs fable — with the window at 100% of weekly and opus quota and depletion clocked
+  at 07:59:45Z, that is the wrong spend. The plan.js edit is a one-string fallback that only
+  renders on a malformed response; my gate proves the string is gone by grep, not by render.
+  Four screens shipped since cycle 12 remain unlooked-at. Tracked as **T-061** — still the
+  largest unverified surface in this run and the headline of the morning report.
+- **No real browser, ever, in this run.** DOM shim + HTTP only.
+- **H10a–H10d are greps**, labelled as such in the gate. The delegation they describe is
+  proven by execution separately (M4), over real HTTP.
+- **Client JS still typechecks nothing** (KI-11 / T-054). plan.js was edited this cycle and
+  `web/**` is still outside tsconfig, so that edit is unverified by any typechecker.
+- `swarm-notify.sh poll` was DENIED by the permission layer. Non-fatal per cycle.md step 2;
+  applied from the file only — `runs/control.json` pending `[]`, applied `[]`, no inject
+  array. Nothing was pending, so nothing was missed, but the ntfy channel is unread this
+  cycle and would not have surfaced a `stop`.
+
+### bookkeeping
+
+wave autotune: **not clean** (1 failed verify, 0 reverts) and not the ≥2-failure case →
+"any other outcome": `wave_streak` = 0, `k_current` unchanged at 5. The gear-1 cap of 1 binds
+regardless. burn attribution: window_tokens 135,031,842 vs 121,884,803 last cycle, delta
+**+13,147,039** credited to cycle 20's target. `consecutive_no_value` 0 → **1** — the cycle
+produced committed value but no item reached done, and the counter tracks verified items, not
+effort. Below the ≥2 forced-switch threshold, so cycle 22 may build again.
+Backlog **24 done / 32 todo / 1 blocked — 33 live, 7 dropped, 64 filed**. Unchanged: T-038
+went back to the same todo it came from.
+
+result: **T-038 gate FAILED 13/14 and stays todo. The copy module now owns the swap
+no-alternatives copy, countably, with delegation proven over HTTP — but it ships one
+ungrammatical sentence at n=1, so it is not done.** Still TWENTY-FOUR verified of 64 filed.
+
+next: **finish T-038** — one `n === 1` branch in `renderSwapNoAlternativesSentence`, plus the
+"0 other recipes" → plain-English rewrite noted in the item. It is the cheapest verified item
+available and it is half-built. Then, still S-effort and still gear-1 shaped: **T-064**
+(unpin the brittle catalog assertion — before any recipe batch), then the drift pins
+T-031/T-032/T-033/T-035. The 09:00Z reset is ~55 min out; the first cycle after it gets a
+fresh window with ~3h to stop_at 12:00Z, and if the weekly governor's ceiling of 2 lifts at
+all, the order is **T-017** (grocery ledger — it alone unblocks T-021, T-024, T-062) then
+**T-057** (prep screen). If the governor holds, the run ends with the API proven and roughly
+half the screens never looked at, and the report will say exactly that.
+runfile-mirror:
+```json
+{"version": 1, "run_label": "dinner-2026-08-18", "targets": [{"path": "/opt/targets/dinner", "status": "active", "weight": 1}], "rotation_cursor": 0, "rotation_schedule": [0], "stop_at": "2026-08-19T12:00:00+00:00", "usage_reset_at": "2026-08-19T09:00:00+00:00", "model_policy": "value-routing", "auth_mode": "subscription", "pacing": {"mode": "thermostat", "dial": 1}, "heartbeat": {"ts": 1787126436, "next_wakeup_at": 1787129136, "pid": 2447347, "limp": false, "degraded_tiers": []}, "watchdog": {"mode": "normal", "plist_loaded": true, "lockfile": "/opt/swarm/runs/watchdog.lock", "relaunch_attempts": 0}, "caffeinate_pid": 0, "wrap_up_complete": false, "cycles_since_recycle": 24, "artifact": {"file": "/opt/swarm/runs/dashboard.html", "publish_failures": 0}}
+```

@@ -19,10 +19,11 @@ import {
   renderMealReasons,
   renderReason,
   renderRecoveryGuidance,
+  renderSwapNoAlternatives,
   renderTotalActiveTime,
   renderTotalActiveTimeFor,
 } from '../domain/src/reasons.ts';
-import type { ReasonFact } from '../domain/src/reasons.ts';
+import type { ReasonFact, SwapNoAlternativesCounts } from '../domain/src/reasons.ts';
 
 // ---------------------------------------------------------------------------
 // The shared total-vs-active time renderer — DoD 6.
@@ -386,4 +387,140 @@ test('fabrication guard: renderRecoveryGuidance never produces text absent from 
   const absent = renderRecoveryGuidance({ kind: 'none_available' });
   assert.equal(absent, NO_RECOVERY_GUIDANCE_TEXT);
   assert.notEqual(absent, instructionText);
+});
+
+// ---------------------------------------------------------------------------
+// renderSwapNoAlternatives — T-038: WHY a swap slot has nothing to offer,
+// from the same honest counts swap.ts's `swapMeal` computes. Expected
+// strings below are literals, hand-computed from the fixture counts, same
+// discipline as the ReasonCode literals above.
+// ---------------------------------------------------------------------------
+
+test('renderSwapNoAlternatives: no_candidates_in_pool — empty pool, honest catalog-gap framing', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 0, already_in_plan: 0, ineligible_for_reason: 0, eligible: 0 };
+  const out = renderSwapNoAlternatives('no_candidates_in_pool', counts);
+  assert.equal(out.code, 'no_candidates_in_pool');
+  assert.equal(
+    out.text,
+    "The catalog has 0 other recipes to offer for this slot right now — that's a catalog gap, not something about your preferences.",
+  );
+});
+
+test('renderSwapNoAlternatives: all_candidates_already_in_plan — plural count', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 3, already_in_plan: 3, ineligible_for_reason: 0, eligible: 0 };
+  const out = renderSwapNoAlternatives('all_candidates_already_in_plan', counts);
+  assert.equal(out.code, 'all_candidates_already_in_plan');
+  assert.equal(out.text, 'All 3 recipes that could fill this slot are already in this plan.');
+});
+
+test('renderSwapNoAlternatives: all_candidates_already_in_plan — singular count gets singular grammar', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 1, already_in_plan: 1, ineligible_for_reason: 0, eligible: 0 };
+  const out = renderSwapNoAlternatives('all_candidates_already_in_plan', counts);
+  assert.equal(out.text, 'All 1 recipe that could fill this slot is already in this plan.');
+});
+
+test('renderSwapNoAlternatives: no_candidate_satisfies_reason — says how many were looked at and ruled out', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 6, already_in_plan: 2, ineligible_for_reason: 4, eligible: 0 };
+  const out = renderSwapNoAlternatives('no_candidate_satisfies_reason', counts);
+  assert.equal(out.code, 'no_candidate_satisfies_reason');
+  assert.equal(out.text, '4 recipes were available for this slot, and none of them deliver that reason.');
+});
+
+test('renderSwapNoAlternatives: no_candidate_satisfies_reason — singular count gets singular grammar', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 1, already_in_plan: 0, ineligible_for_reason: 1, eligible: 0 };
+  const out = renderSwapNoAlternatives('no_candidate_satisfies_reason', counts);
+  assert.equal(out.text, "1 recipe was available for this slot, and it doesn't deliver that reason.");
+});
+
+test('renderSwapNoAlternatives: every rendered sentence carries at least one digit (voice: concrete and countable)', () => {
+  const fixtures: readonly [import('../domain/src/reasons.ts').SwapNoAlternativesCode, SwapNoAlternativesCounts][] = [
+    ['no_candidates_in_pool', { pool_size: 0, already_in_plan: 0, ineligible_for_reason: 0, eligible: 0 }],
+    ['all_candidates_already_in_plan', { pool_size: 2, already_in_plan: 2, ineligible_for_reason: 0, eligible: 0 }],
+    ['no_candidate_satisfies_reason', { pool_size: 2, already_in_plan: 0, ineligible_for_reason: 2, eligible: 0 }],
+  ];
+  for (const [code, counts] of fixtures) {
+    const text = renderSwapNoAlternatives(code, counts).text;
+    assert.match(text, /\d/, `${code} rendered no digit: "${text}"`);
+    assert.ok(text.endsWith('.'), `${code} did not render a full sentence`);
+  }
+});
+
+test('renderSwapNoAlternatives: no banned guilt/marketing phrase in the rendered corpus', () => {
+  const corpus = [
+    renderSwapNoAlternatives('no_candidates_in_pool', { pool_size: 0, already_in_plan: 0, ineligible_for_reason: 0, eligible: 0 }).text,
+    renderSwapNoAlternatives('all_candidates_already_in_plan', { pool_size: 2, already_in_plan: 2, ineligible_for_reason: 0, eligible: 0 })
+      .text,
+    renderSwapNoAlternatives('no_candidate_satisfies_reason', { pool_size: 2, already_in_plan: 0, ineligible_for_reason: 2, eligible: 0 })
+      .text,
+  ]
+    .join(' \n ')
+    .toLowerCase();
+  for (const phrase of BANNED_PHRASES) {
+    assert.ok(!corpus.includes(phrase.toLowerCase()), `banned phrase "${phrase}" found in swap no-alternatives copy`);
+  }
+});
+
+test('renderSwapNoAlternatives: rejects a positive eligible count on a no-alternatives outcome', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 1, already_in_plan: 0, ineligible_for_reason: 0, eligible: 1 };
+  assert.throws(
+    () => renderSwapNoAlternatives('no_candidates_in_pool', counts),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
+});
+
+test('renderSwapNoAlternatives: rejects counts that do not sum back to pool_size', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 5, already_in_plan: 1, ineligible_for_reason: 1, eligible: 0 };
+  assert.throws(
+    () => renderSwapNoAlternatives('no_candidate_satisfies_reason', counts),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
+});
+
+test('renderSwapNoAlternatives: rejects no_candidates_in_pool paired with a non-empty pool', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 2, already_in_plan: 2, ineligible_for_reason: 0, eligible: 0 };
+  assert.throws(
+    () => renderSwapNoAlternatives('no_candidates_in_pool', counts),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
+});
+
+test('renderSwapNoAlternatives: rejects all_candidates_already_in_plan when some candidates were ineligible instead', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 3, already_in_plan: 2, ineligible_for_reason: 1, eligible: 0 };
+  assert.throws(
+    () => renderSwapNoAlternatives('all_candidates_already_in_plan', counts),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
+});
+
+test('renderSwapNoAlternatives: rejects all_candidates_already_in_plan against an empty pool (that combination is no_candidates_in_pool)', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 0, already_in_plan: 0, ineligible_for_reason: 0, eligible: 0 };
+  assert.throws(
+    () => renderSwapNoAlternatives('all_candidates_already_in_plan', counts),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
+});
+
+test('renderSwapNoAlternatives: rejects no_candidate_satisfies_reason when nothing was actually ineligible', () => {
+  const counts: SwapNoAlternativesCounts = { pool_size: 2, already_in_plan: 2, ineligible_for_reason: 0, eligible: 0 };
+  assert.throws(
+    () => renderSwapNoAlternatives('no_candidate_satisfies_reason', counts),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
+});
+
+test('renderSwapNoAlternatives: rejects negative or non-integer counts', () => {
+  assert.throws(
+    () => renderSwapNoAlternatives('no_candidates_in_pool', { pool_size: -1, already_in_plan: 0, ineligible_for_reason: 0, eligible: 0 }),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
+  assert.throws(
+    () =>
+      renderSwapNoAlternatives('all_candidates_already_in_plan', {
+        pool_size: 1.5,
+        already_in_plan: 1.5,
+        ineligible_for_reason: 0,
+        eligible: 0,
+      }),
+    (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input',
+  );
 });
