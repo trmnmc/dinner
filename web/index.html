@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Three Good Dinners</title>
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <noscript>Three Good Dinners needs JavaScript to run.</noscript>
+
+  <!-- router.js renders the current screen here. -->
+  <div id="app" role="main"></div>
+
+  <!-- Shared component portals (ui.js) — persist across route changes. -->
+  <div id="sheet-root"></div>
+  <div id="snackbar-root"></div>
+  <div id="aria-live-polite" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <div id="aria-live-assertive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+  <script type="module" src="/js/router.js"></script>
+</body>
+</html>
