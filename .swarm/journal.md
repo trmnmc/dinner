@@ -4842,3 +4842,32 @@ next: nothing. `wrap_up_complete = true`, no further wakeups.
 ```runfile-mirror
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"done","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787140619,"next_wakeup_at":0,"pid":2473692,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.79,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":95292044,"window_cost_usd":59.121212800000016,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":46454609,"projected_depletion_at":1787141542,"last_probe_ts":1787137849,"last_real_probe_ts":1787137849,"probe_failures":0,"probe_note":"Cycle 27 REAL probe, probe_ok true (plain-form invocation; the RUNFILE=... env-prefixed form is still DENIED by the harness, KI-1 family). window_tokens 86,225,926 -> 95,292,044 since the 09:00Z reset; rho 0.79 => gear_target 2 (the governor ceiling of 2 binds here, not rho), applied gear 2. Weekly governor still engaged: weekly 100% / opus 100% at week_elapsed 32.23% => heat 3.10, ceiling 2, promote blocked. Projected depletion 1787141542 (~12:12:22Z) now lands AFTER stop_at 12:00:00Z - burn fell from 53.99M/h to 46.45M/h, so the window is projected to survive the whole run. Cycle 27 is the last WORK cycle: the next wakeup clamps to 11:45:00Z, which is the WRAP_UP trigger.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":32.23,"weekly_heat":3.1,"opus_heat":3.1,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":true,"cycles_since_recycle":6,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+### cycle 28 footer — what the harness refused at wrap-up (recorded, not worked around)
+
+Three WRAP_UP steps were DENIED by the harness. None of them changes the run's outcome, and
+none was worked around by weakening anything (hard rule 5 holds to the last cycle):
+
+1. **`systemctl disable --now swarm-watchdog.timer` → "Interactive authentication required"**,
+   and the `sudo -n` form was denied too. The timer therefore stays armed. **This is safe and I
+   verified why rather than assuming it:** both the pacer and the watchdog check
+   `wrap_up_complete` FIRST, before they ever read `heartbeat.next_wakeup_at` —
+   `bin/swarm-pacer.sh:183` (`if [ "$(rf '.wrap_up_complete // false')" = "true" ]`, ahead of the
+   `NEXT=` read at line 229) and `bin/swarm-watchdog.sh:270`. The flag is now `true` and
+   `REPORT.md` exists, so both guards fire on both conditions. The timer will keep waking every
+   5 minutes and will exit immediately at the DONE guard. **For the morning:** disable the timer
+   by hand if you want the wakeups to stop entirely — it is cosmetic, not a risk of a stray cycle.
+2. **`bin/swarm-notify.sh send wrap-up` → DENIED** (KI-1 family). No wrap-up push was delivered.
+   The report and dashboard on disk are the truth; nothing reached the phone.
+3. **`git push` in the SWARM repo → "Please make sure you have the correct access rights"**.
+   The SWARM-side commit (4f10256 — playbook L-046, the L-020 archive, the final dashboard) is
+   durable locally and unpushed. The TARGET repo pushed cleanly: `35896c0..c040eb6 master`, plus
+   `v0.1-overnight` as a new tag on the remote.
+
+`caffeinate_pid` is 0 — Linux, none was ever spawned — so WRAP_UP step 9's identity-check-then-kill
+is a no-op by construction, not a skipped step.
+
+Control channel archived: `control.json` and `notify.log` → `*.1787140800`.
+
+FINAL: 27 work cycles + WRAP_UP · 82 commits · 35 of 73 items verified · suite 411/411 re-verified
+by the conductor at wrap-up · `wrap_up_complete = true` · no further wakeups.
