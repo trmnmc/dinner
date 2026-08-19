@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 13,
+  "cycle": 14,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -164,6 +164,20 @@
       "decision": "Gate rev1 failed 8 of 33. Seven were defects in the GATE, one was arithmetic I got wrong; all were proven so by a recorded read-only diagnostic (cycle-013-diag.mjs -> .swarm/runs/cycle-013-diagnostic.txt) BEFORE any check was edited. rev1 and its failing output are kept on disk beside rev2.",
       "why": "Five checks read body.shortfall when the API nests the plan at body.plan.shortfall - the response carried a completely correct, fully-derived explanation and my accessor could not see it. One check (A3b) asserted a 1200s active ceiling produces a partial plan; the catalog actually has THREE recipes at or under 1200s active (960/1080/1140), so a full plan was the right answer and my count was wrong - replaced with 1080s, which clears exactly two. One (A9) used a regex that spanned newlines and matched whole blocks of TypeScript source rather than string literals. One (A9b) searched for the literal \"hands-on limit\" in reasons.ts, but that phrase is COMPOSED at runtime from a code-dependent dimension word, so a correct implementation failed a literal search - replaced with the stronger exclusivity claim that the distinctive phrase appears in exactly one module. The rule this run keeps re-earning: the bar for editing a red check is a recorded diagnostic, never plausibility - and a gate whose checks never fail is not pointed at anything.",
       "cycle": 13
+    },
+    {
+      "id": "D-22",
+      "topic": "verification-method",
+      "decision": "Built a DOM shim (.swarm/runs/domshim.mjs) so web screens are EXECUTED under node against the live server and asserted on rendered text, replacing the source-grep gates used for every previous web item.",
+      "why": "A text gate cannot distinguish \"the file contains the word shortfall\" from \"the user sees the shortfall sentence\" - which is exactly the KI-7 residual cycle 13 left open. The shim was validated against the already-shipped onboarding.js BEFORE being used to judge new code (459 chars of real copy, 15 tappables), so a shim gap could not be mistaken for a product defect. It caught a severe defect no grep would have found: the grocery ledger printing raw rationals.",
+      "cycle": 14
+    },
+    {
+      "id": "D-23",
+      "topic": "process-failure",
+      "decision": "I wrote gate rev1 into the target working tree while the build wave was live. The T-016 builder found and ran it during development. All rev1 PASS results for T-016 are treated as contaminated and were discarded; rev2 was authored after code freeze and is the evidence of record.",
+      "why": "Hard rule 2 says builders never see the verify check, because an agent that knows the check can code to the check. Writing the gate into the shared tree mid-wave defeated that. The builder disclosed it unprompted, which is how it was caught. Fix for future cycles: author gates only after the wave returns, or hold them outside the target tree until then. rev1 and its output are preserved on disk as cycle-014-gate-rev1-CONTAMINATED.mjs.",
+      "cycle": 14
     }
   ],
   "known_issues": [
@@ -226,13 +240,27 @@
       "status": "open",
       "desc": "A constrained household dead-ends. handleSwap requires exactly three active meals, so a 1- or 2-meal plan (which today is what a time-limited household gets) returns 409 plan_incomplete forever with no way to change anything. Filed as T-045. Compounds KI-7: the users most likely to hit the empty/partial plan are exactly those who cannot then swap out of it.",
       "cycle": 12
+    },
+    {
+      "id": "KI-10",
+      "severity": "high",
+      "status": "open",
+      "desc": "The grocery list is not shoppable: quantities render as raw rationals such as \"Olive oil 44 12376473/25600000 ml\" and \"Honey 4 25176473/32000000 ml\". Ten such values on a 22-line list. Root cause is one call site (grocery.js calls formatQuantity without maxFracDigits). Filed as T-052. This is the only thing standing between the grocery ledger and done - the other 11 gate checks, including full DoD-5 traceability, pass.",
+      "cycle": 14
+    },
+    {
+      "id": "KI-11",
+      "severity": "medium",
+      "status": "open",
+      "desc": "No client JavaScript has ever been typechecked. tsconfig include is [domain,server,tests]; tsc --listFiles reports zero files under web/js. Every \"typecheck passes\" claim about a web file this run was true but vacuous. Filed as T-054.",
+      "cycle": 14
     }
   ],
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 1,
+    "wave_streak": 0,
     "window_tokens_attributed": 134227635
   },
   "qa": {
@@ -241,9 +269,16 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 13,
-    "work": "build-wave T-041 (honest empty/partial plan, sonnet) + T-042 (onboarding defaults, sonnet) - foreground agents",
-    "outcome": "2 VERIFIED done (conductor gate 40/40 after rev1 self-correction); suite 355/355 green, typecheck clean; KI-7 BLOCKER resolved with residual recorded; T-050/T-051 filed from builder-raised gaps; T-016 acceptance amended",
-    "commit": "da53613"
+    "n": 14,
+    "work": "build-wave T-016 (plan screen) + T-017 (grocery ledger)",
+    "outcome": "1 verified, 1 failed gate",
+    "verified": [
+      "T-016"
+    ],
+    "failed": [
+      "T-017"
+    ],
+    "test_cmd": "355/355 pass",
+    "gate": "rev2 28/29"
   }
 }

@@ -2147,3 +2147,159 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T04:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787113400,"next_wakeup_at":1787113490,"pid":2411190,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":3,"ratio":0.99,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":115684878,"window_cost_usd":116.51,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":25848234,"last_probe_ts":1787111900,"last_real_probe_ts":1787111900,"probe_failures":0,"weekly":{"ok":true,"weekly_used_pct":70,"opus_used_pct":76,"week_elapsed_pct":27.92,"weekly_heat":2.51,"opus_heat":2.72,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":15,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+---
+
+## cycle 14 — 2026-08-19T04:29Z → build-wave T-016 (plan screen) + T-017 (grocery ledger)
+
+gear 2 (ρ 0.99→1.18, gear_target 3, weekly governor ceiling 2 still binding: weekly 71.0% used
+at 28.27% week-elapsed, heat 2.51; opus heat 2.72, promote blocked). Window rolled at 04:00Z —
+new block 04:00–09:00Z, 15,446,681 of 130,591,250 used at probe time, burn 30.3M tok/h against a
+25.6M target. `bin/swarm-budget.sh` DENIED for the 10th consecutive cycle (KI-1) — probe run
+manually via `npx ccusage@latest blocks --json --token-limit max`, raw at `runs/cc-probe-c14.json`.
+
+Tree clean at orient. `swarm-notify.sh poll` succeeded; `control.json` pending empty, no injections.
+
+### the method changed this cycle (D-22)
+
+Every previous web-layer gate could only read client source as TEXT. That cannot tell
+*"the file contains the word `shortfall`"* from *"the user sees the shortfall sentence"* — which is
+precisely the KI-7 residual cycle 13 left open. So I wrote a DOM shim
+(`.swarm/runs/domshim.mjs`, ~470 lines) that **executes** the screens under node against a live
+server booted from the real entrypoint, and asserts on rendered text.
+
+I validated the shim against the already-shipped `onboarding.js` **before** using it to judge new
+code, so a shim gap could never be mistaken for a product defect:
+
+```
+RENDERED CHARS: 459
+TEXT: SetupYour householdA few taps, then three dinners you actually want.Household name…
+TAPPABLES: 15
+```
+
+### PROCESS FAILURE, mine (D-23)
+
+I wrote gate rev1 into the target working tree **while the wave was live**. The T-016 builder found
+it and ran it during development — it said so unprompted, which is the only reason I know. Hard
+rule 2 exists because an agent that knows the check can code to the check, so **every rev1 PASS for
+T-016 is contaminated and was discarded.** rev2 was authored after both builders finished and the
+code was frozen; it is the evidence of record. rev1 and its output are preserved unmodified as
+`cycle-014-gate-rev1-CONTAMINATED.mjs` / `cycle-014-verify-rev1-CONTAMINATED.txt`.
+Correction for future cycles: author gates only after the wave returns, or keep them outside the
+target tree until then.
+
+### rev1 also had vacuous passes — proven by diagnostic before any edit
+
+`cycle-014-diag.mjs` → `cycle-014-diagnostic.txt`, read-only, run before touching a single check:
+
+- **P19 passed with `0 slot(s) changed`.** A swap check that passes when no swap happened is not a
+  check. rev2 requires **exactly one** slot changed.
+- **P20 passed with `offered null`** because seven of my nine guessed swap-reason codes were
+  invalid and the API 400'd them. The real codes are in `domain/src/recipe.ts`
+  (`faster | less_hands_on | …`). rev2 reads them from source.
+- **P4** asserted the domain's `combined_label` appears verbatim in `textContent`. The diagnostic
+  proved `ui.js` renders `"26 min total16 min hands-on"` — separator dropped from the DOM, correct
+  in `aria-label`. P4 was testing a shared component's DOM detail, not DoD 6. Replaced with the
+  actual requirement; the `ui.js` defect is **filed (T-053), not papered over**.
+
+rev2 also stopped guessing which chip carries a reason: it wraps `fetch` and reads the reason the
+client actually puts **on the wire**, so the gate couples to the contract, not the builder's copy
+(`reason "faster"` → chip labelled `"Less time overall"`).
+
+### VERIFICATION EVIDENCE — gate rev2, conductor-run (`cycle-014-verify-wave.txt`)
+
+```
+PASS R3   DoD 6 — total and active both rendered, as distinct values, for every meal
+PASS R4   domain time_label reaches the accessible name verbatim for 3/3 meals
+PASS R6   fixture has a swap reason with real alternatives: faster (2 offered)
+PASS R8   swap flow reached an accept in 3 taps [Swap this dinner > Less time overall > Use this dinner]
+PASS R9   DoD 3 — at most three taps (took 3)
+PASS R11  server-side: EXACTLY one slot changed and it is the target (changed 1 [0], target 0)
+PASS R12  server-side: the other 2 meals are byte-identical after the swap (2 survive)
+PASS R13  screen shows the NEW meal after accepting (One-Pot Beef and Black Bean Picadillo Skillet)
+PASS R17  KI-7 — the empty plan renders the API's own explanation verbatim (1/1)
+PASS R23  DoD 5 — 29/29 line→recipe provenance links readable by a user
+PASS R25  inventory deduction readable for 2/2 deducted lines
+FAIL R21  no unreadable raw fractions on the ledger — found 10: 12376473/25600000, …
+pass 28 / 29
+```
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run)
+
+```
+ℹ tests 355
+ℹ pass 355
+ℹ fail 0
+```
+
+`node bin/collision-scan.mjs` → `applicable: false` (ES modules, no classic scripts). Recorded, not
+counted as a pass. All wired assets serve: `/js/plan.js`, `/js/grocery.js`, `/css/plan.css`,
+`/css/grocery.css` → 200.
+
+### T-016 → DONE. KI-7 is now closed at the UI layer.
+
+The thing cycle 13 could only prove about the API is now proven about the screen: an
+over-constrained household reads the API's own sentence, verbatim —
+
+> *"More than one constraint independently accounts for every excluded recipe here — changing just
+> one of them will still leave the others excluded."*
+
+Swap is a real three-tap accept with exactly one slot changed and the other two byte-identical.
+
+### T-017 → NOT DONE. 11 of 12, and the twelfth is the one that matters.
+
+Everything hard passed — all 7 sections, all 22 lines, **29/29 provenance links**, inventory
+deduction 2/2, user edits surviving regeneration. And the list is still not shoppable:
+
+```
+Honey 4 25176473/32000000 ml      Olive oil 44 12376473/25600000 ml
+```
+
+Ten such values on a 22-line list. No parent shops from that. Root cause is one call site —
+`formatQuantity` only rounds when passed `maxFracDigits`, and `grocery.js` omits it. Status → todo,
+`attempts` 1, escalated to opus per the ladder. Filed **KI-10 / T-052** with the exact fix and an
+explicit "do not rebuild the screen" note, so the next attempt is a formatting change, not a redo.
+
+### findings I derived from the code, not from an agent
+
+- **T-055** — inventory confirmation questions are **unreachable in the running product**. Only
+  `confidence: 'inferred'` generates one (`inventoryMath.ts` `isUsableConfidence`), but the sole
+  HTTP write path into inventory hardcodes `assumed_staple`. So T-017's "confirmation questions
+  surface inline" clause was verified against a **synthetic response** and is reported as
+  render-path evidence, never as live evidence.
+- **`is_estimate` is false on all 22 live lines** (`selectPackages` called with an empty options
+  array — the existing T-044), so its labelling was verified the same synthetic way, same caveat.
+
+### builder-raised findings, both confirmed by me before filing
+
+- **T-054 / KI-11** — `npm run typecheck` has **never checked any client JavaScript**. I confirmed
+  it myself: `npx tsc --noEmit --listFiles | grep -c "/web/js/"` → **0**. Both builders' "typecheck
+  passes" claims are true and vacuous for their own files. This is why the DOM-shim gate was the
+  only real evidence available this cycle.
+- **T-056** — swap accept-mode response omits `is_partial`/`is_empty`/`shortfall`; `plan.js`
+  documents a provably-safe client-side default.
+- **T-053** — the `ui.js` separator defect above.
+
+### bookkeeping
+
+Wave autotune: 0 reverts, 1 failed verify → mixed; `wave_streak` 1 → 0, `k_current` stays 5
+(gear cap 2 binds regardless). Burn attribution **skipped** — the window reset at 04:00Z, so the
+delta is negative. `consecutive_no_value` stays 0 (T-016 is real verified value).
+Backlog **17 done / 38 todo / 1 blocked of 56** — five new items filed this cycle; it is well over
+the ~30 live cap and cycle 15 owes it the hygiene pass (`cycle % 5 == 0`).
+
+result: **T-016 → done. T-017 → todo (attempts 1). SEVENTEEN verified of 56.**
+
+honest status. A parent can now open this app and see three real dinners, understand why each was
+chosen, and swap one in three taps without disturbing the others — end to end, in a browser, proven
+by execution rather than by inspection. The grocery list renders completely and traceably and is
+still unusable, for one formatting reason, and I would rather say that than call 11-of-12 done.
+Prep, cooking and feedback screens still do not exist.
+
+next: **T-052** (the fraction fix — small, high value, unblocks the grocery must-have) paired with
+**T-043** (prep scaling, KI-8) or **T-018** (feedback screen, S-effort). ~7h05m to stop_at 12:00Z.
+
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":16,"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

@@ -1,0 +1,52 @@
+listening on http://127.0.0.1:44211
+=== DIAG 1: renderTimeInfo — is the combined_label separator lost? ===
+  meal "Cold Sesame Tofu and Cucumber Salad"
+    API combined_label : "26 min total, 16 min hands-on"
+    rendered textContent: "26 min total16 min hands-on"
+    aria-label          : "26 min total, 16 min hands-on"
+    verbatim match      : false
+  meal "Japanese-Style Soy-Butter Egg Fried Rice"
+    API combined_label : "50 min total, 25 min hands-on"
+    rendered textContent: "50 min total25 min hands-on"
+    aria-label          : "50 min total, 25 min hands-on"
+    verbatim match      : false
+  meal "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta"
+    API combined_label : "56 min total, 18 min hands-on"
+    rendered textContent: "56 min total18 min hands-on"
+    aria-label          : "56 min total, 18 min hands-on"
+    verbatim match      : false
+
+=== DIAG 2: what the plan screen actually shows per meal ===
+  full text (1555 chars):
+  PlanYour planSwap any dinner in three taps — the other two never change.Dinner 1 of 3Cold Sesame Tofu and Cucumber Salad26 min total16 min hands-onLow effortLow-costNovel pick2 dishesInterruptionsSafe to pause anytimeFirst safe stop: step 1.Why this dinnerShares 5 ingredients with Japanese-Style Soy-Butter Egg Fried Rice.16 min hands-on out of 26 min total.26 min total, 16 min hands-on.IngredientsOn hand already: Soy Sauce, Honey.Shares ingredients with Japanese-Style Soy-Butter Egg Fried Rice and Greek Sheet-Pan Chicken Thighs with Potatoes and Feta.Swap this dinnerDinner 2 of 3Japanese-Style Soy-Butter Egg Fried Rice50 min total25 min hands-onMedium effortLow-costNovel pick4 dishesInterruptionsNeeds full attentionFirst safe stop: step 1.Why this dinnerShares 5 ingredients with Cold Sesame Tofu and Cucumber Salad.Low-cost ingredient list: 12 items.IngredientsOn hand already: Soy Sauce.S
+  Cold Sesame Tofu and Cucumber Salad: total 26 present=true, active 16 present=true
+  Japanese-Style Soy-Butter Egg Fried Rice: total 50 present=true, active 25 present=true
+  Greek Sheet-Pan Chicken Thighs with Potatoes and Feta: total 56 present=true, active 18 present=true
+
+=== DIAG 3: swap — which reasons actually have alternatives? ===
+  too_long               status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+  too_much_active_time   status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+  dont_fancy_it          status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+  too_expensive          status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+  too_many_dishes        status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+  had_recently           status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+  missing_ingredients    status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+  different_protein      status 200  alternatives=2
+  different_cuisine      status 400  alternatives={"error":{"code":"invalid_swap_reason","message":"reason must be one of the nine swap reas
+
+=== DIAG 4: swap sheet — what does the screen render after tap 1? ===
+  tap1 target: "Swap this dinner"
+  sheet text: Swap Cold Sesame Tofu and Cucumber SaladThe other two dinners stay exactly as they are.Less time overallLess hands-on timeFewer dishesCheaperMore familiarMore adventurousNo pastaDifferent proteinUse what I have
+  sheet tappables: "", "Less time overall", "Less hands-on time", "Fewer dishes", "Cheaper", "More familiar", "More adventurous", "No pasta", "Different protein", "Use what I have"
+
+=== DIAG 5: grocery — which deducted line is not surfacing? ===
+  2 deducted lines:
+    honey: deducted=10 ({"n":"10","d":"1"}) unit=ml
+      rounded2=10 present=false
+      rounded0=10 present=false
+      context: "kesFor Cold Sesame Tofu and Cucumber SaladTo tasteCondimentsHoney4 25176473/32000000 mlOlive oil44 11529419/32000000 mlRice vinegar29 9176473/16000000 mlSoy sauce39 1176473/8000000 mlToasted sesame oil34 16078437/3200000"
+    soy sauce: deducted=20 ({"n":"20","d":"1"}) unit=ml
+      rounded2=20 present=true
+      rounded0=20 present=true
+      context: "oil44 11529419/32000000 mlRice vinegar29 9176473/16000000 mlSoy sauce39 1176473/8000000 mlToasted sesame oil34 16078437/32000000 mlVegetable oil14 25176473/32000000 mlDairy EggsFeta75 gLarge eggs6 countUnsalted butter29 "
+  phrase probe: already-have=false

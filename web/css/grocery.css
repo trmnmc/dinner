@@ -1,0 +1,284 @@
+/* grocery.css — screen-specific styles for the grocery ledger (T-017).
+ *
+ * Everything reachable from app.css/tokens.css is reused as-is: .screen,
+ * .screen-header, .state-panel, .btn, .input, .field__label, .sheet,
+ * .snackbar, .back-link, .num, .text-secondary, .text-muted. This file only
+ * adds the ledger-specific structures app.css has no vocabulary for: the
+ * confirmation-questions strip, store-section groups, line rows with a
+ * checkbox + tap target, and the provenance drawer's internal layout.
+ * Every value below traces to a token in tokens.css — no raw hex, no raw
+ * px, no invented spacing constant.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Confirmation questions — surfaced inline, never buried in a drawer.    */
+/* There is no answer/edit action for these in the frozen contract, so    */
+/* this is read-only, honest information, not a false interactive strip.  */
+/* ---------------------------------------------------------------------- */
+
+.grocery-questions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+}
+
+.grocery-questions__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.grocery-questions__header .icon {
+  color: var(--color-accent);
+}
+
+.grocery-questions__title {
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.grocery-questions__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.grocery-questions__item {
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-body);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Store sections — receipt-style groups. The uppercase tracked header is */
+/* the one deliberate all-caps treatment on this screen (design guidance).*/
+/* ---------------------------------------------------------------------- */
+
+.grocery-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.grocery-section__title {
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  padding: 0 var(--space-1);
+}
+
+.grocery-section__list {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Line rows                                                              */
+/* ---------------------------------------------------------------------- */
+
+.grocery-line {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.grocery-line:last-child {
+  border-bottom: none;
+}
+
+.grocery-line__check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  flex: none;
+  cursor: pointer;
+}
+
+.grocery-line__checkbox {
+  width: var(--space-5);
+  height: var(--space-5);
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.grocery-line__body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target-min);
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-quick) var(--ease-out);
+}
+
+.grocery-line__body:hover {
+  background: var(--color-surface-raised);
+}
+
+.grocery-line__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.grocery-line__name {
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.grocery-line__meta {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grocery-line__qty {
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+  flex: none;
+}
+
+.grocery-line__body .icon {
+  flex: none;
+  width: var(--space-4);
+  height: var(--space-4);
+  color: var(--color-text-muted);
+  /* ui.js only ships a left-pointing chevron; rotate it to read as an
+   * "opens detail" affordance without touching the shared icon set. */
+  transform: rotate(180deg);
+}
+
+/* Checked state signalled by strikethrough + muted colour together, never
+ * colour alone. */
+.grocery-line[data-checked="true"] .grocery-line__name {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.grocery-line[data-checked="true"] .grocery-line__qty {
+  color: var(--color-text-muted);
+}
+
+.grocery-line--totaste .grocery-line__qty {
+  font-weight: var(--font-weight-regular);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Provenance drawer (sheet content)                                      */
+/* ---------------------------------------------------------------------- */
+
+.grocery-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.grocery-drawer__package {
+  font-size: var(--text-caption);
+  margin: 0;
+}
+
+.grocery-drawer__heading {
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+}
+
+.grocery-drawer__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.grocery-drawer__contribution {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-caption);
+}
+
+.grocery-drawer__contribution:last-child {
+  border-bottom: none;
+}
+
+.grocery-drawer__contribution-name {
+  color: var(--color-text);
+}
+
+.grocery-drawer__contribution-amount {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.grocery-drawer__stat {
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.grocery-drawer__edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.grocery-drawer__input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.grocery-drawer__input-row .input {
+  flex: 1;
+}
+
+.grocery-drawer__unit {
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.grocery-drawer__error {
+  font-size: var(--text-caption);
+  color: var(--color-danger);
+  margin: 0;
+}
+
+.grocery-drawer__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

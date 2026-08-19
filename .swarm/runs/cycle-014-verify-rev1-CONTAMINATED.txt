@@ -1,0 +1,55 @@
+listening on http://127.0.0.1:44927
+
+--- live ground truth: 3 meals, 7 sections, 22 lines ---
+
+=== T-016 plan screen ===
+PASS P0  web/js/plan.js exports renderPlan()
+PASS P1  screen rendered 1555 chars of text
+PASS P2  all 3 meal names rendered
+PASS P3  DoD 6 — both times present for every meal
+FAIL P4  domain time_label rendered verbatim for 1/3 meals
+PASS P5  <=3 domain reason texts rendered per meal
+PASS P6  effort "low" surfaced
+PASS P7  cost band "low" surfaced
+PASS P8  novelty/familiarity "novel" surfaced
+PASS P9  interruption profile surfaced (longest continuous 4 min)
+PASS P10  shared-ingredient relationship surfaced
+PASS P11  owned-ingredient signal surfaced
+PASS P12  KI-7 — empty plan renders the API's shortfall copy (1/1 sentences verbatim)
+PASS P13  empty plan is NOT a bare blank screen (526 chars)
+     rendered  : More than one constraint independently accounts for every excluded recipe here — changing just one of them will still leave the others excluded. Nothing fits yo
+PASS P14  partial plan renders the shortfall explanation (1/1)
+PASS P15  partial plan ALSO shows the 2 meals that fit (2 rendered)
+PASS P16  swap flow completed in 3 taps [Swap this dinner > Less time overall > Choose a different reason]
+PASS P17  DoD 3 — swap takes at most three taps (took 3)
+PASS P18  DoD 3 — the other 2 meals are visibly untouched (2 still shown)
+PASS P19  server-side: 0 slot(s) changed [] (target 0)
+PASS P20  API offers at most three alternatives (offered null)
+PASS P21  screen offers at most three alternatives (counted 1)
+PASS P22  plan.js does not hand-format minutes (domain copy is the single source)
+PASS P23  plan.js reads only fields the API actually returns
+
+=== T-017 grocery ledger ===
+PASS G0  web/js/grocery.js exports renderGrocery()
+PASS G1  grocery screen rendered 1046 chars
+PASS G2  all 7 store sections rendered
+PASS G3  all 22 lines rendered
+PASS G4  DoD 5 — every contributing recipe named for every line (29 contributions)
+PASS G5  fixture exercises 6 multi-recipe lines (the case the drawer exists for)
+FAIL G6  inventory deduction surfaced for 1/2 deducted lines
+PASS G7  server: a user edit survives list regeneration (patch 200, re-read {"n":"7","d":"1"})
+PASS G8  screen: the edited quantity (7) is what the user sees after regeneration
+PASS G9  the generated value (4.79) never overwrote the user column
+PASS G10  render path: an is_estimate line is plainly labelled "estimated" (synthetic response — no live line can set this until T-044)
+PASS G11  render path: an inventory confirmation question surfaces inline (synthetic response — unreachable live, see finding)
+PASS G12  ledger uses tabular numerals
+PASS G13  grocery.js reads only fields the API actually returns
+
+=== standing gates ===
+PASS S1  no-any is enforced by tsc, checked separately
+
+pass 37 / 39
+
+FAILURES:
+  - P4: domain time_label rendered verbatim for 1/3 meals
+  - G6: inventory deduction surfaced for 1/2 deducted lines

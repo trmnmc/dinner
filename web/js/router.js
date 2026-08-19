@@ -23,6 +23,8 @@ import { hasHouseholdId, hasCompletedCalibration } from './api.js';
 import { createEmptyState, h } from './ui.js';
 import { renderOnboarding } from './onboarding.js';
 import { renderCalibrate } from './calibrate.js';
+import { renderPlan } from './plan.js';
+import { renderGrocery } from './grocery.js';
 
 /**
  * @typedef {Object} Route
@@ -50,8 +52,8 @@ function notBuiltYet(label) {
 const ROUTES = [
   { pattern: '/onboarding', render: renderOnboarding, label: 'Onboarding' },
   { pattern: '/calibrate', render: renderCalibrate, label: 'Taste calibration' },
-  { pattern: '/plan', render: notBuiltYet('The plan screen'), label: 'Plan' },
-  { pattern: '/grocery', render: notBuiltYet('The grocery list'), label: 'Grocery' },
+  { pattern: '/plan', render: renderPlan, label: 'Plan' },
+  { pattern: '/grocery', render: renderGrocery, label: 'Grocery' },
   { pattern: '/prep/:slot', render: notBuiltYet('Prep'), label: 'Prep' },
   { pattern: '/cook/:sessionId', render: notBuiltYet('Cooking mode'), label: 'Cook' },
   { pattern: '/feedback/:planMealId', render: notBuiltYet('Feedback'), label: 'Feedback' },

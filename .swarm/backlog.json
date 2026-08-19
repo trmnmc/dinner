@@ -522,7 +522,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-001",
         "T-007",
@@ -543,7 +543,8 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "All time strings and reason copy come from the domain reasons/time-renderer module — never hand-rolled here (DoD 6 mechanism). Consume shared components from ui.js per the identity contract; do not create local variants. Builds against the wave-0 route contracts; any needed contract change is an emergency single-agent commit per the contract-drift rule. Cycle 13: shortfall copy is fully rendered by domain/src/reasons.ts — read it from the response, never re-word it here."
+      "notes": "All time strings and reason copy come from the domain reasons/time-renderer module — never hand-rolled here (DoD 6 mechanism). Consume shared components from ui.js per the identity contract; do not create local variants. Builds against the wave-0 route contracts; any needed contract change is an emergency single-agent commit per the contract-drift rule. Cycle 13: shortfall copy is fully rendered by domain/src/reasons.ts — read it from the response, never re-word it here.",
+      "verified_cycle": 14
     },
     {
       "id": "T-017",
@@ -570,9 +571,9 @@
       "dod": [
         5
       ],
-      "model": "sonnet",
-      "attempts": 0,
-      "notes": "Receipt/ledger treatment [steal C]: typography does the trust-building the traceability must-have exists for. User edits live in the separate column — the UI reads and preserves it, never writes generated values over it. Quantity edit gets an undo snackbar from ui.js, not a confirmation modal. Honest uncertainty: 'estimated' stated plainly."
+      "model": "opus",
+      "attempts": 1,
+      "notes": "Receipt/ledger treatment [steal C]: typography does the trust-building the traceability must-have exists for. User edits live in the separate column — the UI reads and preserves it, never writes generated values over it. Quantity edit gets an undo snackbar from ui.js, not a confirmation modal. Honest uncertainty: 'estimated' stated plainly. CYCLE 14: 11 of 12 conductor gate checks PASSED (all 7 sections + all 22 lines render; DoD 5 provenance 29/29 line->recipe links readable; inventory deduction 2/2; user edit survives regeneration and is displayed). The ONE failure is R21: quantities render as raw rationals, e.g. \"Olive oil 44 12376473/25600000 ml\". Root cause is a single call site - api.js formatQuantity() only rounds when passed {maxFracDigits}, and grocery.js omits it. Do NOT rebuild the screen; fix the formatting and re-run .swarm/runs/cycle-014-gate-rev2.mjs."
     },
     {
       "id": "T-018",
@@ -1484,6 +1485,123 @@
       ],
       "acceptance": "is_partial/is_empty and the shortfall explanation must be derived from the SAME instant. Today is_partial comes from the persisted meal count while the shortfall is recomputed against current household state, so if the household raises its ceiling after an empty plan, GET current can report is_partial true with shortfall null. Either persist the exclusions with the plan or derive both live.",
       "notes": "Raised unprompted by the T-041 builder; persisting exclusions was outside its file scope. Mirrors an existing documented GAP for reason-fact reconstruction. Low user impact today, real once settings are editable."
+    },
+    {
+      "id": "T-052",
+      "title": "Grocery quantities render as raw rationals a parent cannot shop from",
+      "kind": "fix",
+      "priority": 1,
+      "value": "H",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "web/js/grocery.js"
+      ],
+      "acceptance": "No quantity displayed on the grocery ledger contains a fraction with a denominator above 100 or a decimal longer than three places. Every amount is a number a person can act on at a shelf. Proven by cycle-014-gate-rev2.mjs check R21 going green without that check being altered.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [
+        "Consolidated grocery list"
+      ],
+      "dod": [
+        5
+      ],
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Conductor-found at cycle 14 by reading actual rendered output. api.js formatQuantity(q,{maxFracDigits:n}) already implements correct round-half-away-from-zero display rounding; grocery.js calls it without options and gets the exact mixed-fraction form. Pick the digits per dimension (ml/g whole numbers, count maybe 1dp) and state estimates honestly. Interacts with T-044: package options would make these numbers buyable rather than merely readable."
+    },
+    {
+      "id": "T-053",
+      "title": "renderTimeInfo drops the domain separator between total and active time",
+      "kind": "fix",
+      "priority": 3,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "web/js/ui.js"
+      ],
+      "acceptance": "The DOM text of renderTimeInfo with both fields present reads the same as the domain combined_label, separator included - not \"26 min total16 min hands-on\". Every screen that calls it (plan.js, calibrate.js) inherits the fix.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [],
+      "dod": [
+        6
+      ],
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Raised by the T-016 builder and CONFIRMED by conductor diagnostic at cycle 14 (.swarm/runs/cycle-014-diagnostic.txt DIAG 1: all 3 meals). aria-label is correct, and CSS gap makes it look fine, so this is not a blocker - but copy/paste, text extraction and any non-CSS rendering read the two times fused."
+    },
+    {
+      "id": "T-054",
+      "title": "tsconfig excludes web/**, so no client JavaScript has ever been typechecked",
+      "kind": "fix",
+      "priority": 2,
+      "value": "H",
+      "effort": "M",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "tsconfig.json",
+        "package.json"
+      ],
+      "acceptance": "npm run typecheck covers web/js/*.js with checkJs, or a second explicit script does, and the command fails on a real type error introduced there. Proven by tsc --listFiles including web/js files, which today returns zero.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [],
+      "dod": [
+        11
+      ],
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Raised by the T-017 builder and CONFIRMED by the conductor at cycle 14: `npx tsc --noEmit --listFiles | grep -c /web/js/` = 0. include is [domain,server,tests] and lib omits dom. Every claim of the form \"typecheck passes\" made about a web/js file this run - by any agent, including both cycle-14 builders - was true but vacuous. Expect a real error backlog on first enablement; that triage is the bulk of the effort."
+    },
+    {
+      "id": "T-055",
+      "title": "Inventory confirmation questions are unreachable in the running product",
+      "kind": "fix",
+      "priority": 3,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "server/src/routes.ts"
+      ],
+      "acceptance": "Some HTTP path can produce an inventory entry with confidence inferred, so GET grocery can return a non-empty confirmation_questions array for a real user. Until then the grocery screens confirmation strip is dead code.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [
+        "Confirmed-only inventory"
+      ],
+      "dod": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Conductor-derived at cycle 14 from the code, not from an agent: inventoryMath.ts isUsableConfidence treats confirmed and assumed_staple as usable, so ONLY confidence inferred generates a question - but the single HTTP write path into inventory (handleCreateHousehold assumed_staples) hardcodes assumed_staple. Verified live: confirmation_questions is empty for every household the API can create. T-017 render path was verified against a synthetic response instead, and reported as such."
+    },
+    {
+      "id": "T-056",
+      "title": "Swap accept response omits is_partial/is_empty/shortfall",
+      "kind": "fix",
+      "priority": 3,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "server/src/routes.ts",
+        "tests/routes.test.ts"
+      ],
+      "acceptance": "POST swap in accept mode returns the same plan envelope shape as GET /plans/current and POST /plans, including is_partial, is_empty and shortfall.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [],
+      "dod": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Raised by the T-016 builder: handleSwap accept mode builds its body via buildFullPlanView, which never attaches the three shortfall fields. plan.js defaults them client-side and documents why that is currently safe (a swap only runs against a complete 3-meal plan; the route 409s otherwise). Normalizing server-side removes the client workaround."
     }
   ]
 }

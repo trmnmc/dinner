@@ -1,0 +1,64 @@
+/* plan.css — screen-specific styles for plan.js, composed entirely from
+ * tokens.css custom properties (same rule app.css states: no raw hex, no
+ * raw px font-size, no magic spacing number). Everything that already had a
+ * home in app.css (.card, .card__eyebrow, .card__title, .card__meta,
+ * .chip-group, .badge, .btn, .state-panel, .stack) is reused as-is; only
+ * genuinely new structures get a class here.
+ */
+
+/* Meal-card body copy (owned/shared ingredients, safe-stop sentence) — same
+ * scale and colour as the rest of a card's secondary text. */
+.meal-card__body-text {
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+}
+
+/* The per-card "Swap this dinner" action is a full-width secondary button
+ * anchored at the bottom of its own card — never the one dominant
+ * bottom-anchored primary action (that stays reserved for "Continue to
+ * grocery list"), just sized for an easy one-handed tap under each card. */
+.meal-card__swap {
+  width: 100%;
+}
+
+/* Shortfall explanation banner (T-041 / KI-7 reaching the UI) — calm, not
+ * alarming: an honest fact about the plan, not an error. */
+.plan-shortfall {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+
+.plan-shortfall .icon {
+  color: var(--color-accent);
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Swap-sheet intro copy above the reason chips / alternatives list. */
+.swap-sheet__intro {
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+}
+
+/* Alternative cards inside the swap sheet — a smaller composition than a
+ * top-level plan card (nested one level deeper, in a modal), so a tighter
+ * radius and padding per the radius-scales-with-element-size rule
+ * (inputs < cards < sheets; this sits between card and input scale). */
+.swap-alt {
+  border-radius: var(--radius-control);
+  padding: var(--space-4);
+  gap: var(--space-3);
+}
+
+.swap-alt__title {
+  font-size: var(--text-body-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+}

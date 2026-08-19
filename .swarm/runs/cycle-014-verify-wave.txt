@@ -1,0 +1,44 @@
+listening on http://127.0.0.1:34043
+
+--- rev2 ground truth: 3 meals, 7 sections, 22 lines (household_size 5, adventurous) ---
+
+=== T-016 plan screen (rev2) ===
+PASS R1  renderPlan renders (1526 chars)
+PASS R2  all 3 meal names rendered
+PASS R3  DoD 6 — total and active both rendered, as distinct values, for every meal
+PASS R4  domain time_label reaches the accessible name verbatim for 3/3 meals
+PASS R5  <=3 domain reason texts rendered verbatim per meal
+PASS R6  fixture has a swap reason with real alternatives: faster (2 offered)
+PASS R7  API caps alternatives at three (offered 2)
+     [gate] reason "faster" is the chip labelled "Less time overall"
+PASS R8  swap flow reached an accept in 3 taps [Swap this dinner > Less time overall > Use this dinner]
+PASS R9  DoD 3 — at most three taps (took 3)
+PASS R10  screen offered at most three alternatives (counted 2)
+PASS R11  server-side: EXACTLY one slot changed and it is the target (changed 1 [0], target 0)
+PASS R12  server-side: the other 2 meals are byte-identical after the swap (2 survive)
+PASS R13  screen shows the NEW meal after accepting (One-Pot Beef and Black Bean Picadillo Skillet)
+PASS R14  screen no longer shows the swapped-out meal (Greek Sheet-Pan Chicken Thighs with Potatoes and Feta)
+PASS R15  plan.js does not hand-format minutes
+PASS R16  fixture produced a genuinely empty plan (is_empty=true)
+PASS R17  KI-7 — the empty plan renders the API's own explanation verbatim (1/1)
+     user reads: "More than one constraint independently accounts for every excluded recipe here — changing just one of them will still leave the others excluded. Nothi"
+
+=== T-017 grocery ledger (rev2) ===
+     [gate] grocery household: 7 sections, 22 lines
+PASS R18  renderGrocery renders (1078 chars)
+PASS R19  all 7 store sections rendered
+PASS R20  all 22 lines rendered
+FAIL R21  no unreadable raw fractions on the ledger — found 10: 12376473/25600000, 12376473/12800000, 5976473/6400000, 3278437/25600000, 1176473/1600000
+PASS R22  no unreadable long decimals
+PASS R23  DoD 5 — 29/29 line→recipe provenance links readable by a user
+PASS R24  6 multi-recipe lines exercised (the case the drawer exists for)
+PASS R25  inventory deduction readable for 2/2 deducted lines
+PASS R26  server: user edit survives regeneration ({"n":"13","d":"1"})
+PASS R27  screen: the user's edited 13 is displayed after regeneration
+PASS R28  the generated value (18.48) never overwrote the user column
+PASS R29  ledger uses tabular numerals
+
+pass 28 / 29
+
+FAILURES:
+  - R21: no unreadable raw fractions on the ledger — found 10: 12376473/25600000, 12376473/12800000, 5976473/6400000, 3278437/25600000, 1176473/1600000
