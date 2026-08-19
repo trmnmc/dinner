@@ -1,38 +1,42 @@
-# IN-FLIGHT MARKER — cycle 8
+# IN-FLIGHT MARKER — cycle 11
 
-Written at dispatch time (2026-08-19T00:2xZ, epoch ~1787098351) so a killed cycle is
-recoverable without diagnosis. Delete/overwrite at the next dispatch.
+Written at dispatch, BEFORE any builder ran. If you are reading this in a later session,
+cycle 11 died between dispatch and its journal block. Recover with the procedure below.
 
-## Wave
+- cycle: 11
+- dispatched_at: 2026-08-19T02:20Z (epoch ~1787105980)
+- work type: build-wave, 2 items, effective wave size min(k_current 5, gear cap 2) = 2
+- mechanism: **DIRECT FOREGROUND Agent calls** editing the MAIN working tree
+  (D-11 / KI-4 workaround). NO worktrees, NO builder branches, NO build-wave.js.
+  Both builders were forbidden to run any git command; the conductor commits.
 
-build-wave, effective k=2 (min(k_current 5, gear cap 2)). Mechanism: DIRECT FOREGROUND
-Agent calls on the MAIN working tree under strictly disjoint file scopes — per D-11, the
-KI-4 workaround. No worktrees, no builder branches. Builders are forbidden to run any git
-command; the CONDUCTOR commits.
+## items in flight
 
-| item | model | scope (exclusive) |
-|---|---|---|
-| T-005 | sonnet | `domain/src/preferences.ts`, `domain/src/calibration.ts`, `tests/preferences.test.ts`, `tests/calibration.test.ts` |
-| T-013 | sonnet | `domain/src/prep.ts`, `domain/src/reasons.ts`, `tests/prep.test.ts`, `tests/reasons.test.ts` |
+| id | model | effort | scope (disjoint, pairwise) |
+|---|---|---|---|
+| T-007 | fable (route_class core, fable guard exempts it from the gear-2 demotion) | M | `domain/src/planset.ts`, `domain/src/swap.ts`, `tests/planset.test.ts`, `tests/swap.test.ts` |
+| T-009 | sonnet (kind feature — build never demotes below sonnet) | M | `data/recipes/r01.json` … `r06.json` |
 
-Scopes are provably disjoint: 8 distinct new files, no shared file, no manifest.
+The two scopes share no file and no directory. Nothing else in the repo is in either scope.
 
-## Recovery procedure if this cycle is killed
+## why this pair
 
-1. `git -C /opt/targets/dinner status --porcelain` — uncommitted builder files are the
-   salvage candidates. They are NEW files only; nothing pre-existing is edited by either
-   builder, so a `git checkout .` can never lose landed work (but `git clean -fd` WOULD
-   destroy the wave — do not run it blindly).
-2. Judge each file set for coherence (imports only frozen modules: qty.ts, recipe.ts,
-   catalog.ts, score.ts). Coherent → salvage-commit it; incoherent → discard that item's
-   files and return the item to todo with attempts+1.
-3. The verification gates were NOT written before dispatch (they are authored at
-   verification time, per hard rule 2). A resuming session must author them from scratch
-   against `.swarm/backlog.json` acceptance text — never from builder notes.
-4. Then run `npm test` in the target and close the gate normally.
+T-014 (HTTP server — the item that finally makes anything reachable) is blocked by exactly
+two todo items: T-007 and T-009. Landing both here unblocks the server NEXT cycle, so the
+pair is chosen for critical path, not for size. Cycle 10's journal named the run's biggest
+exposure as "nothing renders"; this is the shortest path out of it.
 
-## Pre-dispatch state
+## recovery procedure if this cycle died
 
-- HEAD before dispatch: 45d506c
-- suite before dispatch: 187/187 green, tsc --noEmit clean (cycle 7 evidence)
-- verified items before this wave: 7 of 31
+1. `git -C /opt/targets/dinner status --porcelain` — builders wrote into the MAIN tree, so
+   any surviving work is an uncommitted diff here, not on a branch and not in `.wt/`.
+2. Judge each item's files independently; the scopes are disjoint so one may be salvageable
+   while the other is garbage.
+   - `domain/src/planset.ts` + `swap.ts` + their tests → T-007.
+   - `data/recipes/r0N.json` → T-009.
+3. Salvage-commit coherent work, `git checkout --` incoherent work, then AUTHOR FRESH GATES
+   (hard rule 2 — never reuse a builder's own check) and run `npm test` yourself.
+4. An item whose builder produced ZERO files is returned to todo with **attempts LEFT AT 0**
+   (D-15): the attempts+1 rule escalates items whose BUILD failed, not items whose conductor
+   session died. An item with a partial diff takes attempts+1 normally.
+5. Delete this file when the cycle closes.
