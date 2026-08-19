@@ -1,0 +1,264 @@
+
+--- W — T-042: derive the shipped onboarding defaults from source ---
+  PASS W1a  total_time default = "60" (via DEFAULT_TOTAL_TIME)
+  PASS W1b  active_time default = "30" (via DEFAULT_ACTIVE_TIME)
+  PASS W1c  defaults must stay a real limit, not "No limit" (got total=60, active=30)
+  → UI-derived ceilings: total 3600s, active 1800s
+  PASS W2a  total default 60 is selectable in TOTAL_TIME_OPTIONS
+  PASS W2b  active default 30 is selectable in ACTIVE_TIME_OPTIONS
+  → catalog: 6 recipes, quickest active 960s, quickest total 1560s
+  → server up at http://127.0.0.1:43063
+
+--- W — T-042: the untouched defaults must yield three dinners ---
+  PASS W3a  POST /api/plans → 201
+  PASS W3b  untouched defaults (1800s active / 3600s total) yield 3 meals, need 3
+  PASS W4  all 3 meals sit inside both ceilings
+  PASS W6  full plan shortfall = null (must be null)
+  PASS W6b  full plan flags: {"is_empty":false,"is_partial":false}
+  PASS W5  the old 900s/1800s defaults must STILL exclude everything (hard filter not weakened) — got 0 meals
+
+--- A — T-041: the empty plan must explain itself with derived numbers ---
+  PASS A1a  POST /api/plans (excluded household) → 201
+  PASS A1b  response carries a shortfall object: {"code":"active_time_ceiling","text":"Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.","excluded_count":6,"missing_
+  PASS A1c  names the ACTIVE-time ceiling as the binding constraint; codes seen = ["active_time_ceiling","active_time_ceiling"]
+  PASS A1d  an excluded plan is flagged is_empty: {"is_empty":true,"is_partial":false}
+  PASS A2a  copy names the household's own 15-minute ceiling — copy: Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.
+  PASS A2b  copy names the catalog's real quickest (16 min), so the number is computed not fixed
+  PASS A3a  a 10-min household is told 10, not a hardcoded 15 — copy: Nothing fits your 10-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.
+  PASS A3a2  while the catalog's quickest (16 min) stays put — one number tracks the household, the other the catalog
+  PASS A3b  1080s active clears exactly 2 recipes → a partial plan; got 2 meals
+  PASS A3c  partial plan flags: {"is_empty":false,"is_partial":true}
+  PASS A3d  a SHORT plan explains itself too, not just an empty one
+  PASS A6a  partial-plan copy must not say "nothing fits" — copy: Every excluded recipe exceeds your 18-minute hands-on limit — the quickest of those needs 19 minutes. Raise the hands-on time limit in household settings to see more.
+  PASS A6b  partial copy is genuinely different wording from the empty copy, not the same sentence reused
+  PASS A10  ceiling exactly == quickest active (960s) must include it (at-most, not less-than) — got 1 meals
+  PASS A4a  GET /api/plans/current must not claim "no plan yet" for a household that HAS one — body: {"plan":{"plan_id":"39886823-95a7-470a-a39c-6a1bde1f5926","created_at_utc":"2026-08-19T04:18:17.743Z","meals":[],"is_partial":false,"is_empty":true,"shortfall":{"code":"active_time_ceiling","text":"No
+  PASS A4b  GET /api/plans/current → 200 (was 404 with a false message)
+  PASS A4c  GET current carries the same explanation, not a bare empty plan
+  PASS A5  a household that never created a plan must STILL 404 — got 404: {"error":{"code":"no_current_plan","message":"This household has no plan yet."}}
+  PASS A7  both independently-excluding constraints named, none picked arbitrarily — codes = ["multiple_constraints","active_time_ceiling","total_time_ceiling"]
+  PASS A8a  no raw domain values in user-facing copy
+  PASS A8b  copy stays guilt-free per the spec taste rules
+  PASS A8c  copy tells the parent what they can change (found a remedy verb): Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings 
+  PASS A9-nonvacuous  comment stripper did not eat the source
+  PASS A9  no shortfall copy hand-rolled in routes.ts
+  PASS A9b  shortfall copy lives in exactly one module (DoD 6 mechanism) — owners: ["/opt/targets/dinner/domain/src/reasons.ts"]
+
+--- G — global: the fix must not have moved anything it was not allowed to move ---
+  PASS G1  exactly the 4 declared files changed
+  PASS G2  the absolute hard filter (filters.ts) was not touched
+  PASS G3  no manifest was modified
+  PASS G4  deleted/weakened test lines = 0 (must be 0)
+
+================ RAW EVIDENCE ================
+{
+ "defaultPlan": {
+  "status": 201,
+  "body": {
+   "plan": {
+    "plan_id": "b770f7e2-c68a-4f8c-9a30-615aaded598c",
+    "created_at_utc": "2026-08-19T04:18:17.718Z",
+    "meals": [
+     {
+      "slot": 0,
+      "recipe_id": "11111111-1111-4111-8111-111111111111",
+      "plan_meal_id": "b52f9bf0-0d08-4f2b-b97d-8c58abeb3a7a",
+      "name": "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta",
+      "total_seconds": 3360,
+      "active_seconds": 1080,
+      "time_label": "56 min total, 18 min hands-on",
+      "interruption": {
+       "has_continuous_attention_step": false,
+       "longest_continuous_seconds": 0,
+       "next_safe_stop_step_index": 0
+      },
+      "effort": "low",
+      "dish_count": 2,
+      "cost_band": "low",
+      "familiarity": "novel",
+      "reasons": [
+       {
+        "code": "shares_ingredients",
+        "text": "Shares 3 ingredients with Japanese-Style Soy-Butter Egg Fried Rice."
+       },
+       {
+        "code": "low_active_time",
+        "text": "18 min hands-on out of 56 min total."
+       },
+       {
+        "code": "budget_friendly",
+        "text": "Low-cost ingredient list: 8 items."
+       }
+      ],
+      "owned_ingredient_ids": [],
+      "shared_with_slots": [
+       1,
+       2
+      ]
+     },
+     {
+      "slot": 1,
+      "recipe_id": "55555555-5555-4555-8555-555555555555",
+      "plan_meal_id": "9d22b5cd-413a-4092-ba88-93be5787921b",
+      "name": "Cold Sesame Tofu and Cucumber Salad",
+      "total_seconds": 1560,
+      "active_seconds": 960,
+      "time_label": "26 min total, 16 min hands-on",
+      "interruption": {
+       "has_continuous_attention_step": false,
+       "longest_continuous_seconds": 0,
+       "next_safe_stop_step_index": 0
+      },
+      "effort": "low",
+      "dish_count": 2,
+      "cost_band": "low",
+      "familiarity": "novel",
+      "reasons": [
+       {
+        "code": "shares_ingredients",
+        "text": "Shares 5 ingredients with Japanese-Style Soy-Butter Egg Fried Rice."
+       },
+       {
+        "code": "low_active_time",
+        "text": "16 min hands-on out of 26 min total."
+       },
+       {
+        "code": "quick_total_time",
+        "text": "26 min total, 16 min hands-on."
+       }
+      ],
+      "owned_ingredient_ids": [],
+      "shared_with_slots": [
+       0,
+       2
+      ]
+     },
+     {
+      "slot": 2,
+      "recipe_id": "66666666-6666-4666-8666-666666666666",
+      "plan_meal_id": "b8429c76-7729-4478-9430-48ac37d8ea6d",
+      "name": "Japanese-Style Soy-Butter Egg Fried Rice",
+      "total_seconds": 3000,
+      "active_seconds": 1500,
+      "time_label": "50 min total, 25 min hands-on",
+      "interruption": {
+       "has_continuous_attention_step": true,
+       "longest_continuous_seconds": 240,
+       "next_safe_stop_step_index": 0
+      },
+      "effort": "medium",
+      "dish_count": 4,
+      "cost_band": "low",
+      "familiarity": "novel",
+      "reasons": [
+       {
+        "code": "shares_ingredients",
+        "text": "Shares 5 ingredients with Cold Sesame Tofu and Cucumber Salad."
+       },
+       {
+        "code": "budget_friendly",
+        "text": "Low-cost ingredient list: 12 items."
+       }
+      ],
+      "owned_ingredient_ids": [],
+      "shared_with_slots": [
+       0,
+       1
+      ]
+     }
+    ],
+    "is_partial": false,
+    "is_empty": false,
+    "shortfall": null
+   }
+  }
+ },
+ "oldDefaultPlan": {
+  "status": 201,
+  "body": {
+   "plan": {
+    "plan_id": "39886823-95a7-470a-a39c-6a1bde1f5926",
+    "created_at_utc": "2026-08-19T04:18:17.743Z",
+    "meals": [],
+    "is_partial": false,
+    "is_empty": true,
+    "shortfall": {
+     "code": "active_time_ceiling",
+     "text": "Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.",
+     "excluded_count": 6,
+     "missing_meal_count": 3,
+     "constraints": [
+      {
+       "code": "active_time_ceiling",
+       "excluded_count": 6,
+       "ceiling_seconds": 900,
+       "quickest_seconds": 960
+      }
+     ]
+    }
+   }
+  }
+ },
+ "oldShortfall": {
+  "code": "active_time_ceiling",
+  "text": "Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.",
+  "excluded_count": 6,
+  "missing_meal_count": 3,
+  "constraints": [
+   {
+    "code": "active_time_ceiling",
+    "excluded_count": 6,
+    "ceiling_seconds": 900,
+    "quickest_seconds": 960
+   }
+  ]
+ },
+ "oldCodes": [
+  "active_time_ceiling",
+  "active_time_ceiling"
+ ],
+ "oldCopy": "Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.",
+ "p10": {
+  "status": 201,
+  "body": {
+   "plan": {
+    "plan_id": "90293b64-6ecc-4896-8dfb-d25fd5cd2d1e",
+    "created_at_utc": "2026-08-19T04:18:17.760Z",
+    "meals": [],
+    "is_partial": false,
+    "is_empty": true,
+    "shortfall": {
+     "code": "active_time_ceiling",
+     "text": "Nothing fits your 10-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.",
+     "excluded_count": 6,
+     "missing_meal_count": 3,
+     "constraints": [
+      {
+       "code": "active_time_ceiling",
+       "excluded_count": 6,
+       "ceiling_seconds": 600,
+       "quickest_seconds": 960
+      }
+     ]
+    }
+   }
+  }
+ },
+ "copy10": "Nothing fits your 10-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.",
+ "pPart": {
+  "status": 201,
+  "body": {
+   "plan": {
+    "plan_id": "f3ee0787-0394-4a08-902d-0e9308940517",
+    "created_at_utc": "2026-08-19T04:18:17.777Z",
+    "meals": [
+     {
+      "slot": 0,
+      "recipe_id": "11111111-1111-4111-8111-111111111111",
+      "plan_meal_id": "f6b1f2bf-b5c7-4fd1-99c9-e6c9062ef9d0",
+      "name": "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta",
+      "total_seconds": 3360,
+      "active_sec
+
+================ GATE RESULT ================
+pass 40 / 40

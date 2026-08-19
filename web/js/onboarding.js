@@ -25,11 +25,21 @@ const NOVELTY_OPTIONS = [
   { value: 'adventurous', label: 'Adventurous' },
 ];
 
+// Smallest pair of ceiling values under which the shipped catalog still
+// yields at least three eligible dinners (verified against data/recipes/*:
+// 5 of 6 recipes clear 60 min total / 30 min active; only the 78-minute
+// braise falls to the total ceiling). Defined once here so the initial
+// `state` below and these option lists cannot drift apart the way the
+// previous 30/15 defaults did — those excluded the entire catalog because
+// the shortest recipe's active time (16 min) already exceeded 15.
+const DEFAULT_TOTAL_TIME = '60';
+const DEFAULT_ACTIVE_TIME = '30';
+
 const TOTAL_TIME_OPTIONS = [
   { value: '20', label: '20 min' },
   { value: '30', label: '30 min' },
   { value: '45', label: '45 min' },
-  { value: '60', label: '60 min' },
+  { value: DEFAULT_TOTAL_TIME, label: '60 min' },
   { value: 'none', label: 'No limit' },
 ];
 
@@ -37,7 +47,7 @@ const ACTIVE_TIME_OPTIONS = [
   { value: '10', label: '10 min' },
   { value: '15', label: '15 min' },
   { value: '20', label: '20 min' },
-  { value: '30', label: '30 min' },
+  { value: DEFAULT_ACTIVE_TIME, label: '30 min' },
   { value: 'none', label: 'No limit' },
 ];
 
@@ -171,8 +181,8 @@ export function renderOnboarding(container) {
     household_name: '',
     household_size: 2,
     novelty_preference: 'mostly_familiar',
-    total_time: '30',
-    active_time: '15',
+    total_time: DEFAULT_TOTAL_TIME,
+    active_time: DEFAULT_ACTIVE_TIME,
     display_name: '',
     dietary_restrictions: [],
     allergies: [],

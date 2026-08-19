@@ -1,0 +1,109 @@
+=== DIAG 1: excluded household (900s active / 1800s total), full response TOP-LEVEL SHAPE ===
+top-level keys: [ 'plan' ]
+plan keys: [
+  'plan_id',
+  'created_at_utc',
+  'meals',
+  'is_partial',
+  'is_empty',
+  'shortfall'
+]
+FULL BODY:
+{
+ "plan": {
+  "plan_id": "b92be7eb-ec6c-47da-b6e6-4cce03480f99",
+  "created_at_utc": "2026-08-19T04:16:18.134Z",
+  "meals": [],
+  "is_partial": false,
+  "is_empty": true,
+  "shortfall": {
+   "code": "active_time_ceiling",
+   "text": "Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.",
+   "excluded_count": 6,
+   "missing_meal_count": 3,
+   "constraints": [
+    {
+     "code": "active_time_ceiling",
+     "excluded_count": 6,
+     "ceiling_seconds": 900,
+     "quickest_seconds": 960
+    }
+   ]
+  }
+ }
+}
+
+=== DIAG 1b: GET /api/plans/current for the same household ===
+status 200 keys: [ 'plan' ]
+{
+ "plan": {
+  "plan_id": "b92be7eb-ec6c-47da-b6e6-4cce03480f99",
+  "created_at_utc": "2026-08-19T04:16:18.134Z",
+  "meals": [],
+  "is_partial": false,
+  "is_empty": true,
+  "shortfall": {
+   "code": "active_time_ceiling",
+   "text": "Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.",
+   "excluded_count": 6,
+   "missing_meal_count": 3,
+   "constraints": [
+    {
+     "code": "active_time_ceiling",
+     "excluded_count": 6,
+     "ceiling_seconds": 900,
+     "quickest_seconds": 960
+    }
+   ]
+  }
+ }
+}
+
+=== DIAG 2: catalog active times vs candidate ceilings (checking MY arithmetic) ===
+    960s active   1560s total  Cold Sesame Tofu and Cucumber Salad
+   1080s active   3360s total  Greek Sheet-Pan Chicken Thighs with Potatoes and Feta
+   1140s active   2040s total  Thai Basil Shrimp Stir-Fry
+   1410s active   2160s total  One-Pot Beef and Black Bean Picadillo Skillet
+   1500s active   3000s total  Japanese-Style Soy-Butter Egg Fried Rice
+   1620s active   4680s total  Moroccan-Spiced Chickpea and Sweet Potato Braise
+  ceiling 600s (10 min) → 0 recipes clear it
+  ceiling 960s (16 min) → 1 recipes clear it
+  ceiling 1080s (18 min) → 2 recipes clear it
+  ceiling 1100s (18.333333333333332 min) → 2 recipes clear it
+  ceiling 1200s (20 min) → 3 recipes clear it
+  ceiling 1500s (25 min) → 5 recipes clear it
+
+=== DIAG 3: live meal counts + shortfall presence at each ceiling ===
+  active 600s → 0 meals; shortfall present: true
+    shortfall: {"code":"active_time_ceiling","text":"Nothing fits your 10-minute hands-on limit — the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.","excluded_count":6,"missing_meal_count":3,"constraints":[{"code":"active_time_ceiling","excluded_count":6,"ceiling_seconds":600,"quickest_seconds":960}]}
+  active 1080s → 2 meals; shortfall present: true
+    shortfall: {"code":"active_time_ceiling","text":"Every excluded recipe exceeds your 18-minute hands-on limit — the quickest of those needs 19 minutes. Raise the hands-on time limit in household settings to see more.","excluded_count":4,"missing_meal_count":1,"constraints":[{"code":"active_time_ceiling","excluded_count":4,"ceiling_seconds":1080,"quickest_seconds":1140}]}
+  active 1200s → 3 meals; shortfall present: false
+
+=== DIAG 4: A9 — single-line prose string literals in routes.ts (comment-stripped) ===
+  137 single-line literals ≥20 chars; 58 look like prose:
+    · FOREIGN KEY constraint failed
+    · plan_meal_id does not reference an existing plan meal.
+    · No household with that id.
+    · household must be an object.
+    · member must be an object.
+    · household.name must be a non-empty string.
+    · household.household_size must be a positive integer.
+    · household.novelty_preference must be one of stick_to_favourites | mostly_familiar | adventurous.
+    · household.weeknight_active_time_ceiling_seconds must be null or a positive integer.
+    · household.weeknight_total_time_ceiling_seconds must be null or a positive integer.
+    · member.display_name must be a non-empty string.
+    · member.dietary_restrictions must be an array of valid dietary tags.
+    · member.allergies must be an array of valid allergens.
+    · member.never_recommend_ingredients must be an array of strings.
+    · assumed_staples must be an array.
+    · reactions must be a non-empty array.
+    · This household has no plan yet.
+    · There are no other eligible recipes to offer right now.
+    · Every eligible recipe is already in this plan.
+    · No other recipe satisfies that reason right now.
+    · slot must be 0, 1, or 2.
+    · No plan with that id for this household.
+    · reason must be one of the nine swap reasons.
+    · accept_recipe_id must be a string.
+    · This plan does not have three active meals to swap against.

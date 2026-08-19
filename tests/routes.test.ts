@@ -378,6 +378,169 @@ test('plan build, then swap offer, then swap accept changes exactly one slot', a
   }
 });
 
+// ---------------------------------------------------------------------------
+// T-041 / KI-7 — an excluded or partial plan must explain itself.
+//
+// Ground truth (verified against the shipped 6-recipe catalog): active
+// (hands-on) times are 18, 23.5, 19, 27, 16, 25 minutes; total times are
+// 56, 36, 34, 78, 26, 50 minutes. So a 15-minute (900s) active ceiling
+// excludes all six (quickest active is 16 min), and a 30-minute (1800s)
+// total ceiling excludes five of six (only the 26-min dish survives; its
+// active time is 16 min, so it alone would also fail a 900s active
+// ceiling — used below to build a "both constraints alone exclude
+// everything" household).
+// ---------------------------------------------------------------------------
+
+function shortfallOf(planJson: unknown): Json {
+  return j(j(planJson)['shortfall']);
+}
+
+test('a household with no time ceilings never sees a shortfall', async () => {
+  const ts = await startTestServer();
+  try {
+    const householdId = await createHousehold(ts.base);
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    assert.equal(jArr(plan['meals']).length, 3);
+    assert.equal(jBool(plan['is_empty']), false);
+    assert.equal(jBool(plan['is_partial']), false);
+    assert.equal(plan['shortfall'], null);
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('POST /api/plans for a household whose active-time ceiling excludes the whole catalog returns 201 with a derived, typed shortfall — and GET /current does not lie about having no plan', async () => {
+  const ts = await startTestServer();
+  try {
+    // The shipped onboarding defaults (T-041's reproduced blocker, KI-7).
+    const householdId = await createHousehold(ts.base, {
+      household: { weeknight_active_time_ceiling_seconds: 900, weeknight_total_time_ceiling_seconds: 1800 },
+    });
+
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    assert.equal(jArr(plan['meals']).length, 0, 'never a bare empty meals array — this is the exact defect being fixed');
+    assert.equal(jBool(plan['is_empty']), true);
+    assert.equal(jBool(plan['is_partial']), false);
+
+    const shortfall = shortfallOf(plan);
+    // Derived, not guessed: EVERY excluded recipe fails the active ceiling
+    // (all six active times exceed 15 min), but only five of six also fail
+    // the total ceiling — so active_time_ceiling, not total, is the one
+    // TRUE binding constraint, and the module must find exactly that one.
+    assert.equal(jStr(shortfall['code']), 'active_time_ceiling');
+    assert.equal(jNum(shortfall['excluded_count']), 6);
+    assert.equal(jNum(shortfall['missing_meal_count']), 3);
+    const constraints = jArr(shortfall['constraints']).map((c) => j(c));
+    assert.equal(constraints.length, 1);
+    assert.equal(jStr(constraints[0]?.['code'] as string), 'active_time_ceiling');
+    assert.equal(jNum(constraints[0]?.['ceiling_seconds'] as number), 900);
+    assert.equal(jNum(constraints[0]?.['quickest_seconds'] as number), 960, 'the quickest excluded recipe needs 16 min (960s)');
+    const text = jStr(shortfall['text']);
+    assert.match(text, /15-minute/, 'copy must name the actual constraint value, not a generic message');
+    assert.match(text, /16 minute/, 'copy must state the real quickest-recipe number, derived from the filter results');
+    assert.doesNotMatch(text, /no results/i);
+
+    // GET /api/plans/current: the household HAS a plan (it was just
+    // created); it must never claim otherwise, even though that plan's
+    // meals array is empty.
+    const currentRes = await api(ts.base, 'GET', '/api/plans/current', { householdId });
+    assert.equal(currentRes.status, 200, JSON.stringify(currentRes.json));
+    const currentPlan = j(j(currentRes.json)['plan']);
+    assert.equal(jArr(currentPlan['meals']).length, 0);
+    assert.equal(jBool(currentPlan['is_empty']), true);
+    const currentShortfall = shortfallOf(currentPlan);
+    assert.equal(jStr(currentShortfall['code']), 'active_time_ceiling');
+    assert.equal(jNum(currentShortfall['excluded_count']), 6);
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('a household that has genuinely never created a plan still gets 404 no_current_plan', async () => {
+  const ts = await startTestServer();
+  try {
+    const householdId = await createHousehold(ts.base);
+    const res = await api(ts.base, 'GET', '/api/plans/current', { householdId });
+    assert.equal(res.status, 404);
+    assert.equal(jStr(j(j(res.json)['error'])['code']), 'no_current_plan');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('a PARTIAL plan (short, not empty) explains why it is short, both from POST and from GET /current', async () => {
+  const ts = await startTestServer();
+  try {
+    const householdId = await createHousehold(ts.base, {
+      household: { weeknight_active_time_ceiling_seconds: null, weeknight_total_time_ceiling_seconds: 1800 },
+    });
+
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    assert.equal(jArr(plan['meals']).length, 1, 'only the 26-min-total dish survives a 30-minute total ceiling');
+    assert.equal(jBool(plan['is_partial']), true);
+    assert.equal(jBool(plan['is_empty']), false);
+
+    const shortfall = shortfallOf(plan);
+    assert.equal(jStr(shortfall['code']), 'total_time_ceiling');
+    assert.equal(jNum(shortfall['excluded_count']), 5);
+    assert.equal(jNum(shortfall['missing_meal_count']), 2);
+    const constraints = jArr(shortfall['constraints']).map((c) => j(c));
+    assert.equal(constraints.length, 1);
+    assert.equal(jNum(constraints[0]?.['ceiling_seconds'] as number), 1800);
+    assert.equal(jNum(constraints[0]?.['quickest_seconds'] as number), 2040, 'the quickest excluded-by-total recipe needs 34 min (2040s)');
+    assert.match(jStr(shortfall['text']), /30-minute/);
+
+    const currentRes = await api(ts.base, 'GET', '/api/plans/current', { householdId });
+    assert.equal(currentRes.status, 200, JSON.stringify(currentRes.json));
+    const currentPlan = j(j(currentRes.json)['plan']);
+    assert.equal(jArr(currentPlan['meals']).length, 1);
+    assert.equal(jBool(currentPlan['is_partial']), true);
+    assert.equal(jStr(shortfallOf(currentPlan)['code']), 'total_time_ceiling');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('when two constraints each independently exclude every recipe, the shortfall names BOTH rather than picking one arbitrarily', async () => {
+  const ts = await startTestServer();
+  try {
+    // 900s active ceiling alone excludes all six (quickest active 16 min).
+    // 1200s (20 min) total ceiling ALSO alone excludes all six (quickest
+    // total is 26 min, the same dish that is quickest-active). Every
+    // excluded recipe therefore carries BOTH reasons — two independently-
+    // sufficient universal constraints, neither of which may be dropped.
+    const householdId = await createHousehold(ts.base, {
+      household: { weeknight_active_time_ceiling_seconds: 900, weeknight_total_time_ceiling_seconds: 1200 },
+    });
+
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    assert.equal(jArr(plan['meals']).length, 0);
+    assert.equal(jBool(plan['is_empty']), true);
+
+    const shortfall = shortfallOf(plan);
+    assert.equal(jStr(shortfall['code']), 'multiple_constraints');
+    const constraints = jArr(shortfall['constraints']).map((c) => j(c));
+    const codes = constraints.map((c) => jStr(c['code'])).sort();
+    assert.deepEqual(codes, ['active_time_ceiling', 'total_time_ceiling']);
+    const byCode = new Map(constraints.map((c) => [jStr(c['code']), c]));
+    assert.equal(jNum((byCode.get('active_time_ceiling') as Json)['ceiling_seconds']), 900);
+    assert.equal(jNum((byCode.get('active_time_ceiling') as Json)['quickest_seconds']), 960);
+    assert.equal(jNum((byCode.get('total_time_ceiling') as Json)['ceiling_seconds']), 1200);
+    assert.equal(jNum((byCode.get('total_time_ceiling') as Json)['quickest_seconds']), 1560);
+    assert.equal(jNum(shortfall['excluded_count']), 6);
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
 test('grocery list has a populated provenance drawer, and a user quantity edit survives a re-read', async () => {
   const ts = await startTestServer();
   try {

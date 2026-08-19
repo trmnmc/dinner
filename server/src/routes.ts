@@ -58,7 +58,7 @@ import type { IngredientRegistry } from '../../domain/src/catalog.ts';
 import { HARD_FILTER_CONFIG, applyHardFilters, signalAppliesToRecipe } from '../../domain/src/filters.ts';
 import type { HardFilterResult, PlanningContext, RecentMeal } from '../../domain/src/filters.ts';
 import { SCORE_CONFIG, scoreSurvivors } from '../../domain/src/score.ts';
-import { buildPlanSet } from '../../domain/src/planset.ts';
+import { PLANSET_CONFIG, buildPlanSet } from '../../domain/src/planset.ts';
 import type { ChosenMeal } from '../../domain/src/planset.ts';
 import { CALIBRATION_CONFIG, selectCalibrationCards } from '../../domain/src/calibration.ts';
 import { applyCalibrationReaction, applyFeedbackEvent, mergeSignal } from '../../domain/src/preferences.ts';
@@ -81,11 +81,12 @@ import type { PrepPlan } from '../../domain/src/prep.ts';
 import {
   MAX_REASON_CODES_PER_MEAL,
   NO_RECOVERY_GUIDANCE_TEXT,
+  derivePlanShortfall,
   renderMealReasons,
   renderTotalActiveTime,
   renderTotalActiveTimeFor,
 } from '../../domain/src/reasons.ts';
-import type { ReasonFact } from '../../domain/src/reasons.ts';
+import type { PlanShortfallExplanation, ReasonFact } from '../../domain/src/reasons.ts';
 
 // ---------------------------------------------------------------------------
 // App wiring
@@ -468,17 +469,17 @@ function buildPlanView(planId: Uuid, createdAt: string, mealsData: readonly Meal
   };
 }
 
-/** Rebuild a `PlanView` entirely from persisted state (the active — i.e. not
- * `swapped_out` — plan_meal row per slot), reconstructing reason facts from
- * the stored codes. Returns null when the plan has no active meals. */
-function buildFullPlanView(deps: Deps, household: Household, planId: Uuid, createdAt: string, aux: PlanAux): Record<string, unknown> | null {
+/** The active (not `swapped_out`) plan_meal rows for a plan, reconstructed
+ * into `MealData` with fresh reason facts from the stored codes. May be
+ * empty — an empty result is a REAL state (T-041: an empty/short plan is
+ * not a "no plan" state), never collapsed to null here. */
+function planMealsData(deps: Deps, household: Household, planId: Uuid, aux: PlanAux): readonly MealData[] {
   const rows = deps.db.listPlanMeals(household.id, planId).filter((r) => r.status !== 'swapped_out');
   const withRecipes = rows
     .map((row) => ({ row, recipe: deps.catalogMap.get(row.recipe_id) }))
     .filter((x): x is { row: PlanMeal; recipe: Recipe } => x.recipe !== undefined);
-  if (withRecipes.length === 0) return null;
   const siblingRecipesAll = withRecipes.map((w) => w.recipe);
-  const mealsData: MealData[] = withRecipes.map((w) => ({
+  return withRecipes.map((w) => ({
     slot: w.row.slot,
     recipe: w.recipe,
     planMealId: w.row.id,
@@ -492,7 +493,29 @@ function buildFullPlanView(deps: Deps, household: Household, planId: Uuid, creat
       }),
     ),
   }));
+}
+
+/** Rebuild a `PlanView` entirely from persisted state. Returns null when the
+ * plan has no active meals — used ONLY by the swap route (a swap always
+ * starts from three active meals, so null is unreachable there in
+ * practice). `GET /api/plans/current` does NOT use this: it needs to tell
+ * the truth about a zero/short-meal plan rather than report "no plan". */
+function buildFullPlanView(deps: Deps, household: Household, planId: Uuid, createdAt: string, aux: PlanAux): Record<string, unknown> | null {
+  const mealsData = planMealsData(deps, household, planId, aux);
+  if (mealsData.length === 0) return null;
   return buildPlanView(planId, createdAt, mealsData, aux);
+}
+
+/** Attaches the honest empty/partial/full state + shortfall explanation
+ * (T-041 acceptance 1-3) to an already-built plan view. Never a bare
+ * `meals: []` with no further information. */
+function withShortfall(view: Record<string, unknown>, mealCount: number, shortfall: PlanShortfallExplanation | null): Record<string, unknown> {
+  return {
+    ...view,
+    is_partial: mealCount > 0 && mealCount < PLANSET_CONFIG.meals_per_plan,
+    is_empty: mealCount === 0,
+    shortfall,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -780,7 +803,13 @@ function handleCreatePlan(deps: Deps, ctx: JsonRouteContext): RouteResult {
   }
 
   const view = buildPlanView(planId, now, mealsData, { inventory, signals, context });
-  return { status: 201, body: { plan: view } };
+  // T-041 / KI-7: an empty or short plan must explain itself — never a bare
+  // 201 with `meals: []` and silence. `filtered.exclusions` names the exact
+  // constraint(s) that excluded the catalog; `result.survivor_count` for a
+  // `short` result is exactly `filtered.survivors.length`.
+  const shortfall =
+    result.kind === 'short' ? derivePlanShortfall(filtered.exclusions, result.survivor_count, PLANSET_CONFIG.meals_per_plan) : null;
+  return { status: 201, body: { plan: withShortfall(view, mealsData.length, shortfall) } };
 }
 
 // ---------------------------------------------------------------------------
@@ -796,6 +825,10 @@ function handleCreatePlan(deps: Deps, ctx: JsonRouteContext): RouteResult {
 function handleGetCurrentPlan(deps: Deps, ctx: JsonRouteContext): RouteResult {
   const household = requireHousehold(deps.db, ctx.householdId as string);
   const plans = deps.db.listPlans(household.id);
+  // "No plan yet" (404) is reserved for the household never having created
+  // one at all. A plan that WAS created but came back empty or short is a
+  // real, different state (T-041 / KI-7) — reported as 200 with an honest
+  // explanation below, never collapsed into this 404.
   if (plans.length === 0) throw new HttpError(404, 'no_current_plan', 'This household has no plan yet.');
   let latest = plans[0] as (typeof plans)[number];
   for (const p of plans) {
@@ -803,12 +836,26 @@ function handleGetCurrentPlan(deps: Deps, ctx: JsonRouteContext): RouteResult {
       latest = p;
     }
   }
+  const members = deps.db.listMembers(household.id);
   const signals = deps.db.listPreferenceSignals(household.id);
   const inventory = deps.db.listInventoryEntries(household.id);
   const context = loadPlanningContext(deps.db, household.id, deps.catalogMap);
-  const view = buildFullPlanView(deps, household, latest.id, latest.created_at_utc, { inventory, signals, context });
-  if (view === null) throw new HttpError(404, 'no_current_plan', 'This household has no plan yet.');
-  return { status: 200, body: { plan: view } };
+  const aux: PlanAux = { inventory, signals, context };
+
+  const mealsData = planMealsData(deps, household, latest.id, aux);
+  const view = buildPlanView(latest.id, latest.created_at_utc, mealsData, aux);
+
+  let shortfall: PlanShortfallExplanation | null = null;
+  if (mealsData.length < PLANSET_CONFIG.meals_per_plan) {
+    // Recomputed live (same GAP-documented pattern reason-fact
+    // reconstruction already uses above): the exclusions that produced
+    // this plan were never persisted, so WHY it is short is derived fresh
+    // from the household's current state, not a frozen snapshot.
+    const { filtered } = computeSurvivorsAndScores(deps, household, members, signals, inventory, context);
+    shortfall = derivePlanShortfall(filtered.exclusions, filtered.survivors.length, PLANSET_CONFIG.meals_per_plan);
+  }
+
+  return { status: 200, body: { plan: withShortfall(view, mealsData.length, shortfall) } };
 }
 
 // ---------------------------------------------------------------------------
