@@ -180,6 +180,6 @@
     "n": 10,
     "work": "resume killed wave — salvage + gate T-034 (never_recommend lock re-scope); T-007 never ran",
     "outcome": "T-034 VERIFIED done (fresh 23/23 conductor gate incl. all three generic flavour members, a not-defanged corroboration probe, and shipped-config assertion); KI-5 CLOSED after 3 cycles; KI-6 filed (session usage limit killed cycle 10 + 3 pacer spawns); 299/299 suite green, typecheck clean",
-    "commit": null
+    "commit": "0a0ddfc"
   }
 }
