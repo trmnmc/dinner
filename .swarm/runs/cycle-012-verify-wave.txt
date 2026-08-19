@@ -1,0 +1,137 @@
+== SECTION A — entrypoint, static serving, path traversal ==
+  PASS  A1 server starts with --port 0 --db <path> and prints a parseable bound port
+  PASS  A2 bound port is ephemeral (not a hardcoded default)
+  PASS  A3 GET / returns 200
+  PASS  A4 GET / serves the REAL web/index.html byte-for-byte (not a placeholder)
+  PASS  A5 GET / content-type is text/html
+  PASS  A6 index.html references at least 3 root-relative assets
+  PASS  A7 asset /css/tokens.css serves 200
+  PASS  A8 asset /css/tokens.css content-type contains text/css
+  PASS  A9 asset /css/tokens.css is non-empty
+  PASS  A7 asset /css/app.css serves 200
+  PASS  A8 asset /css/app.css content-type contains text/css
+  PASS  A9 asset /css/app.css is non-empty
+  PASS  A7 asset /js/router.js serves 200
+  PASS  A8 asset /js/router.js content-type contains javascript
+  PASS  A9 asset /js/router.js is non-empty
+  PASS  A10 every ES module in the import graph resolves over HTTP (5 modules)
+  PASS  A11 traversal /css/../../package.json is refused
+  PASS  A12 traversal /css/../../package.json leaks no file content
+  PASS  A11 traversal /js/../../package.json is refused
+  PASS  A12 traversal /js/../../package.json leaks no file content
+  PASS  A11 traversal /css/%2e%2e/%2e%2e/package.json is refused
+  PASS  A12 traversal /css/%2e%2e/%2e%2e/package.json leaks no file content
+  PASS  A11 traversal /js/../../.swarm/SPEC.md is refused
+  PASS  A12 traversal /js/../../.swarm/SPEC.md leaks no file content
+  PASS  A11 traversal /css/..%2f..%2fpackage.json is refused
+  PASS  A12 traversal /css/..%2f..%2fpackage.json leaks no file content
+  PASS  A11 traversal /js/....//....//package.json is refused
+  PASS  A12 traversal /js/....//....//package.json leaks no file content
+  PASS  A13 unknown static file is a clean 404
+
+== SECTION B — API envelope, household scoping ==
+  PASS  B1 GET /api/health -> 200 {ok:true}
+  PASS  B2 scoped route without x-household-id -> 400
+  PASS  B3 ... with error code household_required
+  PASS  B4 unknown household id -> 404
+  PASS  B5 ... with error code household_not_found
+  PASS  B6 unknown /api route -> 404 with an error envelope
+  PASS  B7 wrong method on a known path -> 405
+  PASS  B8 malformed JSON body -> 400, not 500
+  PASS  B9 malformed JSON response leaks no stack trace or host path
+
+== SECTION C — onboarding, calibration, ids are server-minted ==
+  PASS  C1 POST /api/households -> 201
+  PASS  C2 response carries a household_id
+  PASS  C3 the id is SERVER-minted — the client-forged id is ignored
+  PASS  C4 the id is a real UUID
+  PASS  C5 household_size 0 is rejected 400
+  PASS  C6 unknown novelty_preference enum is rejected 400
+  PASS  C7 unknown allergen enum is rejected 400
+  PASS  C8 GET /api/household round-trips the created household
+  PASS  C9 ... with the name as submitted
+  PASS  C10 ... and exactly one member
+  PASS  C11 GET /api/calibration/cards -> 200
+  PASS  C12 ... returns at least one card
+  PASS  C13 POST /api/calibration/reactions -> 200
+  PASS  C14 ... reports signals actually written
+  PASS  C15 an unknown reaction verb is rejected 400
+
+== SECTION D — plan, swap (DoD 3 / Invariant 4) ==
+  PASS  D1 POST /api/plans -> 201
+  PASS  D2 plan carries exactly 3 meals
+  PASS  D3 plan slots are 0,1,2 exactly once
+  PASS  D4 every meal carries at most three reason codes (SPEC cap)
+  PASS  D5 every meal has at least one reason, each with a code AND rendered copy
+  PASS  D6 no two meals reuse the same recipe
+  PASS  D7 GET /api/plans/current returns the plan just created
+  PASS  D8 swap offer -> 200
+  PASS  D9 swap offers at most three alternatives
+  PASS  D10 offered alternatives are not already in the plan
+  PASS  D11 swap accept -> 200
+  PASS  D12 accepted plan still has 3 meals
+  PASS  D13 DoD 3 / Invariant 4: accepting a swap changes EXACTLY ONE slot
+  PASS  D14 the changed slot is the one that was asked for (slot 0)
+  PASS  D15 slots 1 and 2 are byte-identical to before
+  PASS  D16 the accepted alternative is the recipe now in slot 0
+  PASS  D17 an unknown swap reason is rejected 400
+  PASS  D18 an out-of-range slot is rejected 400/404
+
+== SECTION E — grocery ledger (DoD 5) and protected user edits ==
+  PASS  E1 GET grocery -> 200
+  PASS  E2 grocery list is grouped into at least one section
+  PASS  E3 grocery list has lines
+  PASS  E4 every section carries a section name
+  PASS  E5 DoD 5: EVERY line names at least one contributing recipe
+  PASS  E6 DoD 5: every contribution carries a recipe NAME and an amount
+  PASS  E7 DoD 4: no duplicate (ingredient_id, unit) line in the consolidated list
+  PASS  E8 an estimated package is LABELLED estimated (honest uncertainty)
+  PASS  E9 PATCH a user quantity edit -> 200
+  PASS  E10 the edit is echoed back exactly (7/2, not 3.5)
+  PASS  E11 the user edit SURVIVES a full list regeneration (never silently overwritten)
+  PASS  E12 PATCH checked -> 200 and does not clobber the quantity edit
+
+== SECTION F — DoD 6 and Invariant 1, swept over every payload seen ==
+  PASS  F0 GET prep -> 200
+  PASS  F1 at least one payload actually carries times (the sweep is not vacuous)
+  PASS  F2a DoD 6: no object anywhere states a total time without its active time (12 time carriers swept)
+  PASS  F2b DoD 6: every user-facing duration display (11 found) carries total AND active separately
+  PASS  F2c the active-only exemption covers ONLY prep active_time_blocks (1 objects) and nothing else
+  PASS  F3 DoD 6: every user-facing duration display also ships a pre-rendered time_label
+  PASS  F3b KNOWN GAP (filed T-040): active_time_blocks ship no time_label — recorded, not waived
+  PASS  F4 at least one payload carries a Rational (the sweep is not vacuous)
+  PASS  F5 Invariant 1: EVERY Rational on the wire (125 found) is {n,d} STRINGS, never a float
+  PASS  F6 no Rational has a zero denominator
+  PASS  F7 1/3 round-trips EXACTLY (no float contamination anywhere in the path)
+  PASS  F8 a bigint beyond Number.MAX_SAFE_INTEGER survives losslessly
+  PASS  F9 a bare float quantity is REJECTED 400, never coerced
+
+== SECTION G — household isolation (DoD 10), proven at the route layer ==
+  PASS  G1 a second household is created
+  PASS  G2 B cannot see A plan via /api/plans/current
+  PASS  G3 B cannot read A's grocery list even with A's plan id
+  PASS  G4 B cannot swap a meal in A's plan
+  PASS  G5 B cannot read A's prep plan
+  PASS  G6 B cannot edit a line on A's grocery list
+  PASS  G7 B reading its own household gets B, never A
+
+== SECTION H — DoD 7: cooking state survives a REAL process kill ==
+  PASS  H1 POST /api/cooking/sessions -> 201
+  PASS  H2 a session id is returned
+  PASS  H3 a fresh session starts at step 0
+  PASS  H4 completing step 0 -> 200
+  PASS  H5 completing step 1 -> 200
+  PASS  H6 progress advanced to step 2 before the kill
+  PASS  H7 the server process is genuinely dead after SIGKILL
+  PASS  H8 the old port no longer answers
+  PASS  H9 a new server process starts against the same db file
+  PASS  H10 the session is readable after the kill
+  PASS  H11 DoD 7: STEP PROGRESS survived a SIGKILL and a fresh process
+  PASS  H12 DoD 7: TIMER state (absolute end instants) survived byte-for-byte
+  PASS  H13 recovery guidance is present as a string and never fabricated-looking
+  PASS  H14 the recovered session still knows its recipe and total step count
+  PASS  G8 (isolation, post-restart) B cannot read A's cooking session
+  PASS  H15 POST /api/feedback -> 201 after restart
+  PASS  H16 feedback reports preference signals written
+
+== RESULT: 120 passed, 0 failed ==

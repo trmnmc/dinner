@@ -1,0 +1,89 @@
+== SECTION W1 — the identity contract is mechanically enforced ==
+  PASS  W1.1 app.css contains no raw hex colour (tokens.css is the only colour source)
+  PASS  W1.2 app.css contains no raw rgb/hsl/oklch colour function
+  PASS  W1.3 app.css uses no CSS named colour keyword
+  PASS  W1.4 app.css actually consumes tokens (var(--…) present, and heavily)
+  PASS  W1.5 every token app.css references is defined (52 referenced)
+  PASS  W1.6 no confirm() CALL anywhere in web/js (undo, never a confirmation modal)
+  PASS  W1.7 no alert() call anywhere in web/js
+  PASS  W1.7b the comment-stripper is not vacuous (code survived stripping)
+  PASS  W1.8 an undo affordance actually exists in ui.js
+  PASS  W1.9 no CDN or absolute-http import anywhere in web/js
+  PASS  W1.10 no bare-specifier (npm) import anywhere in web/js
+  PASS  W1.11 index.html loads no external origin
+  PASS  W1.12 index.html uses type="module" (native ES modules, no bundler)
+
+== SECTION W2 — accessibility mechanics (part of done, not a later pass) ==
+  PASS  W2.1 app.css defines a visible focus style
+  PASS  W2.2 app.css honours prefers-reduced-motion
+  PASS  W2.3 app.css never uses `transition: all`
+  PASS  W2.4 a 44px minimum target is expressed somewhere in the CSS
+  PASS  W2.5 tabular figures are applied to numerals
+  PASS  W2.6 index.html declares a lang
+  PASS  W2.7 index.html has a viewport meta
+  PASS  W2.8 an aria-live region exists for announcements
+  PASS  W2.9 the screens set aria labels / roles rather than relying on shape alone
+  PASS  W2.10 a screen-reader-only utility class is defined
+  PASS  W2.11 status badges carry text/icon, not colour alone
+
+== SECTION W3 — every module parses and actually imports ==
+  PASS  W3.1 web/js/api.js parses and imports cleanly
+  PASS  W3.1 web/js/calibrate.js parses and imports cleanly
+  PASS  W3.1 web/js/onboarding.js parses and imports cleanly
+  PASS  W3.1 web/js/router.js parses and imports cleanly
+  PASS  W3.1 web/js/ui.js parses and imports cleanly
+
+== SECTION W4 — api.js speaks EXACTLY the frozen contract ==
+  PASS  W4.1 api.js references contract path /api/health
+  PASS  W4.1 api.js references contract path /api/households
+  PASS  W4.1 api.js references contract path /api/household
+  PASS  W4.1 api.js references contract path /api/calibration/cards
+  PASS  W4.1 api.js references contract path /api/calibration/reactions
+  PASS  W4.1 api.js references contract path /api/plans
+  PASS  W4.1 api.js references contract path /api/plans/current
+  PASS  W4.1 api.js references contract path /swap
+  PASS  W4.1 api.js references contract path /grocery
+  PASS  W4.1 api.js references contract path /api/grocery/lines/
+  PASS  W4.1 api.js references contract path /prep
+  PASS  W4.1 api.js references contract path /api/cooking/sessions
+  PASS  W4.1 api.js references contract path /events
+  PASS  W4.1 api.js references contract path /api/feedback
+  PASS  W4.2 api.js attaches the x-household-id header
+  PASS  W4.3 api.js stores the household id under the agreed localStorage key
+  PASS  W4.4 a non-2xx surfaces the server error envelope code AND message verbatim (executed)
+  PASS  W4.5 api.js never coerces a quantity with parseFloat/Number on {n,d}
+  PASS  W4.6 api.js uses BigInt for quantity arithmetic (no float contamination)
+
+== SECTION W5 — the shell actually renders real DOM ==
+  PASS  W5.1 router.js exports something callable to start the app
+  PASS  W5.2 onboarding (renderOnboarding) renders real DOM into #app on first run
+  PASS  W5.2b the rendered onboarding asks a real household question (real copy, not a stub)
+  PASS  W5.3 ui.js exports a shared component surface (14 exports)
+  PASS  W5.4 ui.js exports a time renderer
+  PASS  W5.4 ui.js exports a bottom sheet
+  PASS  W5.4 ui.js exports an undo snackbar
+  PASS  W5.4 ui.js exports an aria-live announcer
+  PASS  W5.4 ui.js exports reason chips
+  PASS  W5.4 ui.js exports a status badge
+  PASS  W5.4 ui.js exports a primary action
+  PASS  W5.5 the shared time renderer surfaces BOTH the total and the active figure
+  PASS  W5.6 no screen hand-formats minutes — the shared renderer is the only path
+
+== SECTION W6 — router declares the routes later screens will claim ==
+  PASS  W6.1 router declares #/onboarding
+  PASS  W6.1 router declares #/calibrate
+  PASS  W6.1 router declares #/plan
+  PASS  W6.1 router declares #/grocery
+  PASS  W6.1 router declares #/prep
+  PASS  W6.1 router declares #/cook
+  PASS  W6.1 router declares #/feedback
+  PASS  W6.2 unbuilt routes resolve to an honest panel, not a blank screen or a fake mock
+
+== NOT RUN — needs a browser this host does not have ==
+  NOT RUN  paint / layout / visual correctness :: no browse CLI on this host; MCP fence forbids a browser MCP
+  NOT RUN  contrast ratios on tokens.css :: requires computed style in a real engine
+  NOT RUN  real tap-target hit areas at 44px :: requires layout
+  NOT RUN  keyboard tab-order and screen-reader output :: requires a real a11y tree
+
+== RESULT: 69 passed, 0 failed, 4 NOT RUN ==
+NOT RUN (reported as not-run, never as passed): paint / layout / visual correctness | contrast ratios on tokens.css | real tap-target hit areas at 44px | keyboard tab-order and screen-reader output

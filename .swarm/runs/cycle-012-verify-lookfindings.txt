@@ -1,0 +1,41 @@
+=== FINDING 1 (claimed BLOCKER): onboarding.js DEFAULTS produce an empty plan ===
+web/js/onboarding.js:174-175 defaults are total_time "30" (1800s), active_time "15" (900s).
+
+POST /api/plans with the SHIPPED onboarding defaults (active 900s, total 1800s)
+  -> HTTP 201
+  -> meals returned: 0
+  -> full body: {"plan":{"plan_id":"56d4b9e8-9ab3-47c6-8d97-db1eafc42d1f","created_at_utc":"2026-08-19T03:44:20.928Z","meals":[]}}
+GET /api/plans/current for that same household
+  -> HTTP 404 :: {"error":{"code":"no_current_plan","message":"This household has no plan yet."}}
+
+CONTROL: identical household with NO ceilings -> meals: 3
+  meals: Greek Sheet-Pan Chicken Thighs with Potatoes and Feta [56 min total, 18 min hands-on] | Moroccan-Spiced Chickpea and Sweet Potato Braise [78 min total, 27 min hands-on] | Cold Sesame Tofu and Cucumber Salad [26 min total, 16 min hands-on]
+
+FINDING 1 REPRODUCED: YES — confirmed blocker
+
+=== FINDING 2 (claimed HIGH): prep quantities are unscaled vs the grocery list ===
+household_size = 2; slot 0 = "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta"
+grocery lines contributed by slot 0 ALONE: 5
+  feta
+    grocery contribution (scaled to servings): 75/2 g
+    prep required_ingredients            : (none) 
+  chicken_thigh_boneless
+    grocery contribution (scaled to servings): 450/1 g
+    prep required_ingredients            : 900/1 g
+  flat_leaf_parsley
+    grocery contribution (scaled to servings): 473176473/32000000 ml
+    prep required_ingredients            : (none) 
+  russet_potato
+    grocery contribution (scaled to servings): 2/1 count
+    prep required_ingredients            : 4/1 count
+
+FINDING 2 REPRODUCED: YES — prep and grocery disagree on quantities
+
+=== FINDING 6 (claimed MEDIUM): a "buy 0" line is emitted ===
+lines with purchase_quantity 0 in the shopping sections: 0
+
+=== FINDING 5 (claimed MEDIUM): unpurchasable fractional/loose quantities ===
+lines whose purchase quantity is a non-integer fraction: 20 of 28
+  crushed_tomatoes_canned: 1/2 count | package_label=null is_estimate=false
+  honey: 473176473/64000000 ml | package_label=null is_estimate=false
+  olive_oil: 473176473/12800000 ml | package_label=null is_estimate=false

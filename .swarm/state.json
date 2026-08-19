@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 11,
+  "cycle": 12,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -70,14 +70,14 @@
     {
       "id": "D-8",
       "topic": "crashed-cycle-salvage",
-      "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work \u2014 authored the gates from scratch, ran them, and closed the wave.",
-      "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind \u2014 detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
+      "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work — authored the gates from scratch, ran them, and closed the wave.",
+      "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind — detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
       "cycle": 5
     },
     {
       "id": "D-9",
       "topic": "scope-cut",
-      "decision": "T-002's domain/src/ingredients.ts is CUT from scope. catalog.ts (landed by T-008) already owns the curated ingredient registry \u2014 aliases, allergen classes, densities, per-item weights \u2014 sourced from data/ingredients.json. normalize.ts consumes IngredientRegistry as a parameter instead of owning a second table.",
+      "decision": "T-002's domain/src/ingredients.ts is CUT from scope. catalog.ts (landed by T-008) already owns the curated ingredient registry — aliases, allergen classes, densities, per-item weights — sourced from data/ingredients.json. normalize.ts consumes IngredientRegistry as a parameter instead of owning a second table.",
       "why": "A second curated table would be a second source of truth, which is precisely the data-drift failure Invariant 5 exists to prevent. Ruled at cycle 6 dispatch time and recorded in the in-flight marker; formalised here because the cycle that made the ruling died before it could write a journal block.",
       "cycle": 6
     },
@@ -85,14 +85,14 @@
       "id": "D-10",
       "topic": "crashed-cycle-salvage",
       "decision": "Cycle 6 was killed mid-wave by the pacer's 600s background-task ceiling (\"Background tasks still running after 600s; terminating\", runs/pacer.log 22:55Z). This session RESUMED cycle 6 rather than opening cycle 7: merged wave-006-T-002 (complete and committed by its builder), salvage-committed the T-006 builder's uncommitted worktree files, merged those too, then authored and ran both verification gates.",
-      "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed \u2014 it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests \u2014 filed as T-029 rather than papered over.",
+      "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed — it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests — filed as T-029 rather than papered over.",
       "cycle": 6
     },
     {
       "id": "D-11",
       "topic": "harness-workaround",
-      "decision": "Cycle 7 dispatched its two builders as DIRECT, FOREGROUND Agent calls editing the main working tree under strictly disjoint file scopes \u2014 no build-wave workflow, no worktrees, no builder branches. Both builders were forbidden to run any git command; the conductor committed.",
-      "why": "KI-4 killed cycles 4 and 6 mid-wave. This cycle established the mechanism: bin/swarm-pacer.sh spawns `claude -p` synchronously with NO timeout of its own (verified by reading lines 232-260), so the 600s guillotine is purely the harness background-task wait ceiling (CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at turn end. Foreground agents are part of the turn, not background tasks, so the ceiling never applies. The wave ran 424s and 356s \u2014 both would have been at risk, and the T-029 builder in particular was still working at the 356s mark. This is a prompt-side workaround costing nothing; the durable fix is still in the pacer and still belongs in the morning report.",
+      "decision": "Cycle 7 dispatched its two builders as DIRECT, FOREGROUND Agent calls editing the main working tree under strictly disjoint file scopes — no build-wave workflow, no worktrees, no builder branches. Both builders were forbidden to run any git command; the conductor committed.",
+      "why": "KI-4 killed cycles 4 and 6 mid-wave. This cycle established the mechanism: bin/swarm-pacer.sh spawns `claude -p` synchronously with NO timeout of its own (verified by reading lines 232-260), so the 600s guillotine is purely the harness background-task wait ceiling (CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at turn end. Foreground agents are part of the turn, not background tasks, so the ceiling never applies. The wave ran 424s and 356s — both would have been at risk, and the T-029 builder in particular was still working at the 356s mark. This is a prompt-side workaround costing nothing; the durable fix is still in the pacer and still belongs in the morning report.",
       "cycle": 7
     },
     {
@@ -120,15 +120,29 @@
       "id": "D-15",
       "topic": "crashed-cycle-salvage",
       "decision": "Cycle 10 was killed by a SESSION USAGE LIMIT, not by KI-4's 600s background-task ceiling. This session resumed cycle 10 rather than opening cycle 11: salvage-committed T-034's two modified files, authored a fresh 23-check gate against them, and closed the wave. T-007, whose builder produced ZERO files, is returned to todo with attempts LEFT AT 0 rather than incremented.",
-      "why": "runs/cycle-1787102668.json records is_error=true, result \"You've hit your session limit \u00b7 resets 3:20am (UTC)\", num_turns 38, duration 831s \u2014 the cycle was cut off mid-wave by the account's 5h session cap, and the three pacer spawns that followed (01:43, 01:48, 01:54Z) each died in under 500ms with the identical message and $0 cost. That is a DIFFERENT failure mode from KI-4 and it is filed separately as KI-6; attributing it to KI-4 would have sent the next cycle chasing a timeout that was not the cause. attempts is deliberately NOT incremented on T-007 because cycle.md's attempts+1 rule exists to escalate items whose BUILD failed; T-007's build never ran. Incrementing it twice for conductor-session deaths would blocked-cap a critical-path item for a reason that has nothing to do with its code.",
+      "why": "runs/cycle-1787102668.json records is_error=true, result \"You've hit your session limit · resets 3:20am (UTC)\", num_turns 38, duration 831s — the cycle was cut off mid-wave by the account's 5h session cap, and the three pacer spawns that followed (01:43, 01:48, 01:54Z) each died in under 500ms with the identical message and $0 cost. That is a DIFFERENT failure mode from KI-4 and it is filed separately as KI-6; attributing it to KI-4 would have sent the next cycle chasing a timeout that was not the cause. attempts is deliberately NOT incremented on T-007 because cycle.md's attempts+1 rule exists to escalate items whose BUILD failed; T-007's build never ran. Incrementing it twice for conductor-session deaths would blocked-cap a critical-path item for a reason that has nothing to do with its code.",
       "cycle": 10
     },
     {
       "id": "D-16",
       "topic": "verification-method",
       "decision": "The cycle-11 T-007 gate failed 4 of 52 checks on its first run. All four were defects in the GATE, not in the code, and each was proven so with a recorded diagnostic BEFORE any check was touched. Rev1 and its failing output are kept on disk beside the corrected rev2 (58/58).",
-      "why": "Loosening a check that just went red is exactly how a run starts overclaiming, so the bar for editing one is evidence, not plausibility. (1) A1 searched swap.ts for the string \"planset\" and tripped on the module's own doc comment \"This module does not import planset.ts AT ALL\" \u2014 three occurrences, all comments, none an import; corrected to search comment-stripped source. (2) E2 demanded every swap reason yield alternatives; a hand-derived count independent of swap.ts showed ZERO strictly-cheaper candidates exist because all three planned meals are already the cheapest band, so returning nothing is correct \u2014 corrected to excuse only provably-empty reasons and to exercise cheaper against a high-band outgoing meal instead. (3) E5c required the pantry's target dish to rank first; five variants share its exact required-ingredient set, so all tie at 100% owned and the order among them is settled correctly by other terms. (4) E8 \u2014 the one that mattered \u2014 cloned the outgoing meal to prove overlap is scored against the frozen pair, but the outgoing meal shared ALL EIGHT of its required ingredients with that pair, so overlap 1 was the right answer to the wrong question; rebuilt on a hand-assembled plan using only the outgoing meal's EXCLUSIVE ingredients, which now scores 0 exactly like a disjoint candidate while a frozen-meal echo scores 1. The rebuilt E8 is a stronger test than the original, and only exists because the first one failed. A gate that never fails is not being pointed at anything.",
+      "why": "Loosening a check that just went red is exactly how a run starts overclaiming, so the bar for editing one is evidence, not plausibility. (1) A1 searched swap.ts for the string \"planset\" and tripped on the module's own doc comment \"This module does not import planset.ts AT ALL\" — three occurrences, all comments, none an import; corrected to search comment-stripped source. (2) E2 demanded every swap reason yield alternatives; a hand-derived count independent of swap.ts showed ZERO strictly-cheaper candidates exist because all three planned meals are already the cheapest band, so returning nothing is correct — corrected to excuse only provably-empty reasons and to exercise cheaper against a high-band outgoing meal instead. (3) E5c required the pantry's target dish to rank first; five variants share its exact required-ingredient set, so all tie at 100% owned and the order among them is settled correctly by other terms. (4) E8 — the one that mattered — cloned the outgoing meal to prove overlap is scored against the frozen pair, but the outgoing meal shared ALL EIGHT of its required ingredients with that pair, so overlap 1 was the right answer to the wrong question; rebuilt on a hand-assembled plan using only the outgoing meal's EXCLUSIVE ingredients, which now scores 0 exactly like a disjoint candidate while a frozen-meal echo scores 1. The rebuilt E8 is a stronger test than the original, and only exists because the first one failed. A gate that never fails is not being pointed at anything.",
       "cycle": 11
+    },
+    {
+      "id": "D-17",
+      "topic": "verification-method",
+      "decision": "DoD 6's total+active pairing requirement applies to user-facing duration displays, not to a field that is definitionally active-only. prep.active_time_blocks[] is exempt; a total_seconds without an active_seconds remains a hard failure anywhere it appears.",
+      "why": "rev1 of the cycle-12 gate asserted the pair on EVERY object carrying active_seconds and failed on prep.active_time_blocks. domain/src/prep.ts defines ActiveTimeBlock as \"a maximal run of index-contiguous steps each with active_duration_seconds > 0\" — a breakdown of where hands-on work sits, with no total to state and nothing conflated, which is the confusion DoD 6 exists to prevent. The check was wrong, not the code. rev1 and its failing output are kept on disk (cycle-012-gate-rev1.mjs, cycle-012-verify-wave-rev1-FAILING.txt); rev2 narrows the rule and adds F2c asserting the exemption can never widen beyond that one shape. The missing time_label is NOT waived — it is filed as T-040 and asserted by F3b.",
+      "cycle": 12
+    },
+    {
+      "id": "D-18",
+      "topic": "frozen-contract-deviation",
+      "decision": "MealView carries plan_meal_id, beyond the frozen cycle-12 contract. Accepted.",
+      "why": "The T-014 builder raised it rather than working around it: POST /api/feedback and POST /api/cooking/sessions both require plan_meal_id, and db.ts enforces it with a real foreign key — but no frozen view exposed one, so no client could ever supply a valid value and both routes were unreachable. Adding the field is the minimal correct fix. The contract text is amended for the screens still to be built.",
+      "cycle": 12
     }
   ],
   "known_issues": [
@@ -141,7 +155,7 @@
     {
       "id": "KI-2",
       "severity": "medium",
-      "desc": "RE-OPENED at cycle 5 (was mislabelled RESOLVED-BY-DRIFT at cycle 3). The weekly governor zero-envelope blind spot in bin/swarm-weekly-from-allocator.sh: heat is computed as 100*swarm_used/(swarm_used+allow_overall), so a zero denominator DISENGAGES the governor. At cycle 3 swarm_used_pct had drifted 0 -> 4 and I recorded the bug as resolved. At cycle 5 it fell back to 0 with allow_overall_pct 0 and posture \"trickle\", so the feeder would disengage the governor again \u2014 precisely when restraint matters most. The ceiling held at 2 this cycle ONLY because a second, independent signal was hot (raw account 52.0% weekly at 24.65% week-elapsed => heat 2.11). Drift is not a fix. Correct behaviour: u+a <= 0 must mean MAXIMUM heat, not \"unconfigured\". Hard rule 5 forbids the fix mid-run; morning report.",
+      "desc": "RE-OPENED at cycle 5 (was mislabelled RESOLVED-BY-DRIFT at cycle 3). The weekly governor zero-envelope blind spot in bin/swarm-weekly-from-allocator.sh: heat is computed as 100*swarm_used/(swarm_used+allow_overall), so a zero denominator DISENGAGES the governor. At cycle 3 swarm_used_pct had drifted 0 -> 4 and I recorded the bug as resolved. At cycle 5 it fell back to 0 with allow_overall_pct 0 and posture \"trickle\", so the feeder would disengage the governor again — precisely when restraint matters most. The ceiling held at 2 this cycle ONLY because a second, independent signal was hot (raw account 52.0% weekly at 24.65% week-elapsed => heat 2.11). Drift is not a fix. Correct behaviour: u+a <= 0 must mean MAXIMUM heat, not \"unconfigured\". Hard rule 5 forbids the fix mid-run; morning report.",
       "cycle": 5
     },
     {
@@ -153,7 +167,7 @@
     {
       "id": "KI-4",
       "severity": "high",
-      "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" \u2014 runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
+      "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" — runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
       "cycle": 6
     },
     {
@@ -168,24 +182,45 @@
       "id": "KI-6",
       "severity": "high",
       "status": "open",
-      "desc": "SWARM-side / account-side, DISTINCT FROM KI-4. The account's 5-hour SESSION limit terminated cycle 10 mid-wave and then killed three consecutive pacer spawns outright. Evidence: runs/cycle-1787102668.json (is_error true, \"You've hit your session limit \u00b7 resets 3:20am (UTC)\", num_turns 38, duration_ms 831019, cost $8.49) followed by runs/cycle-1787103828.json, cycle-1787104138.json and cycle-1787104455.json \u2014 each num_turns 1, duration under 500ms, cost $0.00, same message. Consequences: (a) a cycle can die from the session cap at ANY point regardless of wave duration, so the in-flight marker (D-8) is the only thing standing between this and merged-but-ungated code; (b) the pacer has no session-limit awareness \u2014 it kept respawning every ~5 min into a hard wall, converting a usage pause into a stream of failed cycles in pacer.log; (c) neither the window probe (rho 0.50, cool) nor the weekly governor (heat 2.58, hot) models the SESSION cap, so the pacing machinery could not have predicted or prevented this. Fix direction: teach bin/swarm-pacer.sh to parse the session-limit message out of the cycle result JSON and back off until the quoted reset time instead of respawning on its fixed interval. SWARM-side, hard rule 5 \u2014 recorded, not edited mid-run; belongs in the morning report."
+      "desc": "SWARM-side / account-side, DISTINCT FROM KI-4. The account's 5-hour SESSION limit terminated cycle 10 mid-wave and then killed three consecutive pacer spawns outright. Evidence: runs/cycle-1787102668.json (is_error true, \"You've hit your session limit · resets 3:20am (UTC)\", num_turns 38, duration_ms 831019, cost $8.49) followed by runs/cycle-1787103828.json, cycle-1787104138.json and cycle-1787104455.json — each num_turns 1, duration under 500ms, cost $0.00, same message. Consequences: (a) a cycle can die from the session cap at ANY point regardless of wave duration, so the in-flight marker (D-8) is the only thing standing between this and merged-but-ungated code; (b) the pacer has no session-limit awareness — it kept respawning every ~5 min into a hard wall, converting a usage pause into a stream of failed cycles in pacer.log; (c) neither the window probe (rho 0.50, cool) nor the weekly governor (heat 2.58, hot) models the SESSION cap, so the pacing machinery could not have predicted or prevented this. Fix direction: teach bin/swarm-pacer.sh to parse the session-limit message out of the cycle result JSON and back off until the quoted reset time instead of respawning on its fixed interval. SWARM-side, hard rule 5 — recorded, not edited mid-run; belongs in the morning report."
+    },
+    {
+      "id": "KI-7",
+      "severity": "blocker",
+      "status": "open",
+      "desc": "The DEFAULT first-run path produces zero dinners. web/js/onboarding.js:174-175 pre-selects total 30 min / active 15 min, and every authored recipe is 26-78 min total and 16-27 min active, so the hard time filter excludes the whole catalog: POST /api/plans returns 201 with meals: [] and no explanation, and GET /api/plans/current then answers \"This household has no plan yet.\" — which is false. Found by the cycle-12 live-look pass and INDEPENDENTLY REPRODUCED by the conductor (.swarm/runs/cycle-012-verify-lookfindings.txt lines 4-14; control household with no ceilings returns 3 meals). Filed as T-041 (make the failure honest) + T-042 (stop it happening on the default path). This is the single most important thing to fix next: the product currently greets a default user with nothing.",
+      "cycle": 12
+    },
+    {
+      "id": "KI-8",
+      "severity": "high",
+      "status": "open",
+      "desc": "Prep contradicts the grocery list. handleGetPrep calls derivePrepPlan on the raw recipe without scaling to target_servings, so at household_size 2 the grocery list says 450 g chicken and 2 potatoes while the prep screen says 900 g and 4. Conductor-reproduced cycle 12 (cycle-012-verify-lookfindings.txt lines 22-30). Filed as T-043. Directly undermines the traceability the grocery must-have exists for.",
+      "cycle": 12
+    },
+    {
+      "id": "KI-9",
+      "severity": "high",
+      "status": "open",
+      "desc": "A constrained household dead-ends. handleSwap requires exactly three active meals, so a 1- or 2-meal plan (which today is what a time-limited household gets) returns 409 plan_incomplete forever with no way to change anything. Filed as T-045. Compounds KI-7: the users most likely to hit the empty/partial plan are exactly those who cannot then swap out of it.",
+      "cycle": 12
     }
   ],
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 1,
-    "window_tokens_attributed": 74139397
+    "wave_streak": 0,
+    "window_tokens_attributed": 88195981
   },
   "qa": {
-    "last_look_cycle": null,
+    "last_look_cycle": 12,
     "last_full_qa_cycle": null,
     "last_taste_cycle": null
   },
   "last_cycle": {
     "n": 11,
-    "work": "build-wave T-007 (planset+swap, fable) + T-009 (recipe batch 1, sonnet) \u2014 foreground agents",
+    "work": "build-wave T-007 (planset+swap, fable) + T-009 (recipe batch 1, sonnet) — foreground agents",
     "outcome": "2 VERIFIED done (T-007 58/58 conductor gate, T-009 37/37); 339/339 suite green, typecheck clean; T-014 (HTTP server) now fully unblocked; T-038/T-039 filed from builder-raised gaps",
     "commit": "c0839b7"
   }

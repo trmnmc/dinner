@@ -1807,3 +1807,189 @@ runfile-mirror:
 - if this marker is the last block in the file, cycle 12 died mid-wave: check the two
   branches above, merge only what verifies, and re-queue the rest with attempts+1.
 
+
+---
+
+## cycle 12 — build-wave: T-014 (HTTP server) + T-015 (web shell) — 2 verified
+
+**The run's central blocker is gone: the product renders.** Twelve cycles of proven domain
+code finally have a server in front of them and a page a person can open. That is the good
+news. The rest of this block is the bad news that came with it, because a live look at a
+running product found things 350 green tests could not.
+
+budget: REAL probe (`npx ccusage@latest`, `bin/swarm-budget.sh` DENIED for the 8th straight
+cycle — KI-1). Block 23:00–04:00Z, used 69,653,224 of 130,591,250, remaining 60,938,026 over
+3,854s to T_target ⇒ target 56.9M tok/h vs actual 19.9M tok/h ⇒ **ρ 0.350, gear_target 5**.
+The window is cool. The weekly governor is still what binds: weekly 69.0% at 27.34% elapsed
+⇒ heat 2.52 (2.58 → 2.52, the first non-rise of the run), opus 2.74 ⇒ **ceiling 2,
+promote blocked, applied gear 2**, wave cap 2, demote on. Both L-effort build items routed
+opus → demoted to **sonnet**. Judgment seats untouched (fable guard): the live-look agent ran
+on fable.
+
+work: build-wave, k=2, direct foreground Agent calls (Workflow is review-gated headless —
+KI-4 workaround, 6th cycle running). Worktrees `.wt/T-014` and `.wt/T-015` per KI-3.
+
+### the conductor act that mattered: one frozen contract, two blind agents
+
+T-014 (server) and T-015 (client) had to agree on a wire protocol neither could see the other
+half of. I authored a **FROZEN HTTP CONTRACT v1** — 15 routes, the error envelope, the
+`{n,d}`-strings Rational encoding, and every view shape — and passed it **verbatim** to both
+builders. It held. The one place drift could have bitten hardest — the `novelty_preference`
+enum — came back identical on both sides (`stick_to_favourites | mostly_familiar |
+adventurous`), and my own gate was the only thing that got it wrong.
+
+### VERIFICATION EVIDENCE — conductor gate, 120/120 (`runs/cycle-012-verify-wave.txt`)
+
+```
+== SECTION A — entrypoint, static serving, path traversal ==   29/29
+  PASS  A4 GET / serves the REAL web/index.html byte-for-byte (not a placeholder)
+  PASS  A10 every ES module in the import graph resolves over HTTP (5 modules)
+  PASS  A11/A12 six traversal attacks refused, zero file content leaked
+== SECTION D — plan, swap ==
+  PASS  D13 DoD 3 / Invariant 4: accepting a swap changes EXACTLY ONE slot
+  PASS  D15 slots 1 and 2 are byte-identical to before
+== SECTION E — grocery ledger ==
+  PASS  E5 DoD 5: EVERY line names at least one contributing recipe
+  PASS  E11 the user edit SURVIVES a full list regeneration (never silently overwritten)
+== SECTION F — DoD 6 / Invariant 1 ==
+  PASS  F2a no object anywhere states a total time without its active time (12 swept)
+  PASS  F5 Invariant 1: EVERY Rational on the wire (125 found) is {n,d} STRINGS, never a float
+  PASS  F7 1/3 round-trips EXACTLY   PASS  F9 a bare float quantity is REJECTED 400
+== SECTION G — household isolation (DoD 10) ==   8/8, B cannot touch A on any entity
+== SECTION H — DoD 7, REAL SIGKILL ==
+  PASS  H11 DoD 7: STEP PROGRESS survived a SIGKILL and a fresh process
+  PASS  H12 DoD 7: TIMER state (absolute end instants) survived byte-for-byte
+== RESULT: 120 passed, 0 failed ==
+```
+
+**DoD 7 is now proven the way the DoD actually words it** — SIGKILL, not SIGTERM; a brand-new
+process against the same db file; step progress and absolute timer instants intact. The
+builder could only test this in-process. I tested the thing the spec claims.
+
+### VERIFICATION EVIDENCE — web gate, 69/69 + 4 honestly NOT RUN (`cycle-012-verify-web.txt`)
+
+```
+  PASS  W1.1 app.css contains no raw hex colour (tokens.css is the only colour source)
+  PASS  W1.5 every token app.css references is defined (61 referenced)
+  PASS  W1.6 no confirm() CALL anywhere in web/js (undo, never a confirmation modal)
+  PASS  W4.4 a non-2xx surfaces the server error envelope code AND message verbatim (executed)
+  PASS  W5.2 onboarding (renderOnboarding) renders real DOM into #app on first run
+  PASS  W5.6 no screen hand-formats minutes — the shared renderer is the only path
+== RESULT: 69 passed, 0 failed, 4 NOT RUN ==
+NOT RUN: paint/layout · contrast ratios · real 44px hit areas · keyboard & screen-reader
+```
+
+Those four are reported as **not-run, never as passed**. There is no browser on this host
+(no browse CLI; the MCP fence forbids a browser MCP), so nobody has SEEN this page. The
+accessibility must-have and the tokens.css contrast ratios remain unverified — now since
+cycle 3 — and only a human or a real engine can close them.
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run)
+
+```
+> three-good-dinners@0.1.0 test
+> npm run typecheck && npm run test:unit
+ℹ tests 350   ℹ pass 350   ℹ fail 0   ℹ skipped 0
+```
+
+339 → 350 (+11 from `tests/routes.test.ts`). Typecheck ran first and passed. Hard rule 4 holds.
+`collision-scan.mjs`: `applicable: false` — no classic scripts, the client is pure ES modules.
+
+### the live-look pass earned its cost — a BLOCKER that 350 green tests could not see
+
+One fable look agent against the running server. It found, and **I independently reproduced**
+(`cycle-012-verify-lookfindings.txt`):
+
+```
+POST /api/plans with the SHIPPED onboarding defaults (active 900s, total 1800s)
+  -> HTTP 201   -> meals returned: 0
+  -> {"plan":{"plan_id":"56d4b9e8-...","meals":[]}}
+GET /api/plans/current  -> 404 {"code":"no_current_plan",
+                                "message":"This household has no plan yet."}
+CONTROL: identical household with NO ceilings -> meals: 3
+FINDING 1 REPRODUCED: YES — confirmed blocker
+```
+
+**The default first-run path serves zero dinners and then denies the plan exists.**
+`onboarding.js:174-175` pre-selects 30 min total / 15 min hands-on; every authored recipe is
+26–78 min total and 16–27 min active. The hard time filter excludes the entire catalog. A
+parent opening this app tonight, changing nothing, gets an empty screen and a lie. → **KI-7**,
+filed as **T-041** (make the failure honest) + **T-042** (stop it happening on the default path).
+
+Also reproduced: **prep contradicts the grocery list** — at household_size 2 the list says
+450 g chicken and 2 potatoes, prep says 900 g and 4, because `handleGetPrep` never scales to
+target servings (**KI-8** → T-043). And **20 of 28 grocery lines are unbuyable fractions**
+(`1/2 count crushed tomatoes`, `473176473/64000000 ml honey`) because no package data exists
+anywhere in `data/` (→ T-044). And a constrained household can never swap out of its partial
+plan — permanent 409 (**KI-9** → T-045).
+
+Six more findings filed: T-040, T-046 (chip deselect submits what the screen does not show;
+the last calibration card has no undo and auto-submits; the onboarding hint is the design
+mantra pasted verbatim), T-047, T-048, T-049.
+
+I did NOT reproduce the agent's "buy 0 ml of olive oil" line — my household carried no
+staples, so my run showed zero such lines. Recorded at the agent's severity with that caveat
+rather than dropped or inflated.
+
+### two gate corrections, both mine, both proven before touching
+
+Same discipline as D-16 last cycle: rev1 and its failing output kept on disk beside rev2.
+
+- **D-17**: rev1 demanded total+active on every object with `active_seconds` and failed on
+  `prep.active_time_blocks`. `ActiveTimeBlock` is *definitionally* active-only — no total to
+  state, nothing conflated. The check was wrong, not the code. rev2 narrows the rule, keeps
+  "a total without an active" a hard fail everywhere, and adds **F2c** asserting the exemption
+  can never widen past that one shape. The missing `time_label` is **not** waived — F3b
+  asserts it and T-040 tracks it.
+- The web gate's `confirm()` check failed on `ui.js` — where both hits are inside a doc
+  comment that itself says *"there is no `confirm()` anywhere in this codebase"*. The claim
+  was true; my regex could not tell code from prose. Now strips comments, with a
+  non-vacuity assertion on the stripper.
+- Two more of my own: `W4.4` grepped for a literal `.error.code` when api.js destructures to
+  a local, and `W5.2` looked for an export spelled `render` when it is `renderOnboarding`.
+  Both replaced with **behavioural** checks that execute the code instead of reading it.
+
+**D-18**: accepted the T-014 builder's one contract deviation — `MealView` gained
+`plan_meal_id`. It was raised, not smuggled: feedback and cooking-session creation both
+require it, db.ts enforces a real foreign key, and no frozen view exposed one, so both routes
+were unreachable by any honest client.
+
+### a near-miss worth recording
+
+My first merge silently landed on the wrong branch. `npm ci` had left my shell cwd inside
+`.wt/T-015`, so `git merge` ran there — `master` never moved, and the second merge reported
+"Already up to date". Nothing was lost because I checked `git branch -v` instead of trusting
+the merge output, but a conductor that had trusted it would have committed a cycle claiming
+two merged items with `master` still at the in-flight marker. **Always `git -C <target>`, never
+a bare `git` after any `cd`.** For the morning report, not a live edit (hard rule 5).
+
+### bookkeeping
+
+Wave autotune: zero reverts, zero failed verifies, both items delivered — **CLEAN**.
+`wave_streak` 1 → 2 ⇒ `k_current` 5 (already at the hard max), streak reset to 0. Effective
+wave size stays gear-capped at 2 regardless.
+Burn attribution: window 55,596,640 → 69,653,224, delta **+14,056,584** credited to cycle 11's
+target (dinner). Running total 88,195,981.
+`consecutive_no_value` stays 0. Backlog 14 done / 34 todo / 1 blocked of 49 — **over the ~30
+live cap**; cycle 15's hygiene pass must prune, and I would rather carry evidenced items into
+that pass than drop findings to hit a number tonight.
+
+result: **T-014 → done. T-015 → done. FOURTEEN verified items of 49.**
+
+honest status. The engine was already good and is now reachable: routes, isolation, kill
+survival, exact arithmetic, traceable provenance — all conductor-proven tonight. What the
+first live look revealed is that **reachable is not the same as usable**. The default path is
+broken, prep disagrees with the shopping list, and the grocery list asks for half a can of
+beans. None of that was visible from 350 green tests, and all of it is visible in ten minutes
+of using the thing. That is the whole argument for the look pass, and it paid for itself on
+its first run.
+
+next: **T-042 then T-041** — the default path must produce three dinners, and an empty plan
+must explain itself. Both are S/M and they are the difference between a demo that opens and a
+demo that works. Pair with **T-043** (prep scaling, S, disjoint file). Then T-016/T-017 to put
+the plan and grocery screens on the shell that now exists. ~8h to stop_at 12:00Z.
+
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787111271,"next_wakeup_at":1787111046,"pid":2404495,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":5,"ratio":0.35,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":69653224,"window_cost_usd":86.75,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":19928304,"projected_depletion_at":1787112000,"last_probe_ts":1787108346,"last_real_probe_ts":1787108346,"probe_failures":0,"probe_note":"Cycle 12 REAL probe: npx ccusage@latest blocks --json --token-limit max (raw runs/cc-probe-c12.json). bin/swarm-budget.sh DENIED for the 8th consecutive cycle (KI-1). Block 23:00-04:00Z, limit 130,591,250, used 69,653,224, remaining 60,938,026 over 3,854s to T_target (block end 04:00Z < stop_at 12:00Z) => target 56,930,000 tok/h; actual 19,928,304 tok/h (332,138 tok/min) => rho 0.350 => gear_target 5. Window is COOL and getting cooler. WEEKLY GOVERNOR still binding (runs/allocator.json): weekly_used 69.0% at week_elapsed 27.34% => heat 2.52 (was 2.58 - flat, first non-rise of the run); opus 75/27.34 = 2.74. Ceiling 2, promote_blocked. prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true (opus->sonnet for both L build items). KI-6 session cap: cycle 11 ran clean 02:38-02:50Z with no session error, so the 03:20Z reset quoted in cycle 10 has effectively passed or capacity recovered; dispatching the wave.","weekly":{"ok":true,"weekly_used_pct":69,"opus_used_pct":75,"week_elapsed_pct":27.34,"weekly_heat":2.52,"opus_heat":2.74,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":14,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
