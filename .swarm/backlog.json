@@ -531,7 +531,7 @@
       "files_hint": [
         "web/js/plan.js"
       ],
-      "acceptance": "The plan screen shows three dinners each with name, total AND active time separately, interruption profile, effort, at most three concrete reason codes, owned/shared ingredients, cost band and novelty indicator — and swapping one meal by explicit reason takes at most three taps, offers at most three alternatives, and visibly leaves the other two meals untouched.",
+      "acceptance": "The plan screen shows three dinners each with name, total AND active time separately, interruption profile, effort, at most three concrete reason codes, owned/shared ingredients, cost band and novelty indicator — and swapping one meal by explicit reason takes at most three taps, offers at most three alternatives, and visibly leaves the other two meals untouched. ADDED cycle 13: the screen MUST render the plan response's `shortfall` explanation when `is_empty` or `is_partial` is true — T-041 made the API honest, but conductor-verified at cycle 13 that NO web file reads shortfall/is_empty/is_partial, so today the explanation reaches no user. A plan screen that renders an empty list with no reason re-creates KI-7 at the UI layer.",
       "packages": [],
       "wave": 2,
       "must_haves": [
@@ -543,7 +543,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "All time strings and reason copy come from the domain reasons/time-renderer module — never hand-rolled here (DoD 6 mechanism). Consume shared components from ui.js per the identity contract; do not create local variants. Builds against the wave-0 route contracts; any needed contract change is an emergency single-agent commit per the contract-drift rule."
+      "notes": "All time strings and reason copy come from the domain reasons/time-renderer module — never hand-rolled here (DoD 6 mechanism). Consume shared components from ui.js per the identity contract; do not create local variants. Builds against the wave-0 route contracts; any needed contract change is an emergency single-agent commit per the contract-drift rule. Cycle 13: shortfall copy is fully rendered by domain/src/reasons.ts — read it from the response, never re-word it here."
     },
     {
       "id": "T-017",
@@ -1253,7 +1253,7 @@
       "kind": "fix",
       "effort": "M",
       "priority": 1,
-      "status": "todo",
+      "status": "done",
       "model": "sonnet",
       "files_hint": [
         "server/src/routes.ts",
@@ -1261,7 +1261,8 @@
         "tests/routes.test.ts"
       ],
       "acceptance": "POST /api/plans for a household whose hard filters leave fewer than three eligible recipes returns a typed reason code AND rendered copy naming WHICH constraint excluded the catalog (e.g. the active-time ceiling) and what the parent can change — never a bare 201 with meals: []. GET /api/plans/current must not answer \"This household has no plan yet.\" for a household that HAS a plan which came back empty; that message is currently false. Conductor-reproduced cycle 12: .swarm/runs/cycle-012-verify-lookfindings.txt lines 4-9.",
-      "notes": "BLOCKER. Found by the cycle-12 live-look pass and independently reproduced by the conductor."
+      "notes": "BLOCKER. Found by the cycle-12 live-look pass and independently reproduced by the conductor.",
+      "done_cycle": 13
     },
     {
       "attempts": 0,
@@ -1275,13 +1276,14 @@
       "kind": "fix",
       "effort": "S",
       "priority": 1,
-      "status": "todo",
+      "status": "done",
       "model": "sonnet",
       "files_hint": [
         "web/js/onboarding.js"
       ],
       "acceptance": "The pre-selected onboarding defaults produce a non-empty plan against the catalog as shipped. Today web/js/onboarding.js:174-175 defaults to total_time \"30\" (1800s) and active_time \"15\" (900s), while every authored recipe is 26-78 min total and 16-27 min active — so the DEFAULT first-run path yields zero meals. Either the defaults change, or the ceiling stops being an absolute hard filter, or the catalog gains genuinely fast recipes (T-010/T-011). Whichever is chosen, prove it by building a plan from the untouched defaults and getting three meals.",
-      "notes": "Pairs with T-041 — T-041 makes the failure honest, T-042 stops it happening on the default path. Conductor-reproduced cycle 12."
+      "notes": "Pairs with T-041 — T-041 makes the failure honest, T-042 stops it happening on the default path. Conductor-reproduced cycle 12.",
+      "done_cycle": 13
     },
     {
       "attempts": 0,
@@ -1446,6 +1448,42 @@
         "web/js/onboarding.js"
       ],
       "acceptance": "Three gaps the frozen cycle-12 contract left open, each named by a builder rather than discovered later: (a) there is no server-authoritative \"calibration complete\" signal, so router.js relies on a client-only localStorage flag tgd.calibration_done that a new device silently loses; (b) onboarding collects no preferred proteins or cuisines although the SPEC must-have lists them, because the frozen request shape had no field; (c) GET /api/plans/current means \"most recently created\" rather than a real status flag, since db.ts exposes no updatePlanStatus."
+    },
+    {
+      "id": "T-050",
+      "status": "todo",
+      "priority": 2,
+      "effort": "S",
+      "kind": "test",
+      "model": "sonnet",
+      "title": "Cover the mixed_constraints shortfall branch with a real HTTP test",
+      "files_hint": [
+        "tests/routes.test.ts"
+      ],
+      "deps": [
+        "T-041"
+      ],
+      "acceptance": "An HTTP-level test drives a household where NO single constraint is universal across the excluded recipes (e.g. an allergy excludes some, a time ceiling excludes different ones) and asserts the mixed_constraints code plus an honest per-constraint breakdown. The single/multiple branches are covered; this one is implemented and typechecked but unexercised.",
+      "notes": "Raised unprompted by the T-041 builder as a known gap rather than claimed as covered. Needs per-recipe ingredient/allergen knowledge hand-verified against data/ingredients.json."
+    },
+    {
+      "id": "T-051",
+      "status": "todo",
+      "priority": 3,
+      "effort": "S",
+      "kind": "fix",
+      "model": "sonnet",
+      "title": "GET /plans/current recomputes the shortfall live while is_partial comes from stored meals",
+      "files_hint": [
+        "server/src/routes.ts",
+        "server/src/db.ts",
+        "tests/routes.test.ts"
+      ],
+      "deps": [
+        "T-041"
+      ],
+      "acceptance": "is_partial/is_empty and the shortfall explanation must be derived from the SAME instant. Today is_partial comes from the persisted meal count while the shortfall is recomputed against current household state, so if the household raises its ceiling after an empty plan, GET current can report is_partial true with shortfall null. Either persist the exclusions with the plan or derive both live.",
+      "notes": "Raised unprompted by the T-041 builder; persisting exclusions was outside its file scope. Mirrors an existing documented GAP for reason-fact reconstruction. Low user impact today, real once settings are editable."
     }
   ]
 }

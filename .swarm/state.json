@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 12,
+  "cycle": 13,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -143,6 +143,27 @@
       "decision": "MealView carries plan_meal_id, beyond the frozen cycle-12 contract. Accepted.",
       "why": "The T-014 builder raised it rather than working around it: POST /api/feedback and POST /api/cooking/sessions both require plan_meal_id, and db.ts enforces it with a real foreign key — but no frozen view exposed one, so no client could ever supply a valid value and both routes were unreachable. Adding the field is the minimal correct fix. The contract text is amended for the screens still to be built.",
       "cycle": 12
+    },
+    {
+      "id": "D-19",
+      "topic": "scope-ruling",
+      "decision": "T-042 is fixed by moving the onboarding defaults to 60 min total / 30 min active - the smallest pair of ALREADY-OFFERED option values under which the shipped catalog yields three dinners. The two other options its acceptance left open were ruled out by the conductor BEFORE dispatch, and the builder was told so: the time ceiling must not become soft/advisory, and the default must not become \"No limit\".",
+      "why": "The item as filed offered three routes (change the defaults, stop the ceiling being an absolute hard filter, or add fast recipes) and letting a builder choose would have risked the one that breaks an invariant. The ceilings are absolute hard filters by locked domain invariant (T-006); softening one to make a default work would have traded a visible empty plan for an invisible broken promise, which is strictly worse for a parent who set a time limit because they have no time. Defaulting to \"No limit\" erases the question the screen exists to ask. Adding genuinely fast recipes is the real cure and is T-010/T-011 - once the catalog has them, the default can drop back toward 30/15. Gate check W5 pins the ruling: the old 900s/1800s ceilings must STILL exclude all six recipes, so a future attempt to fix an empty plan by weakening the filter fails the gate.",
+      "cycle": 13
+    },
+    {
+      "id": "D-20",
+      "topic": "verification-method",
+      "decision": "The cycle-13 gate derives the onboarding defaults by PARSING web/js/onboarding.js and resolving the identifier to its const binding, then builds its live households from those parsed values. It never hardcodes 3600/1800.",
+      "why": "A gate that asserts \"a 3600s/1800s household gets three meals\" proves the server works; it does not prove the SHIPPED DEFAULT works, which is the entire content of T-042. Had the builder edited only the option list and left the state initialiser at 30/15 - a plausible near-miss, since the defaults were duplicated magic strings and that duplication is exactly how the defect arose - a hardcoded gate would have passed while the product stayed broken. Parsing the file makes the check point at the defect rather than at the expected answer. It also verified the builder's single-source-of-truth refactor for free: W1a/W1b report the value came via DEFAULT_TOTAL_TIME/DEFAULT_ACTIVE_TIME.",
+      "cycle": 13
+    },
+    {
+      "id": "D-21",
+      "topic": "verification-method",
+      "decision": "Gate rev1 failed 8 of 33. Seven were defects in the GATE, one was arithmetic I got wrong; all were proven so by a recorded read-only diagnostic (cycle-013-diag.mjs -> .swarm/runs/cycle-013-diagnostic.txt) BEFORE any check was edited. rev1 and its failing output are kept on disk beside rev2.",
+      "why": "Five checks read body.shortfall when the API nests the plan at body.plan.shortfall - the response carried a completely correct, fully-derived explanation and my accessor could not see it. One check (A3b) asserted a 1200s active ceiling produces a partial plan; the catalog actually has THREE recipes at or under 1200s active (960/1080/1140), so a full plan was the right answer and my count was wrong - replaced with 1080s, which clears exactly two. One (A9) used a regex that spanned newlines and matched whole blocks of TypeScript source rather than string literals. One (A9b) searched for the literal \"hands-on limit\" in reasons.ts, but that phrase is COMPOSED at runtime from a code-dependent dimension word, so a correct implementation failed a literal search - replaced with the stronger exclusivity claim that the distinctive phrase appears in exactly one module. The rule this run keeps re-earning: the bar for editing a red check is a recorded diagnostic, never plausibility - and a gate whose checks never fail is not pointed at anything.",
+      "cycle": 13
     }
   ],
   "known_issues": [
@@ -187,9 +208,10 @@
     {
       "id": "KI-7",
       "severity": "blocker",
-      "status": "open",
-      "desc": "The DEFAULT first-run path produces zero dinners. web/js/onboarding.js:174-175 pre-selects total 30 min / active 15 min, and every authored recipe is 26-78 min total and 16-27 min active, so the hard time filter excludes the whole catalog: POST /api/plans returns 201 with meals: [] and no explanation, and GET /api/plans/current then answers \"This household has no plan yet.\" — which is false. Found by the cycle-12 live-look pass and INDEPENDENTLY REPRODUCED by the conductor (.swarm/runs/cycle-012-verify-lookfindings.txt lines 4-14; control household with no ceilings returns 3 meals). Filed as T-041 (make the failure honest) + T-042 (stop it happening on the default path). This is the single most important thing to fix next: the product currently greets a default user with nothing.",
-      "cycle": 12
+      "status": "resolved",
+      "desc": "The DEFAULT first-run path produces zero dinners. web/js/onboarding.js:174-175 pre-selects total 30 min / active 15 min, and every authored recipe is 26-78 min total and 16-27 min active, so the hard time filter excludes the whole catalog: POST /api/plans returns 201 with meals: [] and no explanation, and GET /api/plans/current then answers \"This household has no plan yet.\" — which is false. Found by the cycle-12 live-look pass and INDEPENDENTLY REPRODUCED by the conductor (.swarm/runs/cycle-012-verify-lookfindings.txt lines 4-14; control household with no ceilings returns 3 meals). Filed as T-041 (make the failure honest) + T-042 (stop it happening on the default path). This is the single most important thing to fix next: the product currently greets a default user with nothing. RESOLVED at cycle 13 by T-042 + T-041, CONDUCTOR-VERIFIED by a fresh 40-check gate (/opt/swarm/runs/cycle-013-gate.mjs, output .swarm/runs/cycle-013-verify-wave.txt, 40/40). The onboarding defaults now derive from single DEFAULT_TOTAL_TIME/DEFAULT_ACTIVE_TIME constants at 60/30 min and the untouched default path yields exactly 3 meals, all provably inside both ceilings; an excluded plan now returns a typed code plus derived copy (\"Nothing fits your 15-minute hands-on limit - the quickest dinner here needs 16 minutes. Raise the hands-on time limit in household settings to see more.\") whose ceiling number tracks the household (10-min household is told 10) while the catalog number tracks the catalog; a short plan is separately worded (\"Every excluded recipe exceeds your 18-minute...\") and never says \"nothing fits\"; GET /plans/current no longer lies, while a household that never planned still correctly 404s. The hard filter was NOT weakened - the old 900s/1800s defaults still exclude all six recipes. RESIDUAL, recorded not hidden: no web file reads shortfall/is_empty/is_partial, because the plan screen (T-016) does not exist yet, so the honest explanation currently reaches no user. T-016 acceptance was amended at cycle 13 to require rendering it.",
+      "cycle": 12,
+      "resolved_cycle": 13
     },
     {
       "id": "KI-8",
@@ -210,8 +232,8 @@
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 0,
-    "window_tokens_attributed": 88195981
+    "wave_streak": 1,
+    "window_tokens_attributed": 134227635
   },
   "qa": {
     "last_look_cycle": 12,
@@ -219,9 +241,9 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 11,
-    "work": "build-wave T-007 (planset+swap, fable) + T-009 (recipe batch 1, sonnet) — foreground agents",
-    "outcome": "2 VERIFIED done (T-007 58/58 conductor gate, T-009 37/37); 339/339 suite green, typecheck clean; T-014 (HTTP server) now fully unblocked; T-038/T-039 filed from builder-raised gaps",
-    "commit": "c0839b7"
+    "n": 13,
+    "work": "build-wave T-041 (honest empty/partial plan, sonnet) + T-042 (onboarding defaults, sonnet) - foreground agents",
+    "outcome": "2 VERIFIED done (conductor gate 40/40 after rev1 self-correction); suite 355/355 green, typecheck clean; KI-7 BLOCKER resolved with residual recorded; T-050/T-051 filed from builder-raised gaps; T-016 acceptance amended",
+    "commit": "da53613"
   }
 }

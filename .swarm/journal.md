@@ -1993,3 +1993,157 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787111271,"next_wakeup_at":1787111046,"pid":2404495,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":5,"ratio":0.35,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":69653224,"window_cost_usd":86.75,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":19928304,"projected_depletion_at":1787112000,"last_probe_ts":1787108346,"last_real_probe_ts":1787108346,"probe_failures":0,"probe_note":"Cycle 12 REAL probe: npx ccusage@latest blocks --json --token-limit max (raw runs/cc-probe-c12.json). bin/swarm-budget.sh DENIED for the 8th consecutive cycle (KI-1). Block 23:00-04:00Z, limit 130,591,250, used 69,653,224, remaining 60,938,026 over 3,854s to T_target (block end 04:00Z < stop_at 12:00Z) => target 56,930,000 tok/h; actual 19,928,304 tok/h (332,138 tok/min) => rho 0.350 => gear_target 5. Window is COOL and getting cooler. WEEKLY GOVERNOR still binding (runs/allocator.json): weekly_used 69.0% at week_elapsed 27.34% => heat 2.52 (was 2.58 - flat, first non-rise of the run); opus 75/27.34 = 2.74. Ceiling 2, promote_blocked. prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true (opus->sonnet for both L build items). KI-6 session cap: cycle 11 ran clean 02:38-02:50Z with no session error, so the 03:20Z reset quoted in cycle 10 has effectively passed or capacity recovered; dispatching the wave.","weekly":{"ok":true,"weekly_used_pct":69,"opus_used_pct":75,"week_elapsed_pct":27.34,"weekly_heat":2.52,"opus_heat":2.74,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":14,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+---
+
+## cycle 13 — build-wave: T-041 (honest empty/partial plan) + T-042 (onboarding defaults) — 2 verified, KI-7 CLOSED
+
+**gear 2** (weekly governor still binding). Probe: block 23:00–04:00Z, used 115,684,878 of
+130,591,250 with 4 min left in the window; burn 430,804 tok/min ⇒ 25.85M tok/h against a
+post-reset target of 26.12M tok/h ⇒ **ρ 0.99 ⇒ gear_target 3**. The window is no longer cool —
+cycle 12 alone burned 46.0M tokens. But `runs/allocator.json` reports weekly_used **70.0%** at
+week_elapsed **27.92%** ⇒ heat **2.51**, opus 76/27.92 ⇒ **2.72**, so the governor **ceiling
+holds at 2** and promote stays blocked. prev gear 2, hysteresis no-op ⇒ **applied gear 2**,
+wave cap 2, demote=true (both items are `fix`, so both stay sonnet — build/fix never drops
+below sonnet). `bin/swarm-budget.sh` DENIED for the 9th consecutive cycle (KI-1); probe run
+directly as `npx ccusage@latest`, raw at `runs/cc-probe-c13.json`.
+
+Both items were dispatched as **direct foreground Agent calls** on the main working tree under
+strictly disjoint scopes (D-11), builders forbidden every git command. Both returned; the tree
+showed exactly the four declared files and nothing else.
+
+### the conductor act that mattered: ruling the fix before dispatching it (D-19)
+
+T-042's acceptance deliberately left three routes open — change the defaults, stop the ceiling
+being an absolute hard filter, or add fast recipes. One of those breaks a locked invariant.
+I ruled it **before** dispatch and told the builder so: the ceiling stays absolute (T-006), the
+default stays a real limit rather than "No limit", and the value moves to 60/30 — the smallest
+pair already offered in the picker under which the shipped catalog yields three dinners.
+Gate check **W5** pins the ruling permanently: the old 900s/1800s ceilings must **still**
+exclude all six recipes, so any future attempt to cure an empty plan by softening the filter
+fails the gate rather than passing it.
+
+### VERIFICATION EVIDENCE — conductor gate rev2, 40/40 (`runs/cycle-013-verify-wave.txt`)
+
+```
+PASS W1a  total_time default = "60" (via DEFAULT_TOTAL_TIME)
+PASS W1b  active_time default = "30" (via DEFAULT_ACTIVE_TIME)
+PASS W3b  untouched defaults (1800s active / 3600s total) yield 3 meals, need 3
+PASS W4   all 3 meals sit inside both ceilings
+PASS W5   the old 900s/1800s defaults must STILL exclude everything (hard filter not weakened) — got 0 meals
+PASS A2a  copy: Nothing fits your 15-minute hands-on limit — the quickest dinner here needs 16 minutes.
+          Raise the hands-on time limit in household settings to see more.
+PASS A3a  a 10-min household is told 10, not a hardcoded 15
+PASS A3a2 while the catalog's quickest (16 min) stays put — one number tracks the household, the other the catalog
+PASS A6a  partial copy: Every excluded recipe exceeds your 18-minute hands-on limit — the quickest of
+          those needs 19 minutes.  (never "nothing fits" — something plainly did fit)
+PASS A10  ceiling exactly == quickest active (960s) must include it (at-most, not less-than) — got 1 meals
+PASS A4b  GET /api/plans/current → 200 (was 404 with a false message)
+PASS A5    a household that never created a plan must STILL 404 — {"code":"no_current_plan"}
+PASS A7    both independently-excluding constraints named — ["multiple_constraints","active_time_ceiling","total_time_ceiling"]
+PASS G4    deleted/weakened test lines = 0 (must be 0)
+pass 40 / 40
+```
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run)
+
+```
+ℹ tests 355
+ℹ pass 355
+ℹ fail 0
+```
+
+339 → 355, +16 tests, and `git diff --numstat tests/routes.test.ts` = **163 added, 0 deleted** —
+no existing assertion was weakened to reach green.
+
+`node bin/collision-scan.mjs` → `applicable: false` (the web client is ES modules, no classic
+scripts). Recorded, not treated as a pass.
+
+### the gate that had to be pointed at the defect, not the answer (D-20)
+
+The gate never hardcodes 3600/1800. It **parses** `web/js/onboarding.js`, resolves
+`total_time:` through its `const` binding, and builds its live households from whatever it
+finds. Had the builder edited only the option list and left the state initialiser at 30/15 —
+a plausible near-miss, since those defaults were duplicated magic strings and that duplication
+is precisely how the defect arose — a hardcoded gate would have gone green over a still-broken
+product. As a free side-effect it also verified the single-source refactor: W1a/W1b report the
+value arriving via `DEFAULT_TOTAL_TIME` / `DEFAULT_ACTIVE_TIME`.
+
+### four gate corrections, all mine, all proven before touching (D-21)
+
+rev1 failed 8 of 33. I wrote a **read-only diagnostic** (`cycle-013-diag.mjs` →
+`cycle-013-diagnostic.txt`) and ran it before editing a single check. rev1 and its failing
+output are kept on disk beside rev2.
+
+- **Five checks** read `body.shortfall`. The API nests the plan one level down at
+  `body.plan.shortfall` — the response carried a completely correct, fully-derived explanation
+  and my accessor could not see it. The code was right; I was reading the wrong address.
+- **A3b** asserted a 1200s active ceiling yields a partial plan. The catalog has **three**
+  recipes at or under 1200s active (960 / 1080 / 1140), so a full plan was the correct answer
+  and my count was the defect. Replaced with 1080s, which clears exactly two — and that
+  replacement is a better check, because it exercises the partial state the original never
+  reached.
+- **A9** used a regex that spanned newlines and matched whole blocks of TypeScript rather than
+  string literals. Narrowed to single-line literals and to the shortfall vocabulary
+  specifically.
+- **A9b** searched for the literal `"hands-on limit"` in `reasons.ts`. That phrase is
+  **composed** at runtime from a code-dependent dimension word, so a correct implementation
+  failed a literal search. Replaced with the stronger exclusivity claim — the distinctive
+  phrase must appear in exactly one module — which now passes and asserts more than the
+  original would have.
+
+### KI-7 is closed, and the residual is recorded rather than hidden
+
+The blocker as filed is gone: the default path yields three dinners, an excluded plan explains
+itself with derived numbers, a short plan is separately worded, and `GET /plans/current` has
+stopped lying without swallowing the case where "no plan yet" is true (A5).
+
+**But no user can see the explanation yet.** I grepped the client myself: **no file under
+`web/` reads `shortfall`, `is_empty` or `is_partial`**, because the plan screen (T-016) does
+not exist. The API is honest; the UI has no consumer for that honesty. So T-016's acceptance
+was amended this cycle to require rendering it — a plan screen that shows an empty list with no
+reason would re-create KI-7 one layer up. That is stated in KI-7's resolution text too, in
+place of a clean-sounding "resolved".
+
+### builder-raised gaps, filed rather than absorbed
+
+Both builders reported gaps unprompted instead of claiming completeness:
+- **T-050** — the `mixed_constraints` branch is implemented and typechecked but has no HTTP
+  test; constructing one needs allergen knowledge hand-verified against `data/ingredients.json`.
+- **T-051** — `GET /plans/current` recomputes the shortfall live while `is_partial` comes from
+  the stored meal count, so the two can disagree once settings become editable.
+
+Also re-observed, already filed as **T-047**: DIAG 4 shows raw validation strings still reach
+the client verbatim (`household.novelty_preference must be one of stick_to_favourites | ...`).
+Not this item's scope; evidence now on record.
+
+The T-042 builder was honest about one more thing worth keeping: it did **not** run `npm test`
+itself, and said so rather than implying it had. I ran it.
+
+### bookkeeping
+
+Wave autotune: zero reverts, zero failed verifies — **CLEAN**. `wave_streak` 0 → 1;
+`k_current` stays 5 (hard max). Effective wave size stays gear-capped at 2 regardless.
+Burn attribution: window 69,653,224 → 115,684,878, delta **+46,031,654** credited to cycle 12's
+target (dinner). Running total 134,227,635.
+`consecutive_no_value` stays 0. Backlog **16 done / 34 todo / 1 blocked of 51** — still well
+over the ~30 live cap; cycle 15's hygiene pass owes it a prune.
+
+result: **T-041 → done. T-042 → done. SIXTEEN verified items of 51. KI-7 resolved.**
+
+honest status. The product now greets a default first-run parent with three real dinners
+instead of silence — that was the single most important thing wrong with it, and it is fixed
+and proven end to end against a live server. The engine and the API are in good shape. What is
+still true is that most of the app is API-only: the plan, grocery, prep, cooking and feedback
+screens do not exist, so almost none of tonight's correctness is reachable by a human with a
+browser. That is the honest gap between "verified" and "usable".
+
+next: **T-016** (plan screen — now carrying the shortfall-rendering requirement) paired with
+**T-017** (grocery ledger); they are disjoint files and both are must-haves that turn proven
+API surface into something a parent can actually see. **T-043** (prep scaling, KI-8) is the
+next routes.ts item after that. ~7h40m to stop_at 12:00Z.
+
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T04:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787113400,"next_wakeup_at":1787113490,"pid":2411190,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":3,"ratio":0.99,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":115684878,"window_cost_usd":116.51,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":25848234,"last_probe_ts":1787111900,"last_real_probe_ts":1787111900,"probe_failures":0,"weekly":{"ok":true,"weekly_used_pct":70,"opus_used_pct":76,"week_elapsed_pct":27.92,"weekly_heat":2.51,"opus_heat":2.72,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":15,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
