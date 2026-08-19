@@ -605,11 +605,11 @@
     },
     {
       "id": "T-019",
-      "title": "Build cooking mode and prep screens with resume-into-session recovery",
+      "title": "Build interruption-aware cooking mode with resume-into-session recovery",
       "kind": "feature",
       "priority": 1,
       "value": "H",
-      "effort": "L",
+      "effort": "M",
       "status": "todo",
       "deps": [
         "T-012",
@@ -619,14 +619,16 @@
       ],
       "files_hint": [
         "web/js/cook.js",
-        "web/js/prep.js"
+        "web/css/cook.css",
+        "web/js/router.js",
+        "web/index.html",
+        "web/js/plan.js"
       ],
-      "acceptance": "Cooking mode shows one large-text step at a time with one-handed completion, labelled active vs unattended intervals, background-safe timers with accessible announcements, an explicit warning (with required uninterrupted duration) before any continuous-attention step, the next safe stopping point always visible — and reopening the app mid-session after a reload or kill lands the user back on the correct step with timers correct, showing validated recovery guidance or an honest 'no guidance available'.",
+      "acceptance": "Cooking mode shows one large-text step at a time with one-handed completion, labelled active vs unattended intervals, timers rendered from stored absolute end instants, an explicit warning (with the required uninterrupted duration) before any continuous-attention step, and the next safe stopping point always visible — and reopening the app mid-session after a reload lands the user back on the correct step with timer state intact, showing validated recovery guidance from step metadata or an honest no-guidance-available line.",
       "packages": [],
       "wave": 3,
       "must_haves": [
         "Interruption-aware cooking mode",
-        "Prep plan",
         "Accessibility"
       ],
       "dod": [
@@ -635,7 +637,8 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Invariant 2 binds: render timer state from stored absolute UTC end instants vs now — never count down a local variable as truth. Invariant 6 binds: recovery text comes only from per-step metadata; absent metadata is stated, never fabricated. Prep screen shows retrieve/equipment/do-ahead, first non-interruptible step, first safe stopping point, active-time blocks. Build accessibility in from the start (aria-live announcer from ui.js, 44px targets); the wave-3 a11y pass does not touch these files."
+      "notes": "Invariant 2 binds: render timer state from stored absolute UTC end instants vs now — never count down a local variable as truth. Invariant 6 binds: recovery text comes only from per-step metadata; absent metadata is stated, never fabricated. Prep screen shows retrieve/equipment/do-ahead, first non-interruptible step, first safe stopping point, active-time blocks. Build accessibility in from the start (aria-live announcer from ui.js, 44px targets); the wave-3 a11y pass does not touch these files. CYCLE 15: SPLIT — prep screen carved out to T-057 so cooking mode gets a full builder. Scope now includes router.js/index.html wiring (this item owns those files this wave) and a plan.js entry affordance into cooking.",
+      "craft": "ui"
     },
     {
       "id": "T-020",
@@ -846,7 +849,7 @@
       "priority": 4,
       "value": "M",
       "effort": "S",
-      "status": "todo",
+      "status": "dropped",
       "deps": [
         "T-016",
         "T-020",
@@ -867,7 +870,7 @@
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Strictly after DoD green; independently droppable. Renders the breakdown the spec already forces score.ts to persist — an additive leaf, no engine changes. Numbers formatted via the shared renderer, tabular-nums."
+      "notes": "Strictly after DoD green; independently droppable. Renders the breakdown the spec already forces score.ts to persist — an additive leaf, no engine changes. Numbers formatted via the shared renderer, tabular-nums. DROPPED cycle 15 (hygiene): Plan-screen show-the-math drawer: DoD 5 traceability is already proven on the grocery ledger (29/29 links, cycle 14); a second math surface is duplicate value."
     },
     {
       "id": "T-027",
@@ -876,7 +879,7 @@
       "priority": 4,
       "value": "M",
       "effort": "M",
-      "status": "todo",
+      "status": "dropped",
       "deps": [
         "T-004",
         "T-017",
@@ -901,7 +904,7 @@
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Two delighters merged because both live in grocery.js (same-wave file disjointness); if time is short ship export alone and drop the useitup half. useitup.ts is a pure leaf over persisted surplus + score data; Rational arithmetic via qty.ts (Invariant 1). Guilt-free voice binds: never 'about to waste'."
+      "notes": "Two delighters merged because both live in grocery.js (same-wave file disjointness); if time is short ship export alone and drop the useitup half. useitup.ts is a pure leaf over persisted surplus + score data; Rational arithmetic via qty.ts (Invariant 1). Guilt-free voice binds: never 'about to waste'. DROPPED cycle 15 (hygiene): Clipboard export + use-it-up: SPEC nice-to-have, not a must-have."
     },
     {
       "id": "T-028",
@@ -910,7 +913,7 @@
       "priority": 4,
       "value": "L",
       "effort": "M",
-      "status": "todo",
+      "status": "dropped",
       "deps": [
         "T-034",
         "T-006",
@@ -934,7 +937,7 @@
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "DESIGN names this FIRST TO CUT — it is the only delighter editing existing modules rather than adding a leaf. Any touched frozen type is a contract-drift emergency (single-agent commit). Member hard restriction sits in the existing precedence chain below household hard restriction, above strong dislike."
+      "notes": "DESIGN names this FIRST TO CUT — it is the only delighter editing existing modules rather than adding a leaf. Any touched frozen type is a contract-drift emergency (single-agent commit). Member hard restriction sits in the existing precedence chain below household hard restriction, above strong dislike. DROPPED cycle 15 (hygiene): Second-adult preferences: SPEC nice-to-have, not a must-have."
     },
     {
       "id": "T-029",
@@ -973,7 +976,7 @@
       "priority": 4,
       "value": "M",
       "effort": "S",
-      "status": "todo",
+      "status": "dropped",
       "deps": [
         "T-002"
       ],
@@ -993,7 +996,7 @@
       "route_class": "core",
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Found by the cycle-6 conductor gate (check N5d). parseIngredientRegistry keys uniqueness on name.toLowerCase(); normalize.ts keys its alias index on foldIngredientText (lowercase + COLLAPSED whitespace). An alias pair differing only in internal whitespace therefore passes the parser and then silently collides in the fold index, where last-writer-wins. LATENT, not live: gate check N4 proves the shipped 97-entry registry has no such pair, so no current behaviour is wrong. It is an authoring-time trap, and DoD 4 is exactly about duplicate lines caused by naming differences."
+      "notes": "Found by the cycle-6 conductor gate (check N5d). parseIngredientRegistry keys uniqueness on name.toLowerCase(); normalize.ts keys its alias index on foldIngredientText (lowercase + COLLAPSED whitespace). An alias pair differing only in internal whitespace therefore passes the parser and then silently collides in the fold index, where last-writer-wins. LATENT, not live: gate check N4 proves the shipped 97-entry registry has no such pair, so no current behaviour is wrong. It is an authoring-time trap, and DoD 4 is exactly about duplicate lines caused by naming differences. DROPPED cycle 15 (hygiene): Registry name-uniqueness fold: internal invariant with no user-visible symptom; no reproduction on record."
     },
     {
       "id": "T-031",
@@ -1144,7 +1147,7 @@
       "priority": 3,
       "value": "M",
       "effort": "M",
-      "status": "todo",
+      "status": "dropped",
       "deps": [
         "T-034"
       ],
@@ -1166,7 +1169,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "The honest residual of T-034, recorded by the cycle-10 gate section F rather than hidden. T-034 bought correctness by dropping flavour from the lock WHOLESALE, which also gives up real precision: a tap on a smoky dish no longer vetoes other smoky dishes. Measured consequence, not a hypothesis — the gate lists the 8 distinctive tags now falling through. This is the durable shape; it was explicitly deferred, not forgotten. NOT a blocker for DoD 2, which T-034 already unblocked."
+      "notes": "The honest residual of T-034, recorded by the cycle-10 gate section F rather than hidden. T-034 bought correctness by dropping flavour from the lock WHOLESALE, which also gives up real precision: a tap on a smoky dish no longer vetoes other smoky dishes. Measured consequence, not a hypothesis — the gate lists the 8 distinctive tags now falling through. This is the durable shape; it was explicitly deferred, not forgotten. NOT a blocker for DoD 2, which T-034 already unblocked. DROPPED cycle 15 (hygiene): FlavourTag distinctive/generic partition: internal model refinement, invisible to the user at 30 recipes."
     },
     {
       "id": "T-037",
@@ -1227,7 +1230,7 @@
       "priority": 4,
       "value": "L",
       "effort": "S",
-      "status": "todo",
+      "status": "dropped",
       "deps": [
         "T-007"
       ],
@@ -1240,7 +1243,7 @@
       "model": "sonnet",
       "attempts": 0,
       "route_class": "core",
-      "notes": "Raised by the T-007 builder unprompted (cycle 11). score.ts's novelty anchor logic is not exported and score.ts was frozen, so swap.ts carries its own familiarityOf with identical eight-axis anchor semantics. Two copies of one definition is the drift shape Invariant 5 exists to prevent. LOW priority deliberately: both copies are currently correct and tested, so this is debt, not a defect — it must not outrank a screen the user can see."
+      "notes": "Raised by the T-007 builder unprompted (cycle 11). score.ts's novelty anchor logic is not exported and score.ts was frozen, so swap.ts carries its own familiarityOf with identical eight-axis anchor semantics. Two copies of one definition is the drift shape Invariant 5 exists to prevent. LOW priority deliberately: both copies are currently correct and tested, so this is debt, not a defect — it must not outrank a screen the user can see. DROPPED cycle 15 (hygiene): Familiarity-derivation unification between score.ts and swap.ts: internal tidiness, both paths tested."
     },
     {
       "attempts": 0,
@@ -1602,6 +1605,36 @@
       "model": "sonnet",
       "attempts": 0,
       "notes": "Raised by the T-016 builder: handleSwap accept mode builds its body via buildFullPlanView, which never attaches the three shortfall fields. plan.js defaults them client-side and documents why that is currently safe (a swap only runs against a complete 3-meal plan; the route 409s otherwise). Normalizing server-side removes the client workaround."
+    },
+    {
+      "id": "T-057",
+      "title": "Build the prep screen",
+      "kind": "feature",
+      "priority": 1,
+      "value": "H",
+      "effort": "M",
+      "status": "todo",
+      "deps": [
+        "T-014",
+        "T-043"
+      ],
+      "files_hint": [
+        "web/js/prep.js",
+        "web/css/prep.css"
+      ],
+      "acceptance": "The prep screen shows ingredients to retrieve, equipment needed, tasks doable earlier, the first non-interruptible step, the first safe stopping point and expected active-time blocks, for a real plan meal, with quantities that match the grocery list for that plan.",
+      "packages": [],
+      "wave": 3,
+      "must_haves": [
+        "Prep plan"
+      ],
+      "dod": [
+        6
+      ],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 15,
+      "notes": "Split out of T-019 at cycle 15. Blocked in practice by T-043 (handleGetPrep returns UNSCALED quantities, KI-8) and T-040 (active_time_blocks ship no time_label) — a prep screen built before those renders numbers that contradict the grocery list the parent shopped from. Do T-043 first or in the same wave (server/src/routes.ts is a disjoint scope from web/js/prep.js)."
     }
   ]
 }

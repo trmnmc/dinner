@@ -2303,3 +2303,20 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":16,"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 15 — IN-FLIGHT MARKER (written before dispatch, D-8)
+
+- ts: 1787116000 (2026-08-19T05:06:40Z), stop_at 12:00Z, ~6h53m remaining
+- gear 2 carried forward (no re-probe: last_real_probe_ts 1787115362, 638s < 1800s anchor);
+  wave cap 2, demote=true, weekly governor ceiling 2 still binding
+- work type: build-wave, k = min(k_current 5, gear cap 2) = 2, direct foreground Agent
+  calls into the main working tree (D-11 / KI-4 workaround — no Workflow, no worktrees,
+  no branches; builders forbidden every git command)
+- items: T-019 (cooking mode, sonnet — opus demoted one rung by gear 2) scope
+  web/js/cook.js + web/css/cook.css + web/js/router.js + web/index.html + web/js/plan.js;
+  T-052 (grocery raw-rational formatting fix, sonnet) scope web/js/grocery.js ONLY
+- scopes are pairwise disjoint; no packages to install; craft.ui pack spliced into both
+- hygiene (cycle % 5 == 0): 6 items dropped (T-026/027/028/030/036/039), T-019 split with
+  the prep screen carved out to T-057; live items 39 -> 34
+- if this session dies mid-wave: the tree may hold partial screens. Judge from git diff,
+  salvage-commit or reset per cycle.md step 2, re-queue with attempts+1.
