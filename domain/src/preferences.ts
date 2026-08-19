@@ -21,21 +21,27 @@
  * 1, durability 'durable') — a deliberate, immediate lock, not merely a
  * strong dislike that happens to cross the hard-exclusion threshold — but
  * ONLY on the card's DISTINCTIVE axes (`never_recommend_lock_attributes`:
- * protein, cuisine, flavour). Because filters.ts's `strong_dislike` hard
+ * protein, cuisine). Because filters.ts's `strong_dislike` hard
  * exclusion fires on ANY signal with value ≤ −4/5 and confidence ≥ 1/2
  * (see HARD_FILTER_CONFIG), each locked signal is structurally guaranteed
  * to feed that exclusion the moment it is merged in. The GENERIC axes
- * (spice, richness, method, effort, texture) instead receive an ordinary
- * strong negative through the raw/multiplier path — durable, and strictly
- * stronger than `not_for_me` — whose single-event confidence sits BELOW the
- * hard filter's confidence gate. This scoping is the fix for a measured
- * interaction defect: writing the lock to every axis made each generic
- * value (richness=rich, effort=high, method=stir_fry, spice=hot, …) an
- * independent absolute veto, and ONE tap on one card hard-excluded most of
- * a catalog that shared none of the card's distinctive character. Generic
- * axes still learn from the tap; corroborating negative evidence can still
- * push them across the hard-exclusion threshold later, exactly as repeated
- * `not_again` feedback already can.
+ * (flavour, texture, spice, richness, method, effort) instead receive an
+ * ordinary strong negative through the raw/multiplier path — durable, and
+ * strictly stronger than `not_for_me` — whose single-event confidence sits
+ * BELOW the hard filter's confidence gate. This scoping is the fix for a
+ * measured interaction defect (KI-5, both halves): writing the lock to
+ * every axis made each generic value (richness=rich, effort=high,
+ * method=stir_fry, spice=hot, …) an independent absolute veto, and ONE tap
+ * on one card hard-excluded most of a catalog that shared none of the
+ * card's distinctive character. Flavour left the lock set last (the second
+ * half of KI-5): `FlavourTag` contains generic members ('savoury', 'mild',
+ * 'fresh') that a realistic catalog puts on most dinners, so locking
+ * flavour let one tap on a savoury card veto the savoury majority — the
+ * measured probe saw 3/12 survivors with flavour locked vs 10/12 without,
+ * with shared-protein and shared-cuisine kin still correctly excluded.
+ * Generic axes still learn from the tap; corroborating negative evidence
+ * can still push them across the hard-exclusion threshold later, exactly
+ * as repeated `not_again` feedback already can.
  *
  * A `reason` (feedback) or the `too_much_work` calibration reaction narrows
  * an EXTRA boost onto specific attribute(s) — effort, spice, richness — on
@@ -116,12 +122,14 @@ export interface PreferenceAsymmetryConfig {
    * lock attributes ONLY. */
   readonly never_recommend_confidence: Rational;
   /** The DISTINCTIVE axes that receive `never_recommend`'s absolute lock.
-   * Every axis NOT listed here (the generic axes: spice, richness, method,
-   * effort, texture) receives an ordinary strong negative via the
+   * Every axis NOT listed here (the generic axes: flavour, texture, spice,
+   * richness, method, effort) receives an ordinary strong negative via the
    * raw/multiplier path instead (`never_recommend_generic_raw_value`), so a
    * single tap cannot turn each generic attribute value into an independent
    * absolute hard-filter veto (the measured interaction defect with
-   * filters.ts's `strong_dislike` exclusion — see module doc). */
+   * filters.ts's `strong_dislike` exclusion — see module doc; flavour is
+   * generic here because `FlavourTag` carries catalog-wide members like
+   * 'savoury'). */
   readonly never_recommend_lock_attributes: readonly PreferenceAttribute[];
   /** Raw (unsigned) magnitude `never_recommend` applies to every NON-lock
    * (generic) axis through the ordinary raw/multiplier path. At or above
@@ -167,7 +175,7 @@ export const PREFERENCE_ASYMMETRY_CONFIG: PreferenceAsymmetryConfig = {
   not_for_me_raw_value: rational(2, 5),
   never_recommend_value: rational(-1),
   never_recommend_confidence: rational(1),
-  never_recommend_lock_attributes: ['protein', 'cuisine', 'flavour'],
+  never_recommend_lock_attributes: ['protein', 'cuisine'],
   never_recommend_generic_raw_value: rational(3, 5),
   too_much_work_raw_value: rational(3, 5),
 

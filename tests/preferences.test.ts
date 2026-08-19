@@ -208,10 +208,14 @@ test('PREFERENCE_ASYMMETRY_CONFIG carries exactly the documented literal amounts
   // never_recommend's absolute lock is scoped to exactly the DISTINCTIVE
   // axes — pinned as literals so a drift toward "lock everything" (the
   // measured over-exclusion interaction defect with filters.ts) or toward
-  // "lock nothing" (a toothless never_recommend) both fail here.
+  // "lock nothing" (a toothless never_recommend) both fail here. Flavour
+  // is deliberately NOT in the lock set (KI-5, second half): `FlavourTag`
+  // carries catalog-wide generic members ('savoury', 'mild', 'fresh'), so
+  // a flavour lock let one tap on a savoury card veto most of a realistic
+  // catalog. Flavour takes the strong durable generic negative instead.
   assert.deepEqual(
     [...PREFERENCE_ASYMMETRY_CONFIG.never_recommend_lock_attributes],
-    ['protein', 'cuisine', 'flavour'],
+    ['protein', 'cuisine'],
   );
 });
 
@@ -353,26 +357,26 @@ test('durability: a strong negative (raw ≥ threshold) is durable; a strong pos
 //    exclusion (this is the acceptance-critical integration).
 // ---------------------------------------------------------------------------
 
-test('never_recommend locks value −1 / confidence 1 on the DISTINCTIVE axes only; generic axes get a strong durable negative below the hard-filter confidence gate', () => {
+test('never_recommend locks value −1 / confidence 1 on the DISTINCTIVE axes only; generic axes (flavour included) get a strong durable negative below the hard-filter confidence gate', () => {
   const recipe = makeRecipe();
   const updates = applyCalibrationReaction({ recipe, member_id: 'm', reaction: 'never_recommend' });
   assert.equal(updates.length, 10);
 
-  // Distinctive axes (protein, cuisine, flavour tags): the absolute lock.
-  const lockAxes = new Set(['protein', 'cuisine', 'flavour']);
+  // Distinctive axes (protein, cuisine): the absolute lock.
+  const lockAxes = new Set(['protein', 'cuisine']);
   for (const u of updates) {
     if (!lockAxes.has(u.attribute)) continue;
     assert.ok(eq(u.value, rational(-1)), `${u.attribute}:${u.attribute_value} value not -1`);
     assert.ok(eq(u.confidence, ONE), `${u.attribute}:${u.attribute_value} confidence not 1`);
     assert.equal(u.durability, 'durable');
   }
-  // 2 (protein, cuisine) + 2 flavour tags on the fixture card.
-  assert.equal(updates.filter((u) => lockAxes.has(u.attribute)).length, 4);
+  // Exactly protein + cuisine on the fixture card — flavour is NOT locked.
+  assert.equal(updates.filter((u) => lockAxes.has(u.attribute)).length, 2);
 
-  // Generic axes (spice, richness, method, effort, texture tags):
-  // hand-computed via the ordinary raw/multiplier path, independent of the
-  // engine — value = -(3/5 * 3/2) = -9/10, confidence = 2/5, durable
-  // (raw 3/5 ≥ durable threshold 3/5).
+  // Generic axes (flavour tags, texture tags, spice, richness, method,
+  // effort): hand-computed via the ordinary raw/multiplier path,
+  // independent of the engine — value = -(3/5 * 3/2) = -9/10,
+  // confidence = 2/5, durable (raw 3/5 ≥ durable threshold 3/5).
   for (const u of updates) {
     if (lockAxes.has(u.attribute)) continue;
     assert.ok(eq(u.value, rational(-9, 10)), `${u.attribute}:${u.attribute_value} value = ${u.value.num}/${u.value.den}, expected -9/10`);
@@ -386,8 +390,9 @@ test('never_recommend locks value −1 / confidence 1 on the DISTINCTIVE axes on
   assert.ok(compare(ONE, HARD_FILTER_CONFIG.strong_dislike_confidence_min) >= 0);
   // ...while a SINGLE tap's generic-axis signal is structurally guaranteed
   // NOT to: its confidence (2/5) sits below the hard filter's confidence
-  // gate (1/2), so richness/method/spice/effort/texture values shared with
-  // unrelated recipes do not each become an independent absolute veto.
+  // gate (1/2), so flavour/richness/method/spice/effort/texture values
+  // shared with unrelated recipes do not each become an independent
+  // absolute veto.
   // (Its value magnitude does cross the value threshold — corroborating
   // negative evidence can still escalate a generic axis to a hard
   // exclusion later, exactly like repeated not_again feedback.)
@@ -425,7 +430,7 @@ test('never_recommend is strictly stronger AND more durable than not_for_me on e
   }
 });
 
-test('REGRESSION (measured interaction defect): one never_recommend tap does not hard-exclude recipes sharing only generic axes — but the reacted dish and its distinctive kin stay excluded', () => {
+test('REGRESSION (measured interaction defect): one never_recommend tap does not hard-exclude recipes sharing only generic axes (a flavour tag included) — but the reacted dish and its protein/cuisine kin stay excluded', () => {
   // The reacted card: chicken / thai, flavour [umami, garlicky] — with
   // generic axes (spice hot, richness rich, method stir_fry, effort high,
   // texture [tender, saucy]) deliberately shared with unrelated recipes.
@@ -451,6 +456,10 @@ test('REGRESSION (measured interaction defect): one never_recommend tap does not
     slug: 'thai-tofu',
     attributes: { ...reactedAttributes, protein: 'tofu', cuisine: 'thai', flavour: ['bright'], spice: 'medium', richness: 'light', method: 'oven', effort: 'low' },
   });
+  // Shares only a flavour tag — flavour is a GENERIC axis (KI-5, second
+  // half): one tap must NOT hard-exclude it. Its flavour signal is a
+  // strong durable negative that corroborating evidence can escalate
+  // later, but a single tap sits below the hard-filter confidence gate.
   const sameFlavour = makeRecipe({
     id: 'garlicky-beef',
     slug: 'garlicky-beef',
@@ -493,18 +502,19 @@ test('REGRESSION (measured interaction defect): one never_recommend tap does not
   const result = applyHardFilters(catalog, household, [member], signals, emptyRegistry, emptyContext);
 
   // The catalog can still produce a full 3-meal plan: every recipe sharing
-  // only generic axes with the reacted card SURVIVES...
+  // only generic axes with the reacted card SURVIVES — the shared-flavour
+  // dish included...
   assert.deepEqual(
     result.survivors.map((r) => r.id),
-    ['beef-bourguignon', 'veg-stir-fry', 'hot-lentil-curry'],
+    ['garlicky-beef', 'beef-bourguignon', 'veg-stir-fry', 'hot-lentil-curry'],
     `survivors were [${result.survivors.map((r) => r.id).join(', ')}]`,
   );
   // ...while the reacted dish and everything sharing its distinctive
-  // character (protein, cuisine, a flavour tag) remain hard-excluded, each
-  // with a strong_dislike reason. never_recommend is not toothless.
+  // character (protein or cuisine) remain hard-excluded, each with a
+  // strong_dislike reason. never_recommend is not toothless.
   assert.deepEqual(
     result.exclusions.map((e) => e.recipe_id),
-    ['thai-chicken', 'chicken-milanese', 'thai-tofu', 'garlicky-beef'],
+    ['thai-chicken', 'chicken-milanese', 'thai-tofu'],
   );
   for (const exclusion of result.exclusions) {
     assert.ok(
@@ -512,6 +522,167 @@ test('REGRESSION (measured interaction defect): one never_recommend tap does not
       `${exclusion.recipe_id} lacks a strong_dislike reason`,
     );
   }
+});
+
+test('KI-5 REGRESSION (broad generic flavour tag): one never_recommend tap on a savoury card leaves the savoury majority of a realistic catalog standing; only the reacted dish and its protein/cuisine kin fall', () => {
+  // A realistic 12-recipe catalog: 'savoury' — a generic FlavourTag member
+  // sitting on most real dinners — appears on 8 of 12. Every recipe other
+  // than r-11 (shares protein) and r-12 (shares cuisine) differs from the
+  // reacted card on BOTH distinctive axes.
+  const attrs = (
+    protein: AttributeVector['protein'],
+    cuisine: AttributeVector['cuisine'],
+    flavour: AttributeVector['flavour'],
+  ): AttributeVector => ({
+    protein,
+    cuisine,
+    flavour,
+    texture: ['tender'],
+    spice: 'mild',
+    richness: 'medium',
+    method: 'stovetop',
+    effort: 'medium',
+  });
+  const dish = (id: string, attributes: AttributeVector): Recipe =>
+    makeRecipe({ id, slug: id, attributes });
+
+  const reacted = dish('r-01-thai-chicken', attrs('chicken', 'thai', ['savoury', 'garlicky']));
+  const catalog: readonly Recipe[] = [
+    reacted,
+    // Seven more savoury dinners — the majority the old flavour lock
+    // wrongly wiped out with a single tap:
+    dish('r-02-beef-tacos', attrs('beef', 'mexican', ['savoury'])),
+    dish('r-03-pork-bibimbap', attrs('pork', 'korean', ['savoury', 'umami'])),
+    dish('r-04-miso-salmon', attrs('fish', 'japanese', ['savoury'])),
+    dish('r-05-dal', attrs('legume', 'indian', ['savoury', 'earthy'])),
+    dish('r-06-mapo-tofu', attrs('tofu', 'chinese', ['savoury'])),
+    dish('r-07-shakshuka', attrs('egg', 'middle_eastern', ['savoury'])),
+    dish('r-08-lasagna', attrs('cheese', 'italian', ['savoury'])),
+    // Two non-savoury, fully unrelated dinners:
+    dish('r-09-lamb-souvlaki', attrs('lamb', 'greek', ['herby', 'bright'])),
+    dish('r-10-paella', attrs('shellfish', 'spanish', ['smoky'])),
+    // Distinctive kin — these MUST still fall:
+    dish('r-11-chicken-parm', attrs('chicken', 'american', ['fresh'])),
+    dish('r-12-thai-tempeh', attrs('tempeh', 'thai', ['bright'])),
+  ];
+  assert.equal(
+    catalog.filter((r) => r.attributes.flavour.includes('savoury')).length,
+    8,
+    'fixture precondition: savoury must sit on 8 of 12',
+  );
+
+  const household = makeHousehold();
+  const member = makeMember();
+  // ONE tap, fully merged into persisted signals — the composition with
+  // filters.ts is exactly where the defect lived.
+  const updates = applyCalibrationReaction({
+    recipe: reacted,
+    member_id: member.id,
+    reaction: 'never_recommend',
+  });
+  const signals = updates.map((update, i) =>
+    mergeSignal({
+      existing: null,
+      update,
+      household_id: household.id,
+      id: `sig-ki5-${String(i)}`,
+      now: '2026-08-19T00:00:00.000Z',
+    }),
+  );
+
+  const result = applyHardFilters(catalog, household, [member], signals, emptyRegistry, emptyContext);
+
+  // The savoury MAJORITY survives: 9 of 12 stand, including all seven
+  // other savoury dinners. Under the old flavour lock this catalog kept
+  // only the two non-savoury unrelated dishes.
+  assert.deepEqual(
+    result.survivors.map((r) => r.id),
+    [
+      'r-02-beef-tacos',
+      'r-03-pork-bibimbap',
+      'r-04-miso-salmon',
+      'r-05-dal',
+      'r-06-mapo-tofu',
+      'r-07-shakshuka',
+      'r-08-lasagna',
+      'r-09-lamb-souvlaki',
+      'r-10-paella',
+    ],
+    `survivors were [${result.survivors.map((r) => r.id).join(', ')}]`,
+  );
+  assert.equal(
+    result.survivors.filter((r) => r.attributes.flavour.includes('savoury')).length,
+    7,
+    'every non-reacted savoury dinner must survive one tap',
+  );
+
+  // Still binding: the reacted dish, the shared-protein dish and the
+  // shared-cuisine dish are all hard-excluded, each via strong_dislike.
+  assert.deepEqual(
+    result.exclusions.map((e) => e.recipe_id),
+    ['r-01-thai-chicken', 'r-11-chicken-parm', 'r-12-thai-tempeh'],
+  );
+  const strongDislikeAxes = (recipeId: string): readonly string[] => {
+    const exclusion = result.exclusions.find((e) => e.recipe_id === recipeId);
+    assert.ok(exclusion !== undefined, `${recipeId} was not excluded`);
+    return exclusion.reasons
+      .filter((r) => r.kind === 'strong_dislike')
+      .map((r) => (r.kind === 'strong_dislike' ? r.attribute : ''));
+  };
+  assert.ok(strongDislikeAxes('r-01-thai-chicken').includes('protein'));
+  assert.ok(strongDislikeAxes('r-01-thai-chicken').includes('cuisine'));
+  assert.ok(strongDislikeAxes('r-11-chicken-parm').includes('protein'));
+  assert.ok(strongDislikeAxes('r-12-thai-tempeh').includes('cuisine'));
+});
+
+test('CONTROL: a single not_for_me tap hard-excludes nothing — not even the reacted dish', () => {
+  const reacted = makeRecipe({ id: 'reacted', slug: 'reacted' });
+  const twin = makeRecipe({ id: 'twin', slug: 'twin' }); // identical vector
+  const unrelated = makeRecipe({
+    id: 'unrelated',
+    slug: 'unrelated',
+    attributes: {
+      protein: 'legume',
+      cuisine: 'indian',
+      flavour: ['earthy'],
+      texture: ['creamy'],
+      spice: 'hot',
+      richness: 'light',
+      method: 'simmer',
+      effort: 'low',
+    },
+  });
+  const household = makeHousehold();
+  const member = makeMember();
+
+  const updates = applyCalibrationReaction({
+    recipe: reacted,
+    member_id: member.id,
+    reaction: 'not_for_me',
+  });
+  const signals = updates.map((update, i) =>
+    mergeSignal({
+      existing: null,
+      update,
+      household_id: household.id,
+      id: `sig-nfm-${String(i)}`,
+      now: '2026-08-19T00:00:00.000Z',
+    }),
+  );
+
+  const result = applyHardFilters(
+    [reacted, twin, unrelated],
+    household,
+    [member],
+    signals,
+    emptyRegistry,
+    emptyContext,
+  );
+  // not_for_me is a soft (if strong-ish) negative: value -3/5 sits above
+  // the hard filter's value threshold (-4/5), so NOTHING is hard-excluded.
+  // Only never_recommend locks; not_for_me merely re-ranks via score.ts.
+  assert.deepEqual(result.survivors.map((r) => r.id), ['reacted', 'twin', 'unrelated']);
+  assert.deepEqual(result.exclusions, []);
 });
 
 test('never_recommend, once merged, hard-excludes the recipe via filters.ts (real integration, not a mock)', () => {

@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 9,
+  "cycle": 10,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -70,14 +70,14 @@
     {
       "id": "D-8",
       "topic": "crashed-cycle-salvage",
-      "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work \u2014 authored the gates from scratch, ran them, and closed the wave.",
-      "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind \u2014 detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
+      "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work — authored the gates from scratch, ran them, and closed the wave.",
+      "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind — detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
       "cycle": 5
     },
     {
       "id": "D-9",
       "topic": "scope-cut",
-      "decision": "T-002's domain/src/ingredients.ts is CUT from scope. catalog.ts (landed by T-008) already owns the curated ingredient registry \u2014 aliases, allergen classes, densities, per-item weights \u2014 sourced from data/ingredients.json. normalize.ts consumes IngredientRegistry as a parameter instead of owning a second table.",
+      "decision": "T-002's domain/src/ingredients.ts is CUT from scope. catalog.ts (landed by T-008) already owns the curated ingredient registry — aliases, allergen classes, densities, per-item weights — sourced from data/ingredients.json. normalize.ts consumes IngredientRegistry as a parameter instead of owning a second table.",
       "why": "A second curated table would be a second source of truth, which is precisely the data-drift failure Invariant 5 exists to prevent. Ruled at cycle 6 dispatch time and recorded in the in-flight marker; formalised here because the cycle that made the ruling died before it could write a journal block.",
       "cycle": 6
     },
@@ -85,14 +85,14 @@
       "id": "D-10",
       "topic": "crashed-cycle-salvage",
       "decision": "Cycle 6 was killed mid-wave by the pacer's 600s background-task ceiling (\"Background tasks still running after 600s; terminating\", runs/pacer.log 22:55Z). This session RESUMED cycle 6 rather than opening cycle 7: merged wave-006-T-002 (complete and committed by its builder), salvage-committed the T-006 builder's uncommitted worktree files, merged those too, then authored and ran both verification gates.",
-      "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed \u2014 it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests \u2014 filed as T-029 rather than papered over.",
+      "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed — it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests — filed as T-029 rather than papered over.",
       "cycle": 6
     },
     {
       "id": "D-11",
       "topic": "harness-workaround",
-      "decision": "Cycle 7 dispatched its two builders as DIRECT, FOREGROUND Agent calls editing the main working tree under strictly disjoint file scopes \u2014 no build-wave workflow, no worktrees, no builder branches. Both builders were forbidden to run any git command; the conductor committed.",
-      "why": "KI-4 killed cycles 4 and 6 mid-wave. This cycle established the mechanism: bin/swarm-pacer.sh spawns `claude -p` synchronously with NO timeout of its own (verified by reading lines 232-260), so the 600s guillotine is purely the harness background-task wait ceiling (CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at turn end. Foreground agents are part of the turn, not background tasks, so the ceiling never applies. The wave ran 424s and 356s \u2014 both would have been at risk, and the T-029 builder in particular was still working at the 356s mark. This is a prompt-side workaround costing nothing; the durable fix is still in the pacer and still belongs in the morning report.",
+      "decision": "Cycle 7 dispatched its two builders as DIRECT, FOREGROUND Agent calls editing the main working tree under strictly disjoint file scopes — no build-wave workflow, no worktrees, no builder branches. Both builders were forbidden to run any git command; the conductor committed.",
+      "why": "KI-4 killed cycles 4 and 6 mid-wave. This cycle established the mechanism: bin/swarm-pacer.sh spawns `claude -p` synchronously with NO timeout of its own (verified by reading lines 232-260), so the 600s guillotine is purely the harness background-task wait ceiling (CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at turn end. Foreground agents are part of the turn, not background tasks, so the ceiling never applies. The wave ran 424s and 356s — both would have been at risk, and the T-029 builder in particular was still working at the 356s mark. This is a prompt-side workaround costing nothing; the durable fix is still in the pacer and still belongs in the morning report.",
       "cycle": 7
     },
     {
@@ -115,6 +115,13 @@
       "decision": "The cycle-9 T-005 gate deliberately probed BEYOND the defect the item failed on: as well as re-running the cycle-8 probe verbatim, it built a second, realistic 12-recipe catalog with broad flavour tags. The item passed the first probe and failed the second.",
       "why": "The cycle-8 fix direction named three axes as 'distinctive' - protein, cuisine, flavour - and the first two are, but the FlavourTag vocabulary contains 'savoury', 'mild' and 'fresh'. A gate that only re-ran the original probe would have marked this item done and shipped the identical product-breaking failure on a different axis, invisibly, because the original probe's catalog carried no flavour tags at all. The lesson generalises past this item: when a fix works by RECLASSIFYING inputs, the gate must test the reclassification against realistic data, not just re-run the case that failed - otherwise the gate only proves the specific counterexample was handled. This is also the second time in two cycles that composing modules (preferences x filters) found what neither module's own suite could, reinforcing the cycle-8 finding.",
       "cycle": 9
+    },
+    {
+      "id": "D-15",
+      "topic": "crashed-cycle-salvage",
+      "decision": "Cycle 10 was killed by a SESSION USAGE LIMIT, not by KI-4's 600s background-task ceiling. This session resumed cycle 10 rather than opening cycle 11: salvage-committed T-034's two modified files, authored a fresh 23-check gate against them, and closed the wave. T-007, whose builder produced ZERO files, is returned to todo with attempts LEFT AT 0 rather than incremented.",
+      "why": "runs/cycle-1787102668.json records is_error=true, result \"You've hit your session limit · resets 3:20am (UTC)\", num_turns 38, duration 831s — the cycle was cut off mid-wave by the account's 5h session cap, and the three pacer spawns that followed (01:43, 01:48, 01:54Z) each died in under 500ms with the identical message and $0 cost. That is a DIFFERENT failure mode from KI-4 and it is filed separately as KI-6; attributing it to KI-4 would have sent the next cycle chasing a timeout that was not the cause. attempts is deliberately NOT incremented on T-007 because cycle.md's attempts+1 rule exists to escalate items whose BUILD failed; T-007's build never ran. Incrementing it twice for conductor-session deaths would blocked-cap a critical-path item for a reason that has nothing to do with its code.",
+      "cycle": 10
     }
   ],
   "known_issues": [
@@ -127,7 +134,7 @@
     {
       "id": "KI-2",
       "severity": "medium",
-      "desc": "RE-OPENED at cycle 5 (was mislabelled RESOLVED-BY-DRIFT at cycle 3). The weekly governor zero-envelope blind spot in bin/swarm-weekly-from-allocator.sh: heat is computed as 100*swarm_used/(swarm_used+allow_overall), so a zero denominator DISENGAGES the governor. At cycle 3 swarm_used_pct had drifted 0 -> 4 and I recorded the bug as resolved. At cycle 5 it fell back to 0 with allow_overall_pct 0 and posture \"trickle\", so the feeder would disengage the governor again \u2014 precisely when restraint matters most. The ceiling held at 2 this cycle ONLY because a second, independent signal was hot (raw account 52.0% weekly at 24.65% week-elapsed => heat 2.11). Drift is not a fix. Correct behaviour: u+a <= 0 must mean MAXIMUM heat, not \"unconfigured\". Hard rule 5 forbids the fix mid-run; morning report.",
+      "desc": "RE-OPENED at cycle 5 (was mislabelled RESOLVED-BY-DRIFT at cycle 3). The weekly governor zero-envelope blind spot in bin/swarm-weekly-from-allocator.sh: heat is computed as 100*swarm_used/(swarm_used+allow_overall), so a zero denominator DISENGAGES the governor. At cycle 3 swarm_used_pct had drifted 0 -> 4 and I recorded the bug as resolved. At cycle 5 it fell back to 0 with allow_overall_pct 0 and posture \"trickle\", so the feeder would disengage the governor again — precisely when restraint matters most. The ceiling held at 2 this cycle ONLY because a second, independent signal was hot (raw account 52.0% weekly at 24.65% week-elapsed => heat 2.11). Drift is not a fix. Correct behaviour: u+a <= 0 must mean MAXIMUM heat, not \"unconfigured\". Hard rule 5 forbids the fix mid-run; morning report.",
       "cycle": 5
     },
     {
@@ -139,14 +146,22 @@
     {
       "id": "KI-4",
       "severity": "high",
-      "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" \u2014 runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
+      "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" — runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
       "cycle": 6
     },
     {
       "id": "KI-5",
       "severity": "high",
-      "desc": "TARGET-SIDE, PARTIALLY FIXED at cycle 9, still OPEN. Original defect (cycle 8): applyCalibrationReaction(never_recommend) wrote an absolute-exclusion-strength lock (value -1, confidence 1) to EVERY attribute axis, so one tap on a chicken/thai card left 2 of 6 survivors in a catalog sharing no protein and no cuisine with it. FIXED AND VERIFIED at cycle 9: the generic axes (spice, richness, method, effort, texture) now take an ordinary strong durable negative at confidence 2/5, below filters.ts's 1/2 gate; that same probe now returns 6/6. STILL BROKEN: the lock still covers flavour tags, and FlavourTag includes generic members. Measured on a 12-recipe catalog carrying 'savoury' on 8 of 12, one tap on a savoury card leaves 3 of 12 survivors - 8 excluded on strong_dislike:flavour=savoury alone. DoD 2 remains at risk from the first onboarding flow. The remedy is measured, not hypothesised (SWARM/runs/cycle-009-remedy-probe.mjs: locking protein+cuisine only gives 10/12 while keeping both locks binding) and is filed as T-034, priority 1. T-005 itself is BLOCKED at attempts 2. Severity stays high until T-034 lands.",
-      "cycle": 9
+      "desc": "RESOLVED at cycle 10 (T-034), both halves. History: applyCalibrationReaction(never_recommend) wrote an absolute-exclusion lock (value -1, confidence 1) to EVERY attribute axis, so one tap hard-excluded most of a catalog sharing none of the card's character. Cycle 9 fixed the generic axes (spice, richness, method, effort, texture) but LEFT flavour locked, and FlavourTag carries catalog-wide members, so one tap on a savoury card still left only 3/12 survivors. Cycle 10 dropped flavour from never_recommend_lock_attributes (a one-line config change; the lock is now exactly protein+cuisine). CONDUCTOR-VERIFIED by a fresh 23-check gate (SWARM/runs/cycle-010-gate-T034.mjs, output .swarm/runs/cycle-010-verify-T-034.txt, 23/23): taps on all three generic members (savoury 8/12 holders, mild 2/12, fresh 3/12) now exclude ZERO dishes; protein and cuisine kin plus the reacted dish are still absolutely excluded (10/12 survive, exactly the 2 kin fall); flavour signals are still emitted, still negative (-9/10), still durable, and sit below the 1/2 hard-filter gate; and a corroborated flavour signal (-9/10, confidence 4/5) STILL hard-excludes all 8 savoury dishes, proving the axis was not defanged. Residual trade-off recorded, not hidden: distinctive flavour tags (garlicky, smoky, umami, ...) now also fall through the generic path, so a tap on a smoky dish no longer vetoes other smoky dishes. The durable fix is a curated distinctive/generic partition of FlavourTag, filed as T-036 and NOT built tonight.",
+      "cycle": 9,
+      "status": "resolved",
+      "resolved_cycle": 10
+    },
+    {
+      "id": "KI-6",
+      "severity": "high",
+      "status": "open",
+      "desc": "SWARM-side / account-side, DISTINCT FROM KI-4. The account's 5-hour SESSION limit terminated cycle 10 mid-wave and then killed three consecutive pacer spawns outright. Evidence: runs/cycle-1787102668.json (is_error true, \"You've hit your session limit · resets 3:20am (UTC)\", num_turns 38, duration_ms 831019, cost $8.49) followed by runs/cycle-1787103828.json, cycle-1787104138.json and cycle-1787104455.json — each num_turns 1, duration under 500ms, cost $0.00, same message. Consequences: (a) a cycle can die from the session cap at ANY point regardless of wave duration, so the in-flight marker (D-8) is the only thing standing between this and merged-but-ungated code; (b) the pacer has no session-limit awareness — it kept respawning every ~5 min into a hard wall, converting a usage pause into a stream of failed cycles in pacer.log; (c) neither the window probe (rho 0.50, cool) nor the weekly governor (heat 2.58, hot) models the SESSION cap, so the pacing machinery could not have predicted or prevented this. Fix direction: teach bin/swarm-pacer.sh to parse the session-limit message out of the cycle result JSON and back off until the quoted reset time instead of respawning on its fixed interval. SWARM-side, hard rule 5 — recorded, not edited mid-run; belongs in the morning report."
     }
   ],
   "counters": {
@@ -154,7 +169,7 @@
     "consecutive_failures": 0,
     "k_current": 5,
     "wave_streak": 0,
-    "window_tokens_attributed": 51463045
+    "window_tokens_attributed": 69458900
   },
   "qa": {
     "last_look_cycle": null,
@@ -162,9 +177,9 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 9,
-    "work": "build-wave k=2 (foreground agents): T-004 inventory subtraction + package selection, T-005 never_recommend re-fix",
-    "outcome": "T-004 verified done (gate 22/22 incl. an independent brute-force oracle over 240 probes, mutation 8/9); T-005 FAILED again -> BLOCKED at attempts 2, over-exclusion moved to the flavour axis (3/12 survivors measured); remedy measured and filed as T-034; 297/297 suite green",
-    "commit": "f79f4dc"
+    "n": 10,
+    "work": "resume killed wave — salvage + gate T-034 (never_recommend lock re-scope); T-007 never ran",
+    "outcome": "T-034 VERIFIED done (fresh 23/23 conductor gate incl. all three generic flavour members, a not-defanged corroboration probe, and shipped-config assertion); KI-5 CLOSED after 3 cycles; KI-6 filed (session usage limit killed cycle 10 + 3 pacer spawns); 299/299 suite green, typecheck clean",
+    "commit": null
   }
 }

@@ -19,7 +19,7 @@
         "tests/qty.test.ts",
         "tests/smoke.sqlite.test.ts"
       ],
-      "acceptance": "All downstream modules can import a frozen contract surface \u2014 Rational quantity type, recipe/step/score-breakdown/cooking-event shapes, household-scoped DB helpers over a real SQLite file, and the design tokens \u2014 with the repo typechecking strictly and running .ts directly on Node 24 with zero runtime dependencies.",
+      "acceptance": "All downstream modules can import a frozen contract surface — Rational quantity type, recipe/step/score-breakdown/cooking-event shapes, household-scoped DB helpers over a real SQLite file, and the design tokens — with the repo typechecking strictly and running .ts directly on Node 24 with zero runtime dependencies.",
       "packages": [],
       "wave": 0,
       "must_haves": [
@@ -34,7 +34,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Runs ALONE; owns the manifests (sole exception to the manifest exclusion). Invariant 1: Rational (bigint num/den) is the ONLY arithmetic type on authoritative paths, qty.ts the sole entry point, rounding once at display/package boundary. Invariant 2: cooking-event shape stores timers as absolute UTC end instants, never remaining-seconds. Invariant 3: every db.ts helper takes household_id as REQUIRED first argument and appends the WHERE itself \u2014 an unscoped query must be inexpressible. Schema includes a separate never-overwritten column for user grocery-quantity edits [steal C]. tsc --noEmit is the gate, never a build step; devDependency typescript only. Smoke check proves node:sqlite on a real file DB with the actual statement API. tokens.css: type scale, 4px grid, dark-first verified contrast, 44px targets, focus states, prefers-reduced-motion, tabular-nums."
+      "notes": "Runs ALONE; owns the manifests (sole exception to the manifest exclusion). Invariant 1: Rational (bigint num/den) is the ONLY arithmetic type on authoritative paths, qty.ts the sole entry point, rounding once at display/package boundary. Invariant 2: cooking-event shape stores timers as absolute UTC end instants, never remaining-seconds. Invariant 3: every db.ts helper takes household_id as REQUIRED first argument and appends the WHERE itself — an unscoped query must be inexpressible. Schema includes a separate never-overwritten column for user grocery-quantity edits [steal C]. tsc --noEmit is the gate, never a build step; devDependency typescript only. Smoke check proves node:sqlite on a real file DB with the actual statement API. tokens.css: type scale, 4px grid, dark-first verified contrast, 44px targets, focus states, prefers-reduced-motion, tabular-nums."
     },
     {
       "id": "T-002",
@@ -65,7 +65,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 1 binds: all arithmetic through qty.ts Rational; review greps for bare +/* on numbers in these files. 'To taste' is a distinct non-numeric state, never foldable into a quantity. Ranges preserved as min/max, scaled independently. CYCLE 6 (D-9): domain/src/ingredients.ts CUT \u2014 catalog.ts already owns the curated registry; a second table would be a second source of truth."
+      "notes": "Invariant 1 binds: all arithmetic through qty.ts Rational; review greps for bare +/* on numbers in these files. 'To taste' is a distinct non-numeric state, never foldable into a quantity. Ranges preserved as min/max, scaled independently. CYCLE 6 (D-9): domain/src/ingredients.ts CUT — catalog.ts already owns the curated registry; a second table would be a second source of truth."
     },
     {
       "id": "T-003",
@@ -97,7 +97,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 1 binds: Rational only, no floats. Scale factor = target_servings / servings_default applied to min and max independently. Differing preparation states preserved on the line, never silently merged. Traceability is a data structure produced here, not a UI afterthought \u2014 DoD 5's test asserts these links exist for every line.",
+      "notes": "Invariant 1 binds: Rational only, no floats. Scale factor = target_servings / servings_default applied to min and max independently. Differing preparation states preserved on the line, never silently merged. Traceability is a data structure produced here, not a UI afterthought — DoD 5's test asserts these links exist for every line.",
       "verified_cycle": 7
     },
     {
@@ -118,7 +118,7 @@
         "tests/inventory.test.ts",
         "tests/packaging.test.ts"
       ],
-      "acceptance": "purchase_requirement = max(0, aggregated \u2212 usable_inventory) subtracting only confirmed/assumed_staple entries (less-certain entries become confirmation-question objects, never silent subtractions), and the chosen package combination's total yield always covers the requirement \u2014 underbuying impossible \u2014 minimising (expected waste, package count), with expected_surplus computed and generic fallbacks ('one bunch', 'one ~2 lb package') flagged as estimates.",
+      "acceptance": "purchase_requirement = max(0, aggregated − usable_inventory) subtracting only confirmed/assumed_staple entries (less-certain entries become confirmation-question objects, never silent subtractions), and the chosen package combination's total yield always covers the requirement — underbuying impossible — minimising (expected waste, package count), with expected_surplus computed and generic fallbacks ('one bunch', 'one ~2 lb package') flagged as estimates.",
       "packages": [],
       "wave": 1,
       "must_haves": [
@@ -152,7 +152,7 @@
         "tests/preferences.test.ts",
         "tests/calibration.test.ts"
       ],
-      "acceptance": "Every calibration reaction and post-meal feedback event updates per-attribute signals (protein, cuisine, flavour, texture, spice, richness, method, effort) each carrying value, confidence and durability \u2014 never one opaque score \u2014 with negative signals weighted more strongly and faster than weak positives, and the calibration module deliberately SELECTS 8\u201315 cards for maximum attribute spread rather than sampling randomly.",
+      "acceptance": "Every calibration reaction and post-meal feedback event updates per-attribute signals (protein, cuisine, flavour, texture, spice, richness, method, effort) each carrying value, confidence and durability — never one opaque score — with negative signals weighted more strongly and faster than weak positives, and the calibration module deliberately SELECTS 8–15 cards for maximum attribute spread rather than sampling randomly.",
       "packages": [],
       "wave": 1,
       "must_haves": [
@@ -164,7 +164,7 @@
       ],
       "model": "sonnet",
       "attempts": 2,
-      "notes": "Card selection variance is why candidate B won \u2014 the spec demands deliberately varied cards, not just reactions. Four reactions: looks good / not for me / never recommend / too much work; 'never recommend' feeds the hard-exclusion set consumed by filters. Persisted score/signal values go through Rational on authoritative paths (Invariant 1). || CYCLE 8 VERDICT: FAILED VERIFICATION (attempt 1). Gate SWARM/runs/cycle-008-gate-T005.mjs scored 44/45; the module is 95% right (asymmetry proven from EQUAL raw inputs and pinned to the exact 3/2 config ratio, all 8 axes covered, clamping exact, greedy selection beat the BEST of 500 random samples on coverage 34 vs 34 and the mean 28.97, deterministic under input reordering). The ONE failure is a product-breaking integration defect and it is the whole reason this item is not done: applyCalibrationReaction(never_recommend) writes value -1 / confidence 1 to EVERY attribute-value pair on the card (all 6 single axes plus every flavour and texture tag), and filters.ts treats ANY signal at value <= -4/5 with confidence >= 1/2 as an ABSOLUTE hard exclusion. Measured: one never_recommend tap on a chicken/thai card left 2 of 6 survivors in a catalog sharing NO protein and NO cuisine with it - r-01 and r-06 died on richness=rich + effort=high, r-02 on method=stir_fry, r-03 on spice=hot. On a real 30-recipe catalog this plausibly empties the plan and breaks DoD 2 (>=2 of 3 meals approvable) from the very first onboarding flow. FIX DIRECTION (do NOT rebuild the module - it is good work; this is a targeted change): never_recommend must not write an absolute-exclusion-strength value to GENERIC axes. Either scope the -1 lock to the distinctive axes only (protein, cuisine, and flavour tags) and write an ordinary strong negative to the generic ones (spice/richness/method/effort/texture), or introduce a recipe-scoped exclusion instead of an attribute-scoped one. Whichever is chosen, the re-verify gate will re-run the 6-recipe integration probe and require a majority to survive. The builder itself flagged this in its return as worth a second look - credit to it for the honesty. See also KI-5. || CYCLE 9 VERDICT: FAILED VERIFICATION AGAIN (attempt 2) -> BLOCKED. Gate SWARM/runs/cycle-009-gate-T005.mjs scored 14/16. What the attempt DID fix, verified: the cycle-8 defect is gone. The builder scoped the -1/confidence-1 lock to protein + cuisine + flavour and routed the generic axes (spice, richness, method, effort, texture) through the ordinary raw/multiplier path at value -9/10, confidence 2/5 - below filters.ts's 1/2 confidence gate, so no generic axis is a one-tap veto. The verbatim cycle-8 probe went from 2/6 survivors to 6/6. never_recommend stays genuinely binding (reacted card, same-protein and same-cuisine recipes all still excluded), is strictly stronger and more durable than not_for_me on every pair, and two taps sharing a generic axis still escalate it to a hard exclusion, so the model still learns. Asymmetry, clamping and calibration selection all survive intact. WHAT STILL FAILS, and why the item is blocked: the over-exclusion did not disappear, it MOVED to the flavour axis. FlavourTag contains genuinely generic members ('savoury', 'mild', 'fresh'), so locking flavour tags as 'distinctive' reproduces the same product-breaking failure. Measured on a realistic 12-recipe catalog carrying 'savoury' on 8 of 12: ONE never_recommend tap on a savoury+spicy chicken/thai card left 3 of 12 survivors, with 8 recipes excluded on `strong_dislike:flavour=savoury` alone. That still plausibly empties the plan and still breaks DoD 2. IMPORTANT ATTRIBUTION: the builder followed the fix direction in these notes verbatim, and flagged this exact risk unprompted in its return, naming the one-line remedy and explaining that it declined to deviate on an unmeasured hypothesis. That was the right call and the failure is in the cycle-8 SCOPING (mine), not in the build. The remedy is now MEASURED, not hypothesised - see T-034 and SWARM/runs/cycle-009-remedy-probe.mjs. The code is COMMITTED rather than reverted because it is strictly better than the cycle-8 state: defect A is fixed and only defect B remains. See KI-5."
+      "notes": "Card selection variance is why candidate B won — the spec demands deliberately varied cards, not just reactions. Four reactions: looks good / not for me / never recommend / too much work; 'never recommend' feeds the hard-exclusion set consumed by filters. Persisted score/signal values go through Rational on authoritative paths (Invariant 1). || CYCLE 8 VERDICT: FAILED VERIFICATION (attempt 1). Gate SWARM/runs/cycle-008-gate-T005.mjs scored 44/45; the module is 95% right (asymmetry proven from EQUAL raw inputs and pinned to the exact 3/2 config ratio, all 8 axes covered, clamping exact, greedy selection beat the BEST of 500 random samples on coverage 34 vs 34 and the mean 28.97, deterministic under input reordering). The ONE failure is a product-breaking integration defect and it is the whole reason this item is not done: applyCalibrationReaction(never_recommend) writes value -1 / confidence 1 to EVERY attribute-value pair on the card (all 6 single axes plus every flavour and texture tag), and filters.ts treats ANY signal at value <= -4/5 with confidence >= 1/2 as an ABSOLUTE hard exclusion. Measured: one never_recommend tap on a chicken/thai card left 2 of 6 survivors in a catalog sharing NO protein and NO cuisine with it - r-01 and r-06 died on richness=rich + effort=high, r-02 on method=stir_fry, r-03 on spice=hot. On a real 30-recipe catalog this plausibly empties the plan and breaks DoD 2 (>=2 of 3 meals approvable) from the very first onboarding flow. FIX DIRECTION (do NOT rebuild the module - it is good work; this is a targeted change): never_recommend must not write an absolute-exclusion-strength value to GENERIC axes. Either scope the -1 lock to the distinctive axes only (protein, cuisine, and flavour tags) and write an ordinary strong negative to the generic ones (spice/richness/method/effort/texture), or introduce a recipe-scoped exclusion instead of an attribute-scoped one. Whichever is chosen, the re-verify gate will re-run the 6-recipe integration probe and require a majority to survive. The builder itself flagged this in its return as worth a second look - credit to it for the honesty. See also KI-5. || CYCLE 9 VERDICT: FAILED VERIFICATION AGAIN (attempt 2) -> BLOCKED. Gate SWARM/runs/cycle-009-gate-T005.mjs scored 14/16. What the attempt DID fix, verified: the cycle-8 defect is gone. The builder scoped the -1/confidence-1 lock to protein + cuisine + flavour and routed the generic axes (spice, richness, method, effort, texture) through the ordinary raw/multiplier path at value -9/10, confidence 2/5 - below filters.ts's 1/2 confidence gate, so no generic axis is a one-tap veto. The verbatim cycle-8 probe went from 2/6 survivors to 6/6. never_recommend stays genuinely binding (reacted card, same-protein and same-cuisine recipes all still excluded), is strictly stronger and more durable than not_for_me on every pair, and two taps sharing a generic axis still escalate it to a hard exclusion, so the model still learns. Asymmetry, clamping and calibration selection all survive intact. WHAT STILL FAILS, and why the item is blocked: the over-exclusion did not disappear, it MOVED to the flavour axis. FlavourTag contains genuinely generic members ('savoury', 'mild', 'fresh'), so locking flavour tags as 'distinctive' reproduces the same product-breaking failure. Measured on a realistic 12-recipe catalog carrying 'savoury' on 8 of 12: ONE never_recommend tap on a savoury+spicy chicken/thai card left 3 of 12 survivors, with 8 recipes excluded on `strong_dislike:flavour=savoury` alone. That still plausibly empties the plan and still breaks DoD 2. IMPORTANT ATTRIBUTION: the builder followed the fix direction in these notes verbatim, and flagged this exact risk unprompted in its return, naming the one-line remedy and explaining that it declined to deviate on an unmeasured hypothesis. That was the right call and the failure is in the cycle-8 SCOPING (mine), not in the build. The remedy is now MEASURED, not hypothesised - see T-034 and SWARM/runs/cycle-009-remedy-probe.mjs. The code is COMMITTED rather than reverted because it is strictly better than the cycle-8 state: defect A is fixed and only defect B remains. See KI-5."
     },
     {
       "id": "T-006",
@@ -216,7 +216,7 @@
         "tests/planset.test.ts",
         "tests/swap.test.ts"
       ],
-      "acceptance": "The planset pass optimises the SET of three meals for ingredient overlap, protein and cuisine diversity, total weekly active time and cost, and a swap by explicit reason (faster, less hands-on, fewer dishes, cheaper, more familiar, more adventurous, no pasta, different protein, use what I have) returns at most three alternatives ranked against the two untouched meals \u2014 which are provably unchanged.",
+      "acceptance": "The planset pass optimises the SET of three meals for ingredient overlap, protein and cuisine diversity, total weekly active time and cost, and a swap by explicit reason (faster, less hands-on, fewer dishes, cheaper, more familiar, more adventurous, no pasta, different protein, use what I have) returns at most three alternatives ranked against the two untouched meals — which are provably unchanged.",
       "packages": [],
       "wave": 1,
       "must_haves": [
@@ -230,7 +230,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 4 binds and is the whole point: swap re-ranks against the FROZEN remaining two meals and NEVER re-runs planset. An agent who 'helpfully' re-optimises the set breaks DoD 3. Greedy set pass per D-2 (combinatorial search is a non-goal tonight)."
+      "notes": "Invariant 4 binds and is the whole point: swap re-ranks against the FROZEN remaining two meals and NEVER re-runs planset. An agent who 'helpfully' re-optimises the set breaks DoD 3. Greedy set pass per D-2 (combinatorial search is a non-goal tonight). || CYCLE 10: dispatched but its builder produced ZERO files before the conductor session hit the account session limit (KI-6). attempts deliberately LEFT AT 0 — the build never ran, so there is nothing to escalate and nothing to penalise. Still the top critical-path pick."
     },
     {
       "id": "T-008",
@@ -248,7 +248,7 @@
         "data/ingredients.json",
         "tests/catalog.test.ts"
       ],
-      "acceptance": "A recipe is ineligible for recommendation unless quantities are complete, steps ordered, servings known, dietary tags verified, and all nine per-step interruption-metadata fields present \u2014 and every recipe ingredient id resolves in the registry with its allergen classes consistent with the recipe's dietary tags, so an allergen can never hide behind an unverified tag.",
+      "acceptance": "A recipe is ineligible for recommendation unless quantities are complete, steps ordered, servings known, dietary tags verified, and all nine per-step interruption-metadata fields present — and every recipe ingredient id resolves in the registry with its allergen classes consistent with the recipe's dietary tags, so an allergen can never hide behind an unverified tag.",
       "packages": [],
       "wave": 1,
       "must_haves": [
@@ -261,7 +261,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "FROZEN CONTRACT (cycle 3, T-001 landed): the nine per-step interruption fields on RecipeStep in domain/src/recipe.ts use two names that DIFFER FROM SPEC.md \u2014 `maximum_pause` (a MaximumPause union: {kind:'bounded',seconds} | {kind:'unlimited'}), NOT `maximum_pause_seconds`; and `timer_duration_seconds` (number | null), NOT `timer_duration`. Also `recovery_instruction` is a RecoveryGuidance union ({kind:'instruction',text} | {kind:'none_available'}), not a bare string. Validate against the TYPES, not against the SPEC's field names. Invariant 5 binds: this gate and the ingredient-id/allergen-class cross-check land BEFORE any recipe is authored \u2014 otherwise DoD 9 fails via data at 5am. Registry carries curated aliases, densities, per-item weights, allergen classes, store sections. The gate excludes incomplete recipes rather than failing the build, which is what makes a short catalog a graceful degradation.",
+      "notes": "FROZEN CONTRACT (cycle 3, T-001 landed): the nine per-step interruption fields on RecipeStep in domain/src/recipe.ts use two names that DIFFER FROM SPEC.md — `maximum_pause` (a MaximumPause union: {kind:'bounded',seconds} | {kind:'unlimited'}), NOT `maximum_pause_seconds`; and `timer_duration_seconds` (number | null), NOT `timer_duration`. Also `recovery_instruction` is a RecoveryGuidance union ({kind:'instruction',text} | {kind:'none_available'}), not a bare string. Validate against the TYPES, not against the SPEC's field names. Invariant 5 binds: this gate and the ingredient-id/allergen-class cross-check land BEFORE any recipe is authored — otherwise DoD 9 fails via data at 5am. Registry carries curated aliases, densities, per-item weights, allergen classes, store sections. The gate excludes incomplete recipes rather than failing the build, which is what makes a short catalog a graceful degradation.",
       "verified_cycle": 5
     },
     {
@@ -283,7 +283,7 @@
         "data/recipes/r05.json",
         "data/recipes/r06.json"
       ],
-      "acceptance": "Six recipes spanning distinct proteins, cuisines, methods and effort levels pass the full validation gate including complete quantities against registry ids, the full attribute vector, and all nine interruption-metadata fields on every step \u2014 establishing the schema-first authoring pattern the bulk batches copy.",
+      "acceptance": "Six recipes spanning distinct proteins, cuisines, methods and effort levels pass the full validation gate including complete quantities against registry ids, the full attribute vector, and all nine interruption-metadata fields on every step — establishing the schema-first authoring pattern the bulk batches copy.",
       "packages": [],
       "wave": 1,
       "must_haves": [
@@ -294,11 +294,11 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "FROZEN CONTRACT (cycle 3): author every step against domain/src/recipe.ts RecipeStep, NOT against SPEC.md's field names. Two differ: `maximum_pause` is a union {kind:'bounded',seconds:n} | {kind:'unlimited'} (NOT `maximum_pause_seconds`), and the timer field is `timer_duration_seconds: number | null` (NOT `timer_duration`). `recovery_instruction` is {kind:'instruction',text:'...'} | {kind:'none_available'} \u2014 a real step-specific instruction or the explicit none, never a fabricated string. All nine fields are required on every step. This batch is the template: schema-first data entry against the gate, not prose. Recovery instructions must be real and step-specific (Invariant 6 consumes them verbatim). Owns numeric prefixes r01\u2013r06 only. Include at least one very-low-effort and one adventurous recipe so calibration and swaps have range even if bulk batches slip."
+      "notes": "FROZEN CONTRACT (cycle 3): author every step against domain/src/recipe.ts RecipeStep, NOT against SPEC.md's field names. Two differ: `maximum_pause` is a union {kind:'bounded',seconds:n} | {kind:'unlimited'} (NOT `maximum_pause_seconds`), and the timer field is `timer_duration_seconds: number | null` (NOT `timer_duration`). `recovery_instruction` is {kind:'instruction',text:'...'} | {kind:'none_available'} — a real step-specific instruction or the explicit none, never a fabricated string. All nine fields are required on every step. This batch is the template: schema-first data entry against the gate, not prose. Recovery instructions must be real and step-specific (Invariant 6 consumes them verbatim). Owns numeric prefixes r01–r06 only. Include at least one very-low-effort and one adventurous recipe so calibration and swaps have range even if bulk batches slip."
     },
     {
       "id": "T-010",
-      "title": "Author recipe batch 2 (recipes 7\u201318)",
+      "title": "Author recipe batch 2 (recipes 7–18)",
       "kind": "feature",
       "priority": 2,
       "value": "H",
@@ -333,11 +333,11 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names \u2014 `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. DESIGN ruling binds: FEWER FULLY-VALID RECIPES BEAT PARTIALLY-VALID ONES \u2014 if time pressures, ship fewer complete recipes rather than more incomplete ones; the gate excludes incomplete recipes anyway. Owns prefixes r07\u2013r18 only; do not touch batch-1 or batch-3 files, the registry, or the gate."
+      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. DESIGN ruling binds: FEWER FULLY-VALID RECIPES BEAT PARTIALLY-VALID ONES — if time pressures, ship fewer complete recipes rather than more incomplete ones; the gate excludes incomplete recipes anyway. Owns prefixes r07–r18 only; do not touch batch-1 or batch-3 files, the registry, or the gate."
     },
     {
       "id": "T-011",
-      "title": "Author recipe batch 3 (recipes 19\u201330)",
+      "title": "Author recipe batch 3 (recipes 19–30)",
       "kind": "feature",
       "priority": 2,
       "value": "H",
@@ -372,7 +372,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names \u2014 `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. Same graceful-degradation ruling as T-010. Owns prefixes r19\u2013r30 only. Runs in parallel with T-010 \u2014 coordinate nothing, just stay inside the assigned file range. If registry ingredients are missing, that is a gap to report, not a license to edit data/ingredients.json (owned by T-008)."
+      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. Same graceful-degradation ruling as T-010. Owns prefixes r19–r30 only. Runs in parallel with T-010 — coordinate nothing, just stay inside the assigned file range. If registry ingredients are missing, that is a gap to report, not a license to edit data/ingredients.json (owned by T-008)."
     },
     {
       "id": "T-012",
@@ -389,7 +389,7 @@
         "domain/src/cooking.ts",
         "tests/cooking.test.ts"
       ],
-      "acceptance": "A cooking session reconstructed purely from its persisted events at any later wall-clock time yields the correct current step, elapsed/remaining timer state, next safe stopping point, and continuous-attention warnings \u2014 with recovery guidance drawn only from per-step metadata and an explicit 'unavailable' state when metadata is absent.",
+      "acceptance": "A cooking session reconstructed purely from its persisted events at any later wall-clock time yields the correct current step, elapsed/remaining timer state, next safe stopping point, and continuous-attention warnings — with recovery guidance drawn only from per-step metadata and an explicit 'unavailable' state when metadata is absent.",
       "packages": [],
       "wave": 1,
       "must_haves": [
@@ -401,7 +401,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 2 binds: timers are absolute UTC end instants, never remaining-seconds \u2014 recovery is arithmetic, not bookkeeping, which is what makes DoD 7 provable. Invariant 6 binds: recovery/panic guidance reads required per-step metadata only, never fabricated. Pure domain: no I/O, no Date.now() inside logic (time is a parameter).",
+      "notes": "Invariant 2 binds: timers are absolute UTC end instants, never remaining-seconds — recovery is arithmetic, not bookkeeping, which is what makes DoD 7 provable. Invariant 6 binds: recovery/panic guidance reads required per-step metadata only, never fabricated. Pure domain: no I/O, no Date.now() inside logic (time is a parameter).",
       "verified_cycle": 5
     },
     {
@@ -476,7 +476,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Invariant 3 binds: all data access through db.ts household-scoped helpers \u2014 routes must be unable to express an unscoped query; never inline SQL in routes. User grocery edits go to the separate never-overwritten column; regeneration must not clobber them by construction. Inventory decremented on 'cooked', never 'planned'. [Steal A]: the port/db-path flags are the stated mitigation for kill-test flake \u2014 they are first-class, not debug leftovers. node:http only, zero deps."
+      "notes": "Invariant 3 binds: all data access through db.ts household-scoped helpers — routes must be unable to express an unscoped query; never inline SQL in routes. User grocery edits go to the separate never-overwritten column; regeneration must not clobber them by construction. Inventory decremented on 'cooked', never 'planned'. [Steal A]: the port/db-path flags are the stated mitigation for kill-test flake — they are first-class, not debug leftovers. node:http only, zero deps."
     },
     {
       "id": "T-015",
@@ -499,7 +499,7 @@
         "web/js/onboarding.js",
         "web/js/calibrate.js"
       ],
-      "acceptance": "A new user completes household setup (size, restrictions, allergies, never-recommend, proteins, cuisines, time ceilings, novelty, staples) and 8\u201315 four-reaction calibration cards in a one-handed, under-four-minute mobile flow with one dominant bottom-anchored action per screen and never more than three choices anywhere.",
+      "acceptance": "A new user completes household setup (size, restrictions, allergies, never-recommend, proteins, cuisines, time ceilings, novelty, staples) and 8–15 four-reaction calibration cards in a one-handed, under-four-minute mobile flow with one dominant bottom-anchored action per screen and never more than three choices anywhere.",
       "packages": [],
       "wave": 2,
       "must_haves": [
@@ -511,7 +511,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Identity contract binds: tokens-only CSS (app.css consumes tokens.css, no free-hand values); ui.js is the SOLE source of shared components \u2014 bottom sheet, undo snackbar (undo everywhere, never a confirmation modal), aria-live timer announcer, reason chips, status-beyond-colour badges. Framework-free vanilla JS. Wave-2 parallel siblings consume ui.js \u2014 keep its component API small, boring, and stable."
+      "notes": "Identity contract binds: tokens-only CSS (app.css consumes tokens.css, no free-hand values); ui.js is the SOLE source of shared components — bottom sheet, undo snackbar (undo everywhere, never a confirmation modal), aria-live timer announcer, reason chips, status-beyond-colour badges. Framework-free vanilla JS. Wave-2 parallel siblings consume ui.js — keep its component API small, boring, and stable."
     },
     {
       "id": "T-016",
@@ -529,7 +529,7 @@
       "files_hint": [
         "web/js/plan.js"
       ],
-      "acceptance": "The plan screen shows three dinners each with name, total AND active time separately, interruption profile, effort, at most three concrete reason codes, owned/shared ingredients, cost band and novelty indicator \u2014 and swapping one meal by explicit reason takes at most three taps, offers at most three alternatives, and visibly leaves the other two meals untouched.",
+      "acceptance": "The plan screen shows three dinners each with name, total AND active time separately, interruption profile, effort, at most three concrete reason codes, owned/shared ingredients, cost band and novelty indicator — and swapping one meal by explicit reason takes at most three taps, offers at most three alternatives, and visibly leaves the other two meals untouched.",
       "packages": [],
       "wave": 2,
       "must_haves": [
@@ -541,7 +541,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "All time strings and reason copy come from the domain reasons/time-renderer module \u2014 never hand-rolled here (DoD 6 mechanism). Consume shared components from ui.js per the identity contract; do not create local variants. Builds against the wave-0 route contracts; any needed contract change is an emergency single-agent commit per the contract-drift rule."
+      "notes": "All time strings and reason copy come from the domain reasons/time-renderer module — never hand-rolled here (DoD 6 mechanism). Consume shared components from ui.js per the identity contract; do not create local variants. Builds against the wave-0 route contracts; any needed contract change is an emergency single-agent commit per the contract-drift rule."
     },
     {
       "id": "T-017",
@@ -570,7 +570,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Receipt/ledger treatment [steal C]: typography does the trust-building the traceability must-have exists for. User edits live in the separate column \u2014 the UI reads and preserves it, never writes generated values over it. Quantity edit gets an undo snackbar from ui.js, not a confirmation modal. Honest uncertainty: 'estimated' stated plainly."
+      "notes": "Receipt/ledger treatment [steal C]: typography does the trust-building the traceability must-have exists for. User edits live in the separate column — the UI reads and preserves it, never writes generated values over it. Quantity edit gets an undo snackbar from ui.js, not a confirmation modal. Honest uncertainty: 'estimated' stated plainly."
     },
     {
       "id": "T-018",
@@ -618,7 +618,7 @@
         "web/js/cook.js",
         "web/js/prep.js"
       ],
-      "acceptance": "Cooking mode shows one large-text step at a time with one-handed completion, labelled active vs unattended intervals, background-safe timers with accessible announcements, an explicit warning (with required uninterrupted duration) before any continuous-attention step, the next safe stopping point always visible \u2014 and reopening the app mid-session after a reload or kill lands the user back on the correct step with timers correct, showing validated recovery guidance or an honest 'no guidance available'.",
+      "acceptance": "Cooking mode shows one large-text step at a time with one-handed completion, labelled active vs unattended intervals, background-safe timers with accessible announcements, an explicit warning (with required uninterrupted duration) before any continuous-attention step, the next safe stopping point always visible — and reopening the app mid-session after a reload or kill lands the user back on the correct step with timers correct, showing validated recovery guidance or an honest 'no guidance available'.",
       "packages": [],
       "wave": 3,
       "must_haves": [
@@ -632,7 +632,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Invariant 2 binds: render timer state from stored absolute UTC end instants vs now \u2014 never count down a local variable as truth. Invariant 6 binds: recovery text comes only from per-step metadata; absent metadata is stated, never fabricated. Prep screen shows retrieve/equipment/do-ahead, first non-interruptible step, first safe stopping point, active-time blocks. Build accessibility in from the start (aria-live announcer from ui.js, 44px targets); the wave-3 a11y pass does not touch these files."
+      "notes": "Invariant 2 binds: render timer state from stored absolute UTC end instants vs now — never count down a local variable as truth. Invariant 6 binds: recovery text comes only from per-step metadata; absent metadata is stated, never fabricated. Prep screen shows retrieve/equipment/do-ahead, first non-interruptible step, first safe stopping point, active-time blocks. Build accessibility in from the start (aria-live announcer from ui.js, 44px targets); the wave-3 a11y pass does not touch these files."
     },
     {
       "id": "T-020",
@@ -649,7 +649,7 @@
       "files_hint": [
         "tests/e2e.cooking.test.ts"
       ],
-      "acceptance": "An automated end-to-end scenario advances a real cooking session with running timers, hard-kills the server process, restarts it against the same database file, and observes identical step progress and arithmetically correct timer state \u2014 proving DoD 7 by execution, not claim.",
+      "acceptance": "An automated end-to-end scenario advances a real cooking session with running timers, hard-kills the server process, restarts it against the same database file, and observes identical step progress and arithmetically correct timer state — proving DoD 7 by execution, not claim.",
       "packages": [],
       "wave": 3,
       "must_haves": [
@@ -662,7 +662,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Uses the entrypoint's ephemeral-port and db-path flags (temp SQLite file, free port per run) \u2014 the designed mitigation for kill-test flake. Invariant 2 is what makes the post-restart assertion pure arithmetic on absolute instants; if this test wants to compare remaining-seconds snapshots, the implementation has drifted."
+      "notes": "Uses the entrypoint's ephemeral-port and db-path flags (temp SQLite file, free port per run) — the designed mitigation for kill-test flake. Invariant 2 is what makes the post-restart assertion pure arithmetic on absolute instants; if this test wants to compare remaining-seconds snapshots, the implementation has drifted."
     },
     {
       "id": "T-021",
@@ -682,7 +682,7 @@
       "files_hint": [
         "tests/e2e.loop.test.ts"
       ],
-      "acceptance": "One automated pass through onboarding \u2192 calibration \u2192 plan \u2192 swap \u2192 grocery \u2192 feedback demonstrates: a plan reached within the interaction budget, at least two of three meals approvable in-app, a swap changing exactly one meal, every grocery line carrying complete recipe-level provenance, total and active time present as separate values in every payload carrying a time, and feedback recorded in two interactions.",
+      "acceptance": "One automated pass through onboarding → calibration → plan → swap → grocery → feedback demonstrates: a plan reached within the interaction budget, at least two of three meals approvable in-app, a swap changing exactly one meal, every grocery line carrying complete recipe-level provenance, total and active time present as separate values in every payload carrying a time, and feedback recorded in two interactions.",
       "packages": [],
       "wave": 3,
       "must_haves": [
@@ -703,7 +703,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "[Steal A] binds: this is the BROADENED loop test \u2014 DoD 2 (>=2 of 3 approvable) and DoD 6 (total+active in every time-carrying payload) are explicit assertions, not incidental. Swap assertion must verify the two untouched meals are byte-identical before/after (Invariant 4's observable consequence)."
+      "notes": "[Steal A] binds: this is the BROADENED loop test — DoD 2 (>=2 of 3 approvable) and DoD 6 (total+active in every time-carrying payload) are explicit assertions, not incidental. Swap assertion must verify the two untouched meals are byte-identical before/after (Invariant 4's observable consequence)."
     },
     {
       "id": "T-022",
@@ -724,7 +724,7 @@
       "files_hint": [
         "tests/fuzz.plan.test.ts"
       ],
-      "acceptance": "Across many seeded, randomly generated households with random allergies, restrictions and exclusions, zero produced plans contain a hard-excluded ingredient \u2014 checked at the ingredient-id and allergen-class level via the registry, not by recipe tag alone, with failing seeds reported for reproduction.",
+      "acceptance": "Across many seeded, randomly generated households with random allergies, restrictions and exclusions, zero produced plans contain a hard-excluded ingredient — checked at the ingredient-id and allergen-class level via the registry, not by recipe tag alone, with failing seeds reported for reproduction.",
       "packages": [],
       "wave": 3,
       "must_haves": [
@@ -738,7 +738,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Checks through the same registry cross-check path Invariant 5 forced early \u2014 DoD 9 can fail via data (allergen present, tag unverified), so the fuzz must resolve ingredients to allergen classes itself rather than trusting tags. Deterministic seeding so a 4am failure is reproducible."
+      "notes": "Checks through the same registry cross-check path Invariant 5 forced early — DoD 9 can fail via data (allergen present, tag unverified), so the fuzz must resolve ingredients to allergen classes itself rather than trusting tags. Deterministic seeding so a 4am failure is reproducible."
     },
     {
       "id": "T-023",
@@ -754,7 +754,7 @@
       "files_hint": [
         "tests/isolation.test.ts"
       ],
-      "acceptance": "With two populated households, no request or query path returns another household's preferences, inventory, plans, grocery lists, cooking sessions or feedback \u2014 covering every entity type in the schema, including attempts that pass a foreign household's ids directly.",
+      "acceptance": "With two populated households, no request or query path returns another household's preferences, inventory, plans, grocery lists, cooking sessions or feedback — covering every entity type in the schema, including attempts that pass a foreign household's ids directly.",
       "packages": [],
       "wave": 3,
       "must_haves": [
@@ -767,7 +767,7 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 3 binds: the tests prove the STRUCTURE (every db.ts helper requires household_id and scopes itself), not merely the absence of leaks in happy paths \u2014 include a check that no data-access surface exists outside the scoped helpers. Enumerate entities from the schema so a later table cannot silently skip coverage."
+      "notes": "Invariant 3 binds: the tests prove the STRUCTURE (every db.ts helper requires household_id and scopes itself), not merely the absence of leaks in happy paths — include a check that no data-access surface exists outside the scoped helpers. Enumerate entities from the schema so a later table cannot silently skip coverage."
     },
     {
       "id": "T-024",
@@ -804,7 +804,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Deliberately excludes cook.js/prep.js (owned this wave by T-019, which builds its own accessibility in). Copy fixes go into domain/src/reasons.ts ONLY if a string lives there \u2014 if so, that is a one-file diff by design; coordinate via deps, do not fork copy into screens. Tokens-only CSS rule binds: fixes adjust tokens/app.css, never inline styles."
+      "notes": "Deliberately excludes cook.js/prep.js (owned this wave by T-019, which builds its own accessibility in). Copy fixes go into domain/src/reasons.ts ONLY if a string lives there — if so, that is a one-file diff by design; coordinate via deps, do not fork copy into screens. Tokens-only CSS rule binds: fixes adjust tokens/app.css, never inline styles."
     },
     {
       "id": "T-025",
@@ -825,7 +825,7 @@
       "files_hint": [
         "web/js/cook.js"
       ],
-      "acceptance": "A single always-reachable control in cooking mode tells an interrupted cook exactly what to do right now \u2014 what can wait, what cannot, and for how long \u2014 using only the current step's stored interruption metadata.",
+      "acceptance": "A single always-reachable control in cooking mode tells an interrupted cook exactly what to do right now — what can wait, what cannot, and for how long — using only the current step's stored interruption metadata.",
       "packages": [],
       "wave": 4,
       "must_haves": [
@@ -834,7 +834,7 @@
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Strictly after DoD green; independently droppable. Invariant 6 binds hardest here: panic guidance is assembled from maximum_pause_seconds, safe_to_pause_*, natural_stopping_point and recovery_instruction \u2014 never generated text. If metadata is missing the button says so honestly."
+      "notes": "Strictly after DoD green; independently droppable. Invariant 6 binds hardest here: panic guidance is assembled from maximum_pause_seconds, safe_to_pause_*, natural_stopping_point and recovery_instruction — never generated text. If metadata is missing the button says so honestly."
     },
     {
       "id": "T-026",
@@ -855,7 +855,7 @@
       "files_hint": [
         "web/js/plan.js"
       ],
-      "acceptance": "Each planned meal can expand to show its persisted score breakdown \u2014 every weighted component and penalty with its value \u2014 matching the numbers the engine actually stored.",
+      "acceptance": "Each planned meal can expand to show its persisted score breakdown — every weighted component and penalty with its value — matching the numbers the engine actually stored.",
       "packages": [],
       "wave": 4,
       "must_haves": [
@@ -864,7 +864,7 @@
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Strictly after DoD green; independently droppable. Renders the breakdown the spec already forces score.ts to persist \u2014 an additive leaf, no engine changes. Numbers formatted via the shared renderer, tabular-nums."
+      "notes": "Strictly after DoD green; independently droppable. Renders the breakdown the spec already forces score.ts to persist — an additive leaf, no engine changes. Numbers formatted via the shared renderer, tabular-nums."
     },
     {
       "id": "T-027",
@@ -931,7 +931,7 @@
       "dod": [],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "DESIGN names this FIRST TO CUT \u2014 it is the only delighter editing existing modules rather than adding a leaf. Any touched frozen type is a contract-drift emergency (single-agent commit). Member hard restriction sits in the existing precedence chain below household hard restriction, above strong dislike."
+      "notes": "DESIGN names this FIRST TO CUT — it is the only delighter editing existing modules rather than adding a leaf. Any touched frozen type is a contract-drift emergency (single-agent commit). Member hard restriction sits in the existing precedence chain below household hard restriction, above strong dislike."
     },
     {
       "id": "T-029",
@@ -1035,7 +1035,7 @@
       "files_hint": [
         "tests/prep.test.ts"
       ],
-      "acceptance": "Mutating prep.ts\u2019s active-block membership test from `active_duration_seconds > 0` to `>= 0` turns the committed suite RED. A fixture with a zero-active step between two active steps asserts EXACTLY two maximal blocks with their exact second sums, so a step that stops splitting blocks is observable.",
+      "acceptance": "Mutating prep.ts’s active-block membership test from `active_duration_seconds > 0` to `>= 0` turns the committed suite RED. A fixture with a zero-active step between two active steps asserts EXACTLY two maximal blocks with their exact second sums, so a step that stops splitting blocks is observable.",
       "packages": [],
       "wave": 2,
       "must_haves": [
@@ -1063,7 +1063,7 @@
       "files_hint": [
         "tests/calibration.test.ts"
       ],
-      "acceptance": "Mutating CALIBRATION_CONFIG.min_cards from 8 to 2, or known_confidence_threshold from 3/5 to 1, each turns the committed suite RED. The 8\u201315 band is asserted against a catalog large enough for the floor to bind, and a fixture with signals at confidence just above and just below 3/5 proves the seeding threshold actually moves the selection.",
+      "acceptance": "Mutating CALIBRATION_CONFIG.min_cards from 8 to 2, or known_confidence_threshold from 3/5 to 1, each turns the committed suite RED. The 8–15 band is asserted against a catalog large enough for the floor to bind, and a fixture with signals at confidence just above and just below 3/5 proves the seeding threshold actually moves the selection.",
       "packages": [],
       "wave": 2,
       "must_haves": [
@@ -1075,7 +1075,7 @@
       "route_class": "core",
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Found by the cycle-8 conductor mutation gate; evidence .swarm/runs/cycle-008-verify-mutation.txt. Both survivors are in calibration.ts, and both are coverage holes rather than behaviour defects: the conductor gate independently proved the 8-15 band holds and that seeding is live (a household with confident signals gets a different selection). Sequence this AFTER T-005\u2019s re-verify lands, since that fix touches preferences.ts and may shift these fixtures."
+      "notes": "Found by the cycle-8 conductor mutation gate; evidence .swarm/runs/cycle-008-verify-mutation.txt. Both survivors are in calibration.ts, and both are coverage holes rather than behaviour defects: the conductor gate independently proved the 8-15 band holds and that seeding is live (a household with confident signals gets a different selection). Sequence this AFTER T-005’s re-verify lands, since that fix touches preferences.ts and may shift these fixtures."
     },
     {
       "id": "T-034",
@@ -1084,7 +1084,7 @@
       "priority": 1,
       "value": "H",
       "effort": "S",
-      "status": "todo",
+      "status": "done",
       "deps": [],
       "files_hint": [
         "domain/src/preferences.ts",
@@ -1104,7 +1104,8 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Successor to the BLOCKED T-005; carries the remaining half of KI-5. The remedy is ALREADY MEASURED by the conductor, not guessed: SWARM/runs/cycle-009-remedy-probe.mjs injects never_recommend_lock_attributes = ['protein','cuisine'] through the module's own injectable config (no source edit) and measures survivors going 3/12 -> 10/12 on the same realistic catalog, with c-11 (shares protein) and c-12 (shares cuisine) both still correctly excluded. So the change is expected to be a ONE-LINE config edit plus test updates. Two things the builder must NOT do: do not drop flavour from the model entirely - flavour tags must still receive the strong durable generic negative (value -9/10, confidence 2/5) so corroborated evidence can still escalate them; and do not weaken the protein/cuisine locks to compensate. Worth ONE paragraph of judgement in the return: whether the honest long-term shape is a curated distinctive/generic partition of FlavourTag rather than dropping the axis wholesale - 'garlicky' or 'smoky' is far more dish-defining than 'savoury'. Do not build that partition tonight without saying so; the one-line fix is what unblocks DoD 2."
+      "notes": "Successor to the BLOCKED T-005; carries the remaining half of KI-5. The remedy is ALREADY MEASURED by the conductor, not guessed: SWARM/runs/cycle-009-remedy-probe.mjs injects never_recommend_lock_attributes = ['protein','cuisine'] through the module's own injectable config (no source edit) and measures survivors going 3/12 -> 10/12 on the same realistic catalog, with c-11 (shares protein) and c-12 (shares cuisine) both still correctly excluded. So the change is expected to be a ONE-LINE config edit plus test updates. Two things the builder must NOT do: do not drop flavour from the model entirely - flavour tags must still receive the strong durable generic negative (value -9/10, confidence 2/5) so corroborated evidence can still escalate them; and do not weaken the protein/cuisine locks to compensate. Worth ONE paragraph of judgement in the return: whether the honest long-term shape is a curated distinctive/generic partition of FlavourTag rather than dropping the axis wholesale - 'garlicky' or 'smoky' is far more dish-defining than 'savoury'. Do not build that partition tonight without saying so; the one-line fix is what unblocks DoD 2. || CYCLE 10 RESULT: landed as the predicted ONE-LINE config change (never_recommend_lock_attributes ['protein','cuisine','flavour'] -> ['protein','cuisine']) plus a rewritten module doc and 4 rewritten/added tests. Conductor gate 23/23. The builder did NOT weaken the protein/cuisine locks and did NOT drop flavour from the model — both were checked explicitly. The builder also raised the curated-partition question it was asked to raise; filed as T-036.",
+      "verified_cycle": 10
     },
     {
       "id": "T-035",
@@ -1132,6 +1133,67 @@
       "model": "sonnet",
       "attempts": 0,
       "notes": "The single surviving mutant (M9) from the cycle-9 T-004 mutation gate (SWARM/runs/cycle-009-mutant-T-004.txt): 8 of 9 deliberate defects were caught, but a claimed inventory quantity LARGER than the line's purchase can currently produce a negative purchase_if_confirmed with no test objecting. Same class as T-031/T-032/T-033. The module itself is correct - this is a missing test pin, not a defect. Needs one case where the inferred claim exceeds the outstanding purchase."
+    },
+    {
+      "id": "T-036",
+      "title": "Partition FlavourTag into distinctive vs generic members instead of dropping the axis from the lock",
+      "kind": "feature",
+      "priority": 3,
+      "value": "M",
+      "effort": "M",
+      "status": "todo",
+      "deps": [
+        "T-034"
+      ],
+      "files_hint": [
+        "domain/src/preferences.ts",
+        "domain/src/recipe.ts",
+        "tests/preferences.test.ts"
+      ],
+      "acceptance": "A never_recommend tap on a dish whose flavour tags include a DISTINCTIVE member ('garlicky', 'smoky', 'umami', 'earthy', 'herby', 'tangy', 'bright', 'spicy') hard-excludes other dishes carrying that same distinctive tag, while a tap on a dish carrying only GENERIC members ('savoury', 'mild', 'fresh') still excludes nothing beyond its protein/cuisine kin. The partition is a named exported constant, not a magic list inline.",
+      "packages": [],
+      "wave": 3,
+      "must_haves": [
+        "Deterministic recommendation engine"
+      ],
+      "dod": [
+        2,
+        8
+      ],
+      "route_class": "core",
+      "model": "fable",
+      "attempts": 0,
+      "notes": "The honest residual of T-034, recorded by the cycle-10 gate section F rather than hidden. T-034 bought correctness by dropping flavour from the lock WHOLESALE, which also gives up real precision: a tap on a smoky dish no longer vetoes other smoky dishes. Measured consequence, not a hypothesis — the gate lists the 8 distinctive tags now falling through. This is the durable shape; it was explicitly deferred, not forgotten. NOT a blocker for DoD 2, which T-034 already unblocked."
+    },
+    {
+      "id": "T-037",
+      "title": "Re-gate T-005's calibration-variance and feedback-update surface to clear its blocked status",
+      "kind": "test",
+      "priority": 2,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-034"
+      ],
+      "files_hint": [
+        "tests/calibration.test.ts",
+        "tests/preferences.test.ts"
+      ],
+      "acceptance": "The two halves of T-005 that the cycle-10 T-034 gate did NOT cover are proven independently: (a) the calibration module deliberately SELECTS attribute-spread cards (deliberate variance, not merely reactions), and (b) applyFeedbackEvent narrows its extra boost onto the specific attribute(s) the reason names. Both with conductor-run evidence.",
+      "packages": [],
+      "wave": 3,
+      "must_haves": [
+        "Onboarding + taste calibration"
+      ],
+      "dod": [
+        2,
+        8
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "T-005 is blocked at attempts 2 and stays blocked — the churn rule is the rule and only a human un-blocks. But its BLOCKING defect (KI-5) is now closed by T-034, and its code is in main and green. What was never independently gated is the calibration-variance and feedback-narrowing surface, which the T-034 gate does not touch. This item gates exactly that, so the morning report can say which parts of T-005 are machine-checked rather than leaving the whole item under one blocked label."
     }
   ]
 }

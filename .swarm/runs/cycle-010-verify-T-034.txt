@@ -1,0 +1,57 @@
+== 0. THE SHIPPED CONFIG (not an injected one) ==
+      never_recommend_lock_attributes = ["protein","cuisine"]
+  PASS  the SHIPPED lock set is EXACTLY protein + cuisine (got ["protein","cuisine"])
+  PASS  flavour is NOT in the shipped lock set
+
+== A. ACCEPTANCE, PER GENERIC FLAVOUR MEMBER ==
+      tap 'savoury' card (protein=duck, cuisine=korean — both unique) -> 12/12 survive
+        'savoury' holders: c-01, c-02, c-03, c-05, c-06, c-07, c-09, c-11  | lost: none
+  PASS  ACCEPTANCE: a 'savoury' tap hard-excludes NONE of the catalog's 8 'savoury' dishes
+  PASS  ACCEPTANCE: nothing at all is excluded when only a generic flavour is shared ('savoury')
+      tap 'mild' card (protein=duck, cuisine=korean — both unique) -> 12/12 survive
+        'mild' holders: c-06, c-08  | lost: none
+  PASS  ACCEPTANCE: a 'mild' tap hard-excludes NONE of the catalog's 2 'mild' dishes
+  PASS  ACCEPTANCE: nothing at all is excluded when only a generic flavour is shared ('mild')
+      tap 'fresh' card (protein=duck, cuisine=korean — both unique) -> 12/12 survive
+        'fresh' holders: c-04, c-10, c-12  | lost: none
+  PASS  ACCEPTANCE: a 'fresh' tap hard-excludes NONE of the catalog's 3 'fresh' dishes
+  PASS  ACCEPTANCE: nothing at all is excluded when only a generic flavour is shared ('fresh')
+
+== B. THE LOCKS ARE STILL ABSOLUTELY BINDING (not weakened to compensate) ==
+      tap chicken/thai/savoury card -> 10/12 survive: c-01, c-02, c-03, c-04, c-05, c-06, c-07, c-08, c-09, c-10
+  PASS  a dish sharing the PROTEIN (c-11 chicken) is still hard-excluded
+  PASS  a dish sharing the CUISINE (c-12 thai) is still hard-excluded
+  PASS  every 'savoury' dish NOT sharing protein/cuisine survives (7 of them; lost: none)
+  PASS  exactly the 2 protein/cuisine kin fall — 10/12 survive (got 10)
+  PASS  ACCEPTANCE: the REACTED dish itself is still absolutely excluded
+
+== C. FLAVOUR IS STILL IN THE MODEL (not deleted to pass A) ==
+      flavour signals emitted: 2 -> savoury v=-9/10 c=2/5 d=durable | spicy v=-9/10 c=2/5 d=durable
+      protein: v=-1/1 c=1/1 d=durable
+      cuisine: v=-1/1 c=1/1 d=durable
+  PASS  a never_recommend tap STILL emits a signal for every flavour tag (not dropped)
+  PASS  every flavour signal is strictly NEGATIVE
+  PASS  every flavour signal sits BELOW the hard-filter confidence gate (1/2) — learns, does not veto
+  PASS  flavour signals are still 'durable' (a tap is remembered, not transient)
+  PASS  the PROTEIN lock is still value −1 / confidence 1 — NOT weakened
+  PASS  the CUISINE lock is still value −1 / confidence 1 — NOT weakened
+
+== D. CORROBORATED FLAVOUR EVIDENCE CAN STILL ESCALATE TO A VETO ==
+      corroborated savoury signal (v=−9/10, c=4/5) -> 4/12 survive
+  PASS  corroborated evidence DOES hard-exclude all 8 savoury dishes — the axis still has teeth
+
+== E. ASYMMETRY + CONTROL (never_recommend > not_for_me; not_for_me vetoes nothing) ==
+      one not_for_me tap on the SAME card -> 12/12 survive
+  PASS  CONTROL: a single not_for_me tap hard-excludes nothing at all
+  PASS  CONTROL: not_for_me does not even exclude the reacted dish (never_recommend does)
+  PASS  never_recommend is strictly MORE NEGATIVE than not_for_me on EVERY shared axis
+
+== F. RECORDED CONSEQUENCE (not a pass/fail — the honest trade-off) ==
+      Dropping the flavour axis wholesale from the lock also means DISTINCTIVE flavour
+      tags now fall through the generic path: garlicky, smoky, umami, earthy, herby, tangy, bright, spicy.
+      A tap on a 'smoky' dish no longer vetoes other smoky dishes. That is a real
+      loss of precision, accepted tonight because the alternative (shipped) state
+      broke the product. The durable fix is a curated distinctive/generic partition
+      of FlavourTag — NOT built tonight; must be carried to the report.
+
+== RESULT: 23 passed, 0 failed ==

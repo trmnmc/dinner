@@ -1453,3 +1453,145 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787100649,"next_wakeup_at":1787103349,"pid":2390530,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":4,"ratio":0.782,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":32920288,"window_cost_usd":34.68,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":24211726,"projected_depletion_at":1787112000,"last_probe_ts":1787100649,"last_real_probe_ts":1787100649,"probe_failures":0,"probe_note":"Cycle 9 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh DENIED again - KI-1, 6th consecutive cycle; this cycle the deny surfaced as a harness refusal on the compound `cd /opt/swarm && RUNFILE=... ./bin/swarm-budget.sh` form). Raw: runs/cc-probe-c9.json. Block 23:00-04:00Z, limit 130,591,250 (max prior completed block), used 32,920,288, remaining 97,670,962 over 11351s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 30,976,606 tok/h; actual 24,211,726 tok/h (ccusage 403,529 tok/min) => rho 0.782 => gear_target 4. WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 60.0% at week_elapsed 26.07% => heat 2.30 > 1.3 (opus 58/26.07 = 2.22). Heat rose again, 2.18 -> 2.30: the WINDOW is now comfortably cool (rho 0.78 alone would buy gear 4) and the WEEK is the binding constraint - exactly the case the governor exists for. gear_target 4 clamped to ceiling 2 + promote_blocked; prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. KI-2 UNCHANGED and still open: allocator posture `halted`, swarm_used_pct 8 with allow_overall_pct 0, so the feeder's u/(u+a) denominator is 8 - non-zero again by drift, 5th time this run. My arithmetic reads weekly_used/week_elapsed off the raw account and never uses that formula, so this clamp is sound regardless. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).","weekly":{"ok":true,"weekly_used_pct":60.0,"opus_used_pct":58,"week_elapsed_pct":26.07,"weekly_heat":2.3,"opus_heat":2.22,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":10,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+
+## cycle 10 | 2026-08-19T01:59:54+0000 | dinner | BUILD
+
+work: **resume the killed cycle-10 wave** — salvage + gate T-034; T-007 never ran.
+gear 2 (rho 0.499, weekly heat 2.58 — governor binding), wave cap 2, demote true.
+
+### orient — the cycle died of something new, and it is NOT KI-4
+
+The tree was dirty with T-034's two files and the last commit was cycle 10's in-flight
+marker, so this looked at first like the third KI-4 guillotining of the run. It is not.
+`runs/pacer.log` shows cycle 10 spawned 01:24:28Z and reported `cycle-failed` at 01:38:22Z
+— 834s, past the 600s ceiling, but the result record says something else entirely:
+
+```
+runs/cycle-1787102668.json  is_error=true  num_turns=38  duration_ms=831019  cost=$8.49
+  result: "You've hit your session limit · resets 3:20am (UTC)"
+runs/cycle-1787103828.json  is_error=true  num_turns=1  duration_ms=473  cost=$0.00  (same message)
+runs/cycle-1787104138.json  is_error=true  num_turns=1  duration_ms=368  cost=$0.00  (same message)
+runs/cycle-1787104455.json  is_error=true  num_turns=1  duration_ms=385  cost=$0.00  (same message)
+```
+
+The account's 5-hour SESSION cap cut cycle 10 off mid-wave, and then the pacer respawned
+into that wall three times at ~5-minute intervals, each dying in under half a second. Filed
+as **KI-6**, separate from KI-4 on purpose: had I written this off as the 600s ceiling, the
+next cycle would have gone hunting a timeout that was never the cause. Note what neither
+pacing signal caught — the window probe reads rho 0.50 (cool) and the weekly governor reads
+heat 2.58 (hot); the SESSION cap is a third limit that neither models. Also note the pacer
+has no session-limit awareness: it converted a usage pause into a stream of failed cycles.
+Both consequences are in KI-6 with a concrete fix direction, recorded not edited (hard rule 5).
+
+I am running normally at 01:59Z, before the quoted 03:20Z reset, so the cap had already
+lifted by my spawn — which is exactly why I did NOT set limp and did NOT stall the night.
+
+### salvage
+
+T-034 (modified `preferences.ts` + `preferences.test.ts`): the marker warned that a large
+`preferences.ts` diff would itself be a red flag. It is not large — the source change is
+literally one line, `never_recommend_lock_attributes: ['protein','cuisine','flavour']` ->
+`['protein','cuisine']`, plus a rewritten module doc and 4 rewritten/added tests. Exactly the
+shape the cycle-9 remedy probe predicted. Salvaged.
+
+T-007 (`planset.ts`, `swap.ts` + tests): **zero files produced**. Nothing to salvage,
+nothing to discard. Returned to todo with **attempts left at 0** — see D-15. The attempts+1
+rule exists to escalate items whose BUILD failed; T-007's build never ran. Incrementing it
+for a conductor-session death twice over would blocked-cap the top critical-path item for a
+reason having nothing to do with its code. Recorded rather than done silently.
+
+control channel: polled clean — `pending: []`, `applied: []`, no injections.
+
+### VERIFICATION EVIDENCE — T-034 (gate: SWARM/runs/cycle-010-gate-T034.mjs) — 23/23, **PASSED**
+
+Full output: `.swarm/runs/cycle-010-verify-T-034.txt`. Authored at verification time from the
+backlog acceptance text; the builder never saw it. Deliberately harder than cycle 9's gate in
+four ways it could not have coded to: it taps all THREE generic flavour members (cycle 9 tapped
+only `savoury`), it measures the resulting SIGNALS so both "fixed by weakening the locks" and
+"fixed by deleting flavour" fail, it proves corroborated flavour evidence still escalates, and
+it asserts the SHIPPED default config rather than an injected one.
+
+```
+== 0. THE SHIPPED CONFIG ==   never_recommend_lock_attributes = ["protein","cuisine"]
+  PASS  the SHIPPED lock set is EXACTLY protein + cuisine   PASS  flavour is NOT in it
+== A. ACCEPTANCE, PER GENERIC FLAVOUR MEMBER (card protein=duck cuisine=korean, both unique) ==
+      'savoury' -> 12/12 survive | holders c-01,c-02,c-03,c-05,c-06,c-07,c-09,c-11 | lost: none
+      'mild'    -> 12/12 survive | holders c-06,c-08 | lost: none
+      'fresh'   -> 12/12 survive | holders c-04,c-10,c-12 | lost: none
+  PASS x6  a generic-flavour tap hard-excludes NOTHING (was 3/12 survivors at cycle 9)
+== B. LOCKS STILL BINDING ==  chicken/thai/savoury tap -> 10/12 survive
+  PASS  c-11 (shares PROTEIN) excluded / PASS  c-12 (shares CUISINE) excluded
+  PASS  all 7 other savoury dishes survive / PASS  exactly the 2 kin fall / PASS  reacted dish excluded
+== C. FLAVOUR STILL IN THE MODEL ==  savoury v=-9/10 c=2/5 durable | spicy v=-9/10 c=2/5 durable
+      protein v=-1/1 c=1/1 durable | cuisine v=-1/1 c=1/1 durable
+  PASS  signals still emitted / negative / below the 1/2 gate / durable; locks NOT weakened
+== D. CORROBORATION STILL ESCALATES ==  hand-built savoury (v=-9/10, c=4/5) -> 4/12 survive
+  PASS  corroborated evidence DOES exclude all 8 savoury dishes — the axis was not defanged
+== E. ASYMMETRY + CONTROL ==
+  PASS  not_for_me excludes nothing, not even the reacted dish / PASS  never_recommend strictly stronger
+== RESULT: 23 passed, 0 failed ==
+```
+
+Structural corroboration that the fix was not bought by defanging something out of frame:
+`git status` showed only two modified files all cycle, so `filters.ts` and its
+`HARD_FILTER_CONFIG` thresholds (value <= -4/5, confidence >= 1/2) are provably untouched.
+
+**KI-5 is CLOSED** after three cycles — the defect that survived cycles 8 and 9 by moving axis.
+
+### VERIFICATION EVIDENCE — full test_cmd (`npm test`, conductor-run)
+
+```
+> three-good-dinners@0.1.0 test
+> npm run typecheck && npm run test:unit
+ℹ tests 299   ℹ pass 299   ℹ fail 0   ℹ cancelled 0   ℹ skipped 0
+```
+
+Typecheck ran and passed (the suite is reached only through `&&`). Hard rule 4 holds.
+
+### the residual I am NOT hiding
+
+T-034 buys correctness by dropping flavour from the lock WHOLESALE, so distinctive tags —
+`garlicky`, `smoky`, `umami`, `earthy`, `herby`, `tangy`, `bright`, `spicy` — now also fall
+through the generic path. A tap on a smoky dish no longer vetoes other smoky dishes. That is
+a real loss of precision, accepted tonight because the shipped alternative broke the product.
+Section F of the gate records it as a measured consequence rather than a footnote, and the
+durable fix (a curated distinctive/generic partition of `FlavourTag`) is filed as **T-036**,
+explicitly deferred. The builder raised this itself, unprompted, as it was asked to.
+
+Also filed: **T-037**, to gate the calibration-variance and feedback-narrowing halves of
+T-005 that the T-034 gate does not cover — so the morning report can say precisely which
+parts of T-005 are machine-checked instead of leaving the whole item under one blocked label.
+T-005 itself stays blocked; the churn rule is the rule and only a human un-blocks it.
+
+### bookkeeping
+
+Wave autotune: no reverted merges and no failed verifies, but half the wave never executed —
+that is not a clean wave, so it takes the "any other outcome" branch: `wave_streak` -> 0,
+`k_current` stays 5. Effective wave size is gear-capped at 2 regardless.
+
+Burn attribution: window_tokens 32,920,288 -> 50,916,143, delta +17,995,855 credited to cycle
+9's target (dinner). Running total 69,458,900.
+
+`consecutive_no_value` stays 0 — T-034 is real verified value.
+
+result: **T-034 -> done. T-007 -> todo (never ran, attempts 0). KI-5 CLOSED, KI-6 OPENED.**
+TEN verified items of 37.
+
+honest note on what this cycle did NOT establish: unchanged from cycle 9 and still the
+run's biggest exposure — **nothing renders**. No server, no screen. The accessibility
+must-have and the tokens.css contrast ratios remain unverified as they have since cycle 3,
+and DoD 7's kill-survival is still a domain-layer claim until T-020. The deterministic core
+is now eleven verified modules deep and not one pixel of it has been seen by a browser.
+
+next: T-007 (planset + frozen-context swap) is still the top pick — priority 1, deps all
+verified done, and it never got its attempt. But the run has now spent four cycles without
+touching T-014/T-015 (server + web shell), which are the items that finally put something on
+a screen, and ~10h remain. If T-007 lands next cycle, T-014 should take the one after it
+regardless of what else is queued — a night that ships a flawless invisible engine and no
+interface is the wrong outcome, and the clock is the only thing that can still cause it.
+
+runfile-mirror:
+```json
+{"version": 1, "run_label": "dinner-2026-08-18", "targets": [{"path": "/opt/targets/dinner", "status": "active", "weight": 1}], "rotation_cursor": 0, "rotation_schedule": [0], "stop_at": "2026-08-19T12:00:00+00:00", "usage_reset_at": "2026-08-18T23:00:00+00:00", "model_policy": "value-routing", "auth_mode": "subscription", "heartbeat": {"ts": 1787104794, "next_wakeup_at": 1787107494, "pid": 2399315, "limp": false, "degraded_tiers": []}, "pacing": {"mode": "thermostat", "dial": 1}, "budget": {"source": "probe", "gear": 2, "gear_target": 5, "ratio": 0.499, "mode": "thermostat", "k_cap": 2, "promote": false, "demote": true, "window_tokens": 50916143, "window_cost_usd": 62.97, "api_cap_usd": null, "api_spend_usd": 0, "tokens_per_hour": 19879890, "projected_depletion_at": 1787112000, "last_probe_ts": 1787104794, "last_real_probe_ts": 1787104794, "probe_failures": 0, "probe_note": "Cycle 10 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max`. bin/swarm-budget.sh DENIED again (KI-1, 7th consecutive cycle; the compound `cd && RUNFILE=... ./bin/...` form is refused by the harness). Raw: runs/cc-probe-c10.json. Block 23:00-04:00Z, limit 130,591,250, used 50,916,143, remaining 79,675,107 over 7,206s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 39,804,220 tok/h; actual 19,879,890 tok/h (ccusage 331,332 tok/min) => rho 0.499 => gear_target 5. The WINDOW is now genuinely cool. WEEKLY GOVERNOR still binding on the RAW ACCOUNT (runs/allocator.json): weekly_used 69.0% at week_elapsed 26.78% => heat 2.58 > 1.3; opus 75/26.78 = 2.80. Heat climbed again, 2.30 -> 2.58, and opus_used jumped 58% -> 75% in one cycle. gear_target 5 clamped to ceiling 2 + promote_blocked; prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. THE DECISIVE FACT THIS CYCLE IS NEITHER OF THESE: the account 5h SESSION cap killed cycle 10 mid-wave and 3 pacer spawns after it (KI-6). Neither rho (cool) nor the weekly heat (hot) models that third limit, so the gear arithmetic below is correct and was still not protective. KI-2 UNCHANGED: allocator posture trickle, swarm_used_pct 0 with allow_overall_pct 0, so the feeder u/(u+a) denominator is 0/0 and would DISENGAGE the governor; my arithmetic reads weekly_used/week_elapsed off the raw account and never uses that formula, so this clamp is sound regardless. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).", "weekly": {"ok": true, "weekly_used_pct": 69.0, "opus_used_pct": 75, "week_elapsed_pct": 26.78, "weekly_heat": 2.58, "opus_heat": 2.8, "ceiling": 2, "promote_blocked": true}}, "watchdog": {"mode": "normal", "plist_loaded": true, "lockfile": "/opt/swarm/runs/watchdog.lock", "relaunch_attempts": 0}, "caffeinate_pid": 0, "wrap_up_complete": false, "cycles_since_recycle": 12, "playbook": {"mode": "auto", "applied": [], "vetoed": [], "note": "swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."}, "artifact": {"url": "", "file": "/opt/swarm/runs/dashboard.html", "publish_failures": 0}}
+```
