@@ -4096,3 +4096,40 @@ next: **T-069** at cycle 25 — it is a small, precisely-scoped fix that convert
 done and already verified into the first user-visible rendering of the product's named
 differentiator, and it unblocks T-065 behind it. Cycle 25 is also a `cycle % 5 == 0` full
 SPEC re-read plus backlog hygiene.
+
+---
+
+## cycle 25 — IN FLIGHT (marker committed before dispatch)
+
+**clock** 1787134243 at open, stop_at 1787140800 (12:00:00Z) — 1 h 49 m of run left;
+admission window `stop_at − now − 900` = 5657 s, so build-wave (2700 s) admits.
+**probe** REAL, `probe_ok: true`: window_tokens 27,509,034 → **51,766,264** since the
+09:00Z reset, ρ **0.98** → gear_target 2, applied **gear 2** (no hysteresis move).
+Governor engaged — weekly 100 % / opus 100 % at 31.63 % week-elapsed, heat 3.16,
+ceiling 2, promote blocked. Projected depletion 1787140876 (**12:01Z**) now lands just
+AFTER stop_at, one minute clear; cycle 24 projected 11:46Z, so the window has eased.
+Tree clean at orient — nothing to salvage. Control channel: `swarm-notify.sh poll` was
+DENIED by the harness (KI-1 family) — journaled, non-fatal, continuing with
+file-sourced `pending[]` only: `runs/control.json` shows **0 pending, 0 applied, no
+injections**.
+
+Cycle 25 is a `cycle % 5 == 0` cycle: full SPEC re-read (done, before dispatch) plus
+backlog hygiene (done after the wave).
+
+Effective wave size = min(k_current 5, gear cap 2, hard max 5) = **2**. Dispatched as
+two DIRECT foreground Agent calls — the documented headless fallback (Workflow is
+review-gated in `-p` sessions), foreground because **KI-4** guillotines background
+tasks at 600 s. Scopes are strictly disjoint and were derived from the seam each
+item's acceptance actually names, not from the stored `files_hint` — that is D-33,
+the cycle-24 scoping error, applied.
+
+- **T-069** (p1, M, fix, sonnet) — `domain/src/catalog.ts` + `server/src/routes.ts` +
+  `tests/`. Teach the registry parser `package_options`; pass the entry's options to
+  `selectPackages` instead of the hardcoded `[]` at routes.ts:1125. Unblocks T-065.
+- **T-054** (p2, M, fix, sonnet) — new `tsconfig.web.json` + `web/js/*.js`. Client
+  JavaScript has never been typechecked (KI-11). The builder does NOT touch
+  `package.json` (manifest files are excluded from every builder's scope); the
+  conductor wires the script itself, and only if the new config is green.
+
+If this block is the last one in the file, the cycle died mid-wave: the two scopes
+above are where to look.
