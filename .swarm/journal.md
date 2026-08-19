@@ -4337,3 +4337,18 @@ act on it.
 ```runfile-mirror
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787134243,"next_wakeup_at":1787136943,"pid":2463691,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.98,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":51766264,"window_cost_usd":32.160379400000004,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":49368622,"projected_depletion_at":1787140876,"last_probe_ts":1787134243,"last_real_probe_ts":1787134243,"probe_failures":0,"probe_note":"Cycle 25 REAL probe, probe_ok true. window_tokens 27,509,034 -> 51,766,264 since the 09:00Z reset; rho 0.98 => gear_target 2, applied gear 2 (no hysteresis move). Governor engaged: weekly 100% / opus 100% at week_elapsed 31.63% => heat 3.16, ceiling 2, promote blocked. Projected depletion 1787140876 (~12:01Z) now lands just AFTER stop_at 12:00:00Z (cycle 24 projected 11:46Z) \u2014 the window is expected to survive to wrap-up by ~1 min.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":31.63,"weekly_heat":3.16,"opus_heat":3.16,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":3,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+**CORRECTION to this block's closing "next" line, appended after the dashboard render.**
+I wrote "~30 minutes to the WRAP_UP trigger at 11:45Z" from an estimate of elapsed time
+rather than from the clock. The real clock at close is **1787135748 (10:35:48Z)** —
+**69 minutes** to the 11:45Z trigger, not 30. The arithmetic that
+depends on it changes: `stop_at − now − 900` = **4152 s**, so a full 2700 s
+build-wave DOES admit at cycle 26, not only an S-effort carve-out. Hard rule 3 exists
+for exactly this — the clock is read, never estimated — and I read it late here.
+
+Cycle 26 therefore has a real choice: another 2-item wave (gear cap 2) against the p1
+must-have gap **T-048** (nothing marks a meal cooked or decrements inventory — a SPEC
+domain rule with no implementation, and its `routes.ts` scope is now free), or the
+**taste pass** the run has never run (`last_taste_cycle: null`). T-048 is the larger
+verified-value bet and is what I would pick; a taste verdict arriving at 11:45Z has no
+clock left to act on.
