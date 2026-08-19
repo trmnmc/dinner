@@ -3603,3 +3603,10 @@ counter-semantics ruling recorded, and the governor's disengagement flagged as t
 rather than trusted as headroom. Still TWENTY-FOUR verified of 64 filed.**
 
 next: **T-038** at cycle 23, on the far side of the 09:00Z reset.
+
+commit: 6b37e55 "cycle 22: RECYCLE — handoff note, KI-8/KI-10 corrected to resolved, D-32 counter ruling [0 verified, no work by design]" (pushed to origin/master, f430990..6b37e55)
+next wakeup: 1787130060 (2026-08-19T09:01Z, +865s) — deliberately parked just past the 09:00Z usage-window reset rather than the 90s base, so cycle 23 opens on a fresh window instead of burning its dispatch in the last minutes of a depleted one. Clamp satisfied: 1787130060 + 900 = 1787130960 << stop_at 1787140800.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787129195,"next_wakeup_at":1787130060,"pid":2450977,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":1,"gear_target":1,"ratio":99.99,"mode":"thermostat","k_cap":1,"promote":false,"demote":true,"window_tokens":141578956,"window_cost_usd":86.15409530000005,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":29735579,"projected_depletion_at":1787129156,"last_probe_ts":1787129195,"last_real_probe_ts":1787129195,"probe_failures":0,"weekly":{"ok":false,"weekly_used_pct":0,"opus_used_pct":0,"week_elapsed_pct":0,"weekly_heat":0,"opus_heat":0,"ceiling":5,"promote_blocked":false}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":0,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly as auto"},"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
