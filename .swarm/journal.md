@@ -3143,7 +3143,7 @@ runfile-mirror:
 
 ---
 
-## cycle 20 — 2026-08-19 07:35Z — IN FLIGHT
+## cycle 20 — 2026-08-19 07:35Z — T-053 verified (gate 14/14, suite 377/377)
 
 clock: now 1787124919 · stop_at 1787140800 (12:00Z, 4h25m left) · usage_reset_at 09:00Z
 budget: REAL probe ok. window 121,884,803 tok · 33,936,239 tok/h · projected depletion
@@ -3299,3 +3299,20 @@ T-031/T-032/T-033/T-035. The moment the gear allows M again the order is **T-017
 ledger — it alone unblocks three items) then **T-057** (prep screen). If the governor never
 lifts, the run ends with the API proven and roughly half the screens unlooked-at; say so
 plainly in the report rather than reporting 24 green items as if they were a finished product.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787125827,"next_wakeup_at":1787127938,"pid":2443789,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":23,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
+next wakeup: 1787126104 (+90s base — verified-value cycle; gears never touch the wakeup delay,
+only limp waits). Pacer fires it from heartbeat.next_wakeup_at.
+dashboard: renderer defect found and fixed in runs/c020-dash.mjs — the template's own contract
+comment names every placeholder, so a blanket replaceAll was substituting the ENTIRE dashboard
+into that comment as well as into the page. 33.6 KB of the cycle-19 render (41%) was a hidden
+duplicate, and a single journal line containing "-->" would have closed the comment early and
+dumped a second copy of the whole page into visible content. Substitution is now body-only.
+The template itself was NOT edited — templates/ is read-only mid-run (hard rule 5); this is a
+renderer-side fix and belongs in the morning report as a tool bug.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787126014,"next_wakeup_at":1787126104,"pid":2443789,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":23,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
