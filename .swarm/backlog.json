@@ -582,7 +582,7 @@
       "priority": 1,
       "value": "H",
       "effort": "S",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-001",
         "T-034"
@@ -601,7 +601,9 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "One dominant action; the optional reason is a second tap at most, never a form. Guilt-free copy from the shared copy module. No streaks, no engagement mechanics of any kind."
+      "notes": "One dominant action; the optional reason is a second tap at most, never a form. Guilt-free copy from the shared copy module. No streaks, no engagement mechanics of any kind.",
+      "done_cycle": 16,
+      "verify_note": "cycle-016-gate-rev2.mjs 33/33 (conductor-authored post-freeze). Server-side ground truth read from the live sqlite file: one tap and nothing else wrote exactly 1 feedback row (make_again, reason null, correct recipe_id) and moved 11 preference_signals rows; verdict+reason wrote exactly 1 row (not_again / too_much_work); a revisit wrote no second row; a finished cooking session reaches the screen via a How did it go? action that lands on #/feedback/<plan_meal_id> and renders. suite 355/355."
     },
     {
       "id": "T-019",
@@ -1666,6 +1668,72 @@
       "model": "sonnet",
       "attempts": 0,
       "notes": "Conductor-found at cycle 15 by grepping for producers of the timer_started event: there are none anywhere in web/ or in server business logic — only server/src/routes.ts:1418, the validator that would accept one. Root cause is a contract gap the T-019 builder documented in cook.js's header rather than papering over: encodeStepView (routes.ts:1239) never emits the step's timer_duration_seconds nor any has-a-timer flag, so the client cannot honestly offer 'start timer' — deriving a duration from total minus active would be WRONG for several shipped recipes, and a wrong kitchen timer is worse than none. Fix is two-sided: add timer_duration_seconds to encodeStepView, then add the one-tap start action to cook.js. Cycle 15's gate proved rendering, ticking, expiry and acknowledgement all work correctly once a timer exists (C12-C14) — this is purely the missing way IN. Same shape as T-055 (inventory confirmation questions unreachable)."
+    },
+    {
+      "id": "T-059",
+      "title": "A verdict tapped and abandoned within ~2.5s can be lost on a hard tab close",
+      "kind": "fix",
+      "priority": 3,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-018"
+      ],
+      "files_hint": [
+        "web/js/feedback.js"
+      ],
+      "packages": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 16,
+      "acceptance": "A verdict tapped and then abandoned by closing the tab immediately (before the screen commits) still reaches the server, or the screen stops deferring the write. Proven by a check that closes the page inside the deferral window.",
+      "notes": "Conductor-found at cycle 16 while reading feedback.js against the gate result. The screen deliberately sends exactly ONE POST /api/feedback per visit (the server has no upsert and applyFeedbackEvent would double-count a second write - the builder documented this and it is the right call), so tap 1 does not write immediately: commit() fires on a reason tap, Done, in-app navigation cleanup, pagehide, or a 2500ms safety-net timer. Gate F6 proves the timer path works (row present within 4s). The uncovered case is a HARD close inside those 2.5s: pagehide fires but an async fetch is not guaranteed to flush. navigator.sendBeacon or keepalive:true on the pagehide path would close it. Low frequency, real data loss when it happens - not a correctness bug in what IS written."
+    },
+    {
+      "id": "T-060",
+      "title": "No server-authoritative way to know a meal already has feedback",
+      "kind": "fix",
+      "priority": 3,
+      "value": "M",
+      "effort": "M",
+      "status": "todo",
+      "deps": [
+        "T-018"
+      ],
+      "files_hint": [
+        "server/src/routes.ts",
+        "web/js/feedback.js",
+        "tests/routes.test.ts"
+      ],
+      "packages": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 16,
+      "acceptance": "Whether a plan meal already carries feedback is readable from the server (a GET, or a field on the plan meal), and the feedback screen uses it instead of localStorage. A second submission for the same plan_meal_id is refused or upserted rather than double-counted.",
+      "notes": "Contract gap documented in feedback.js header and confirmed by the conductor at cycle 16: the feedback table has no unique constraint on plan_meal_id and there is no read path, so already-submitted is tracked in localStorage under tgd.feedback.<planMealId> - honest for one browser only, exactly the limitation tgd.calibration_done already has (KI family). Gate F14 proves the CLIENT does not double-write; nothing prevents a second device or a cleared cache from inflating a preference signal."
+    },
+    {
+      "id": "T-061",
+      "title": "QA look pass over the four screens built since cycle 12",
+      "kind": "test",
+      "priority": 2,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "web/css/plan.css",
+        "web/css/grocery.css",
+        "web/css/cook.css",
+        "web/css/feedback.css"
+      ],
+      "packages": [],
+      "model": "fable",
+      "attempts": 0,
+      "created_cycle": 16,
+      "acceptance": "A qa-verify look pass runs over the plan, grocery, cooking and feedback screens and its findings are filed. Records qa.last_look_cycle.",
+      "notes": "qa.last_look_cycle has been stuck at 12 while T-016, T-019, T-052 and T-018 all shipped user-visible screens; cycles 15 and 16 both skipped the look pass for budget (gear 1, weekly governor at ceiling). Their BEHAVIOUR is proven by conductor DOM gates; their VISUAL polish is unproven. This item exists so the gap is tracked rather than quietly carried."
     }
   ]
 }

@@ -1,0 +1,16 @@
+listening on http://127.0.0.1:42345
+PASS F1  #/feedback/:planMealId resolves to a real screen, not the placeholder
+PASS F2  screen names the actual meal from the API ("Greek Sheet-Pan Chicken Thighs with Pota")
+PASS F3  exactly 3 verdict choices offered (found 3)
+PASS F4  verdict choices are real, enabled <button> elements — keyboard reachable, not click-only divs
+PASS F5  a "make again"-shaped choice exists
+node:internal/deps/undici/undici:7709
+      const parser = parserWeakRef.deref();
+                                   ^
+
+TypeError: Cannot read properties of undefined (reading 'deref')
+    at Timeout.onParserTimeout [as _onTimeout] (node:internal/deps/undici/undici:7709:36)
+    at listOnTimeout (node:internal/timers:635:17)
+    at process.processTimers (node:internal/timers:571:7)
+
+Node.js v24.19.0

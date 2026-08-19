@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 15,
+  "cycle": 16,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -281,8 +281,8 @@
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 1,
-    "window_tokens_attributed": 134227635
+    "wave_streak": 0,
+    "window_tokens_attributed": 141083035
   },
   "qa": {
     "last_look_cycle": 12,
@@ -290,15 +290,15 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 15,
-    "work": "build-wave (resumed from crashed dispatch): T-019 cooking mode + T-052 grocery formatting",
-    "outcome": "2 verified",
+    "n": 16,
+    "work": "build-wave (single foreground sonnet builder): T-018 post-meal feedback screen",
+    "outcome": "1 verified",
     "verified": [
-      "T-019",
-      "T-052"
+      "T-018"
     ],
     "failed": [],
     "test_cmd": "355/355 pass",
-    "gate": "cycle-015-gate-rev2 32/32; unaltered cycle-014-gate-rev2 29/29 (R21 green)"
-  }
+    "gate": "cycle-016-gate-rev2 33/33 (rev1 crashed on a harness timer fault, preserved)"
+  },
+  "updated_at": "2026-08-19T06:12:56.735Z"
 }

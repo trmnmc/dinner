@@ -2473,3 +2473,145 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":18,"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+---
+
+## cycle 16 — build-wave T-018 (post-meal feedback screen) → **1 verified**
+
+clock 05:50Z open, 06:20Z at this write. stop_at 12:00Z, usage reset 09:00Z.
+
+budget: `bin/swarm-budget.sh` **RAN** — first success after eleven consecutive KI-1 denials, so
+this is a real probe rather than a hand parse. `probe_ok: true`, window 04:00–09:00Z at
+72,254,052 tokens, burn 39,054,602 tok/h, projected depletion **07:20Z** (before the 09:00Z
+reset). ρ 2.10 → gear_target 1. The weekly governor is HOTTER than last cycle:
+`weekly_used 100%`, `opus_used 100%` at `week_elapsed 29.07%` → heat 3.44, ceiling 2,
+`promote_blocked`. `runs/allocator.json` still reads 73/76 from a staler probe; the fresher
+figure governs. Applied **gear 1 (crawl)**, wave cap 1, demote=true.
+
+control: `swarm-notify.sh poll` was DENIED (KI-1 family) — journaled, continued on the
+file-sourced channel per cycle.md step 2. `runs/control.json` has `pending: []`, `inject`
+absent. Nothing to apply.
+
+orient: tree clean at open, last commit d103bc8. No salvage needed.
+
+### the pick
+
+Gear 1 permits S-effort sonnet builds and nothing larger, wave cap 1. Of the priority-1
+todos only **T-018** (S) and **T-043** (S) fit; T-057 and T-058 are M. T-018 wins the
+ratchet: it is the last missing stage of the product's own loop and a spec must-have, where
+T-043 fixes a contradiction on a screen that does not exist yet. One sonnet builder,
+dispatched as a foreground Agent call (headless `-p` session — Workflow is review-gated).
+
+### VERIFICATION EVIDENCE — cycle-016-gate-rev2.mjs (conductor-authored post-freeze, 33/33)
+
+The builder's code was frozen and salvage-committed (cd401d5) BEFORE this gate was written;
+no revision of it was ever visible to the builder. Its evidence standard is server-side
+ground truth: a second, read-only `node:sqlite` connection onto the live server's own db
+file. A screen that renders "Saved" while writing nothing fails here.
+
+```
+PASS F1   #/feedback/:planMealId resolves to a real screen, not the placeholder
+PASS F6   ONE tap and nothing else -> exactly 1 feedback row on the SERVER (found 1;
+          deferred, arrived within 4s of the tap)
+PASS F7   stored verdict is the enum value for the tapped label ("make_again")
+PASS F8   no reason invented when the user never chose one (reason=null)
+PASS F10  the verdict moved 11 attribute-level preference signal rows in the DB (before 0, after 11)
+PASS F14  revisiting the same feedback URL wrote NO second row (still 1) — no inflated signal
+PASS F18  verdict + reason = exactly 1 row on the server (found 1), never two
+PASS F19  the negative label maps to the server enum "not_again" (stored "not_again")
+PASS F25  the finished cooking screen offers a way to feedback: "How did it go?"
+PASS F26  that tap navigates to this meal's feedback route (hash "#/feedback/c0ba310b-…")
+PASS F27  and the feedback screen renders there with its verdict choices — the loop is closed end to end
+PASS F28  merely arriving records nothing — no verdict is written without a tap
+PASS F31  nothing was written for the unknown id
+pass 33 / 33
+```
+
+Full output: `.swarm/runs/cycle-016-verify-wave-rev2.txt`.
+
+### the harness fault, recorded rather than quietly fixed
+
+rev1 (`cycle-016-gate.mjs`, preserved unmodified, output at
+`cycle-016-verify-rev1-CRASHED.txt`) died after F5 with
+`TypeError: Cannot read properties of undefined (reading 'deref')` in undici's
+`onParserTimeout`. That is MY harness, not the product: `domshim.mjs` replaces
+`globalThis.setTimeout` with a two-argument wrapper that silently drops the rest, and node's
+HTTP client schedules `setTimeout(onParserTimeout, ms, weakRef)`. Earlier gates never sat
+idle long enough for a keep-alive parser timeout to fire; rev1's deliberate 4-second "the
+parent puts the phone down" wait is the first that does. rev2 restores a variadic
+`globalThis.setTimeout` and leaves `window.setTimeout` — all the product ever calls — as the
+shim defines it. **No check was weakened, removed or retimed.**
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run)
+
+```
+ℹ tests 355
+ℹ pass 355
+ℹ fail 0
+```
+
+`node bin/collision-scan.mjs` → `applicable: false` (ES modules, no classic scripts).
+Recorded, not counted as a pass.
+
+### T-018 → DONE. The loop now closes.
+
+Onboarding → calibration → plan → swap → grocery → cooking → **feedback**. A parent who
+finishes a session is offered "How did it go?", lands on the meal by name, and one tap on
+"Make this again" is the whole interaction — F6 proves that tap alone reaches the server,
+and F10 proves it actually moved eleven attribute-level preference signals rather than
+writing an inert row. The optional reason is one chip tap that rides the SAME single POST.
+
+That single-POST design is the part worth defending. The `feedback` table has no unique
+constraint on `plan_meal_id` and `applyFeedbackEvent` re-runs in full on every insert, so a
+"record now, amend later" screen would have double-counted its own user's preference. The
+builder found that by reading `domain/src/preferences.ts` and designed around it instead of
+papering over it; F14 and F18 are the checks that hold the design to its word.
+
+### the finding I derived from the code, not from an agent
+
+**T-059 — a verdict tapped and abandoned within ~2.5s can be lost.** Because the write is
+deferred to keep it single, `commit()` fires on a reason tap, "Done", in-app navigation,
+`pagehide`, or a 2500 ms timer. F6 proves the timer path. The uncovered case is a HARD tab
+close inside those 2.5 seconds: `pagehide` fires, but an ordinary async `fetch` is not
+guaranteed to flush during unload. `sendBeacon` or `keepalive: true` closes it. Filed at
+priority 3 — low frequency, real loss when it happens, and not a defect in what does get
+written. Also filed **T-060** for the contract gap the builder documented honestly:
+"already submitted" is a `localStorage` marker because no server read path exists, so it is
+true for one browser only.
+
+### not run, stated as not run
+
+- **No qa-verify look pass, second cycle running.** `qa.last_look_cycle` stays **12** while
+  four user-visible screens have shipped since. Gear 1 with the governor pinned at ceiling 2
+  and the weekly probe reading 100% does not pay for a QA agent an hour after the conductor
+  ran 33 live-render checks over the same files. Their BEHAVIOUR is proven; their VISUAL
+  polish is not. Rather than carry that silently a third time it is now **T-061** in the
+  backlog, so it lands in the morning report as tracked work rather than as an omission.
+- **No real browser.** The gate drives `domshim.mjs`, not Chrome. CSS layout, focus rings and
+  `prefers-reduced-motion` in `feedback.css` are unverified.
+- **Client JS still typechecks nothing** (KI-11 / T-054), so the builder's green typecheck is
+  true and vacuous for `web/js/feedback.js`. The DOM gate is the only real evidence here.
+- The `pagehide` and hard-unload paths are asserted by reading, never executed.
+
+### bookkeeping
+
+Wave autotune: **clean wave** — 0 reverts, 0 failed verifies → `wave_streak` 1 → 2 → fires:
+`k_current` = min(5, 5+1) = **5** (already at the cap), streak reset to 0. The gear-1 cap of
+1 binds regardless. Burn attribution: window_tokens 72,254,052 vs 65,398,652 last cycle,
+delta **+6,855,400** credited to cycle 15's target. `consecutive_no_value` stays 0.
+Backlog **20 done / 34 todo / 1 blocked — 55 live, 6 dropped, 61 filed**.
+
+result: **T-018 → done. TWENTY verified of 61 filed.**
+
+honest status. Every stage of the loop the spec promises now exists as a screen a parent can
+reach, except the prep plan (T-057). What is still true and unglamorous: the kitchen timer
+inside cooking mode cannot be started (T-058), prep quantities contradict the grocery list
+(T-043), and nothing marks a meal cooked or decrements inventory (T-048).
+
+next: **T-043** (S-effort, fits gear 1, and unblocks T-057) or **T-058** (M — needs gear 2).
+~5h35m to stop_at 12:00Z; the 09:00Z window reset is the next real budget event.
+
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":19,"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

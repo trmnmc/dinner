@@ -1,0 +1,36 @@
+listening on http://127.0.0.1:43599
+PASS F1  #/feedback/:planMealId resolves to a real screen, not the placeholder
+PASS F2  screen names the actual meal from the API ("Greek Sheet-Pan Chicken Thighs with Pota")
+PASS F3  exactly 3 verdict choices offered (found 3)
+PASS F4  verdict choices are real, enabled <button> elements — keyboard reachable, not click-only divs
+PASS F5  a "make again"-shaped choice exists
+PASS F6  ONE tap and nothing else -> exactly 1 feedback row on the SERVER (found 1; deferred, arrived within 4s of the tap)
+PASS F7  stored verdict is the enum value for the tapped label ("make_again")
+PASS F8  no reason invented when the user never chose one (reason=null)
+PASS F9  stored recipe_id matches the plan meal the URL pointed at — resolved, not guessed
+PASS F10  the verdict moved 11 attribute-level preference signal rows in the DB (before 0 rows, after 11)
+PASS F11  the user is told it is recorded on the tap itself, not left guessing
+PASS F12  after one tap there is a visible way to be finished — the reason is never a gate
+PASS F13  no streaks, scores, badges or engagement mechanics in the copy
+PASS F14  revisiting the same feedback URL wrote NO second row (still 1) — no inflated signal
+PASS F15  the revisit is honest about what was already recorded
+PASS F16  a negative verdict is offered
+PASS F17  the optional reason is one tap on a chip, not a form
+PASS F18  verdict + reason = exactly 1 row on the server (found 1), never two
+PASS F19  the negative label maps to the server enum "not_again" (stored "not_again")
+PASS F20  the reason tap reached the server as a valid enum value ("too_much_work")
+PASS F21  the two-tap path ends in a calm confirmation
+PASS F22  a cooking session opens for "Greek Sheet-Pan Chicken Thighs w"
+PASS F23  the session reaches status completed via the real API (200)
+PASS F24  the cooking screen shows the finished state
+PASS F25  the finished cooking screen offers a way to feedback: "How did it go?"
+PASS F26  that tap navigates to this meal's feedback route (hash "#/feedback/8c7759ad-067b-449e-a85e-31e31bd6fadd")
+PASS F27  and the feedback screen renders there with its verdict choices — the loop is closed end to end
+PASS F28  merely arriving records nothing — no verdict is written without a tap
+PASS F29  an unknown plan_meal_id gets a real panel, not a blank screen (295 chars)
+PASS F30  and it says plainly that nothing was recorded
+PASS F31  nothing was written for the unknown id
+PASS F32  the dead end offers a way out
+PASS F33  no verdict buttons are offered for a meal that could not be resolved
+
+pass 33 / 33
