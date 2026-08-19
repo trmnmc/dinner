@@ -2947,3 +2947,189 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787122740,"next_wakeup_at":1787122830,"pid":2432201,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":21,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 19 — 2026-08-19T07:08Z → 07:50Z · T-045 short-plan swap dead-end (KI-9)
+
+gear **1** (crawl) · ρ **3.05** · wave cap **1** · demote=true · promote blocked by the
+weekly governor (weekly_used 100%, opus_used 100% at week_elapsed 29.85% → heat 3.35,
+ceiling 2). Probe REAL, `probe_ok true`: window 04:00–09:00Z at **109,749,715 tok**,
+34.7M tok/h, projected depletion **07:45:44Z** — 74 minutes before the 09:00Z reset.
+Orient found a clean tree, `control.json` pending empty, no injections.
+
+Work type: build-wave, ONE item, single foreground agent — the Workflow tool is
+review-gated in a headless `-p` session, so this is the documented failure-table fallback
+to a direct Agent call, same shape as cycles 15–18. Craft pack ran clean (no `degraded`
+entries); nothing from it was passed to the builder because this item has zero UI or docs
+surface — it is domain + server TypeScript only.
+
+### why this item, in a gear that only allows S
+
+Gear 1 permits haiku-priced work plus **S-effort sonnet builds only**, so the two
+highest-value items on the board (T-057 the prep screen, T-063 the client's three
+duplicate time renderers) were both out of reach at M. The step-4 rule that
+high-severity `known_issues` outrank new features settled the rest: **KI-9, severity
+high, open since cycle 12**, has an S-effort fix filed as T-045.
+
+It is also the meanest defect on the board. `handleSwap` required exactly three active
+meals. A household with a tight time ceiling is precisely the household the planner
+hands a **partial** plan to — so the users most likely to receive a short plan were the
+users who could then never change it. Permanent 409, no recovery path anywhere in the
+product.
+
+### the ruling came before the builder, on purpose
+
+The root cause was not the route check. `domain/src/swap.ts` typed the request as a fixed
+3-tuple and returned a 2-tuple `unchanged`; the `=== 3` gate in routes.ts was downstream
+of that contract. That leaves several ways to "fix" it, and most of them are wrong —
+padding the tuple with a duplicate meal would have satisfied the type while scoring every
+candidate's ingredient overlap and diversity against a meal the parent does not have.
+
+So the ruling was written to `.swarm/runs/cycle-019-inflight.md` and committed
+(`c15189a`) **before dispatch**: generalise arity to 1–3; frozen set may be empty; no
+padding, no casts, no planset re-run, no weakening of the 409, slot validation stays
+real. I also read the ranking code first and **pinned the empty-frozen-set semantics as
+already correct** (overlap 0, protein/cuisine diversity 1, no fabricated
+`shares_ingredients` fact) so the builder would not "fix" behaviour that was right.
+
+The builder followed it and reported two things it did not have to: that it used the
+`updatePlanMealStatus` DB primitive rather than pure HTTP to construct one 2-meal test
+fixture, and that `DESIGN.md`'s Invariant 4 text still says "the frozen remaining **two**
+meals" and is now imprecise. Both disclosures are recorded — the second as **D-27**,
+because DESIGN.md is binding and conductor-owned, not builder-editable.
+
+### VERIFICATION EVIDENCE — conductor gate, authored AFTER the wave returned
+
+The builder never saw this file and it reuses no line of their tests. It drives real HTTP
+against a real server on a temp DB, and produces the 2-meal and 1-meal states by its own
+sqlite surgery rather than through any code the builder wrote.
+
+```
+--- S — source: the RULING held (comment-stripped source only) ---
+  PASS S1a  no fixed 3-tuple meals type remains
+  PASS S1b  no fixed 2-tuple frozen/unchanged type remains
+  PASS S2   0 tuple cast(s) (`as [` / `as readonly [`) in swap.ts + routes.ts
+  PASS S3   swap.ts still does not import planset (Invariant 4)
+  PASS S4a  the `rows.length !== 3` arity gate is gone from handleSwap
+  PASS S4b  handleSwap still has a plan_incomplete failure path
+  PASS H1   constrained household (1080s active) holds a SHORT plan: 2 meal(s) — KI-9's precondition
+  PASS H2   swap on the short plan → 200  (KI-9 was a permanent 409 plan_incomplete)
+  PASS H4b  3-meal swap still returns 3 alternative(s) at status 200
+  PASS H5b  2-meal plan swap → 200 with 3 alternative(s)
+  PASS H6b  1-meal plan swap → 200 with 3 alternative(s): ONE meal is not a dead end
+  PASS H8a  swap on UNOCCUPIED slot 1 → 409 slot_not_active (never a silent swap)
+  PASS H9   a plan with ZERO active meals still fails loudly: 409 plan_incomplete
+pass 22 / 22
+```
+
+Full output: `.swarm/runs/cycle-019-verify-T-045.txt`.
+
+### VERIFICATION EVIDENCE — the anti-padding pair, and why it is not vacuous
+
+H7 is the check that actually tests the ruling rather than the acceptance. A padded tuple
+would score overlap and diversity against the padding meal. But "everything is 0/1/1"
+proves nothing unless those terms are demonstrably **live**, so H5c measures them first
+against a genuinely non-empty frozen set:
+
+```
+  PASS H5c  one frozen meal:   overlaps 0.11, 0.46, 0.17 | protein 1,1,1 | cuisine 1,1,1
+  PASS H7a  EMPTY frozen set:  overlaps 0.000, 0.000, 0.000
+  PASS H7b  EMPTY frozen set:  protein/cuisine 1/1, 1/1, 1/1
+```
+
+The overlap term moves with a real frozen meal and collapses to exactly zero without one.
+That is the padding hypothesis excluded by measurement, not by reading the diff.
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run)
+
+```
+ℹ tests 372
+ℹ pass 372
+ℹ fail 0
+
+npm test = `tsc --noEmit` && `node --test` — node --test ran, so tsc was clean.
+```
+
+364 before this cycle, **+8** from the builder. I checked the test diff rather than
+trusting "no tests weakened": `git diff -- tests/` contains **zero deleted lines**. Every
+pre-existing assertion is byte-identical; the eight new tests are pure additions.
+
+### the gate failed twice first, and both times the gate was wrong
+
+Six faults, none in the product, each proven by a recorded diagnostic
+(`.swarm/runs/cycle-019-diagnostic.txt`) **before** any check was edited. rev1 and rev2
+are preserved on disk beside rev3 with their failing output.
+
+- rev1: the plan id lives at `body.plan.plan_id`, not `body.plan.id` — my accessor was
+  `undefined`, so four checks 404'd and the sqlite bind threw.
+- rev1: `'something_quicker'` is not one of the nine swap reasons.
+- rev1, **and this is the one that mattered**: error codes nest under `body.error.code`,
+  not `body.code`. My load-bearing KI-9 check read `s1.body.code === 'plan_incomplete'`
+  against `undefined` — so **H2 PASSED VACUOUSLY on a 404**. A gate whose most important
+  check passes for the wrong reason is worse than no gate. It was caught only because
+  H2b, deliberately written to demand a specific status rather than the absence of a bad
+  one, failed loudly next to it. Keep writing the positive assertion beside the negative.
+- rev2: `encodeRational` emits `{n, d}` strings; my reader expected `{num, den}`, so all
+  nine anti-padding readings came back `NaN`. The three checks failed **closed**, which
+  is the correct direction for a broken reader — but I could have "fixed" it by dropping
+  H7 as unmeasurable. Dropping the check that tests the ruling because the harness cannot
+  read the number is how a run starts overclaiming.
+
+### T-045 → DONE. KI-9 → RESOLVED. 23 verified of 64 filed.
+
+### the honest limit of this fix
+
+The gate answers the acceptance — a 1- or 2-meal plan **can** now be swapped, with three
+real ranked alternatives each. It does **not** claim the constrained parent now has
+choices, because they do not:
+
+```
+  short-plan alternatives offered: 0
+  short-plan none_reason: "no_candidates_in_pool"
+  message: "There are no other eligible recipes to offer right now."
+```
+
+With six recipes, a planner-produced short plan already contains **every** survivor, so
+the candidate pool is empty by construction. The permanent 409 is gone and the product
+now says something true instead of refusing forever — but real choice for that household
+is catalog-bound, not swap-bound. Cross-noted onto **T-010** and **T-011** (recipes
+7–30), not filed as a new item, because growing the catalog is exactly what fixes it.
+The builder proved this independently and said so unprompted; I re-derived it from the
+gate's own output rather than taking their word.
+
+### not run, stated as not run
+
+- **No qa-verify look pass, fifth cycle running.** `qa.last_look_cycle` stays **12**.
+  This cycle merged zero user-visible files (domain + server + tests), so the post-merge
+  look pass genuinely does not apply — but the four screens shipped since cycle 12 remain
+  unlooked-at. Still tracked as **T-061**.
+- **No real browser.** HTTP and JSON only. Nothing here says anything about the swap UI.
+- **collision-scan not run**: no classic scripts and no user-visible files merged.
+- **The 500 paths the builder added** for duplicate-slot and unlocatable-slot corruption
+  are unreachable through the real API and are **untested** — defensive code for
+  malformed persisted state, and I am not claiming otherwise.
+- **Client JS still typechecks nothing** (KI-11 / T-054). Unchanged, untouched.
+
+### bookkeeping
+
+Wave autotune: **clean wave** — 0 reverts, 0 failed verifies → `wave_streak` 0 → 1 (needs
+2 to fire), so `k_current` stays 5; the gear-1 cap of 1 binds regardless. Burn
+attribution: window_tokens 109,749,715 vs 100,238,763 last cycle, delta **+9,510,952**
+credited to cycle 18's target. `consecutive_no_value` stays 0. Backlog **23 done / 34
+todo / 1 blocked — 58 live, 6 dropped, 64 filed**.
+
+Data defect noticed, not fixed mid-cycle: `state.json.decisions` contains **two entries
+with id `D-18`** (cycle 12's MealView ruling and cycle 18's time-label placement). Ids
+are for humans reading the retro, so this is cosmetic — but it is a real duplicate and
+belongs in the morning report rather than in a silent rewrite of a prior cycle's record.
+
+result: **T-045 → done, KI-9 → resolved. TWENTY-THREE verified of 64 filed. The gate
+failed twice before it passed, and both times the gate was what was broken.**
+
+next: the window is projected to deplete **07:45:44Z**, so limp is likely before the
+09:00Z reset — expect the next cycles to be hourly waits, then a fresh window at 09:00Z
+with ~3h to stop_at 12:00Z. When the gear allows M again, **T-057** (prep screen) is the
+highest-value item on the board, with **T-063** (the client's three duplicate time
+renderers) behind it. In gear 1 the remaining S-effort work is **T-064** (brittle catalog
+assertion), **T-038** (swap no-alternatives copy — now directly relevant, since the
+constrained household sees exactly that path), and the four drift-pinning items
+T-031/T-032/T-033/T-035.

@@ -1,0 +1,47 @@
+
+--- S — source: the RULING held (comment-stripped source only) ---
+  PASS S1a  no fixed 3-tuple meals type remains
+  PASS S1b  no fixed 2-tuple frozen/unchanged type remains
+  PASS S2  0 tuple cast(s) (`as [` / `as readonly [`) in swap.ts + routes.ts — ruling item 2 forbids them
+  PASS S3  swap.ts still does not import planset (Invariant 4)
+  PASS S4a  the `rows.length !== 3` arity gate is gone from handleSwap
+  PASS S4b  handleSwap still has a plan_incomplete failure path (ruling item 4: zero meals must still fail loudly)
+
+  → server up at http://127.0.0.1:39631
+
+--- H — HTTP: the KI-9 user path ---
+  PASS H1  constrained household (1080s active) holds a SHORT plan: 2 meal(s) — this is KI-9's precondition
+  PASS H2  swap on the short plan → 200  (KI-9 was a permanent 409 plan_incomplete)
+  PASS H2b  short-plan swap answers 200, not an error: got 200 {"alternatives":[],"none_reason":"no_candidates_in_pool","message":"There are no other eligible recipes to offer right now."}
+  PASS H3  empty alternatives carry a typed reason + copy: none_reason="no_candidates_in_pool" message="There are no other eligible recipes to offer right now."
+
+--- H — regression: the normal 3-meal path still works ---
+  PASS H4a  unconstrained household still gets a full 3-meal plan (3)
+  PASS H4b  3-meal swap still returns 3 alternative(s) at status 200
+
+--- H — arity 2 (one frozen meal): the frozen terms must be live ---
+  PASS H5a  DB surgery left exactly 2 active meals (slots 0,1)
+  PASS H5b  2-meal plan swap → 200 with 3 alternative(s)
+  FAIL H5c  the three frozen-context terms VARY with one real frozen meal (overlaps NaN,NaN,NaN | protein NaN,NaN,NaN | cuisine NaN,NaN,NaN) — without this, H7 would be vacuous
+
+--- H — arity 1 (EMPTY frozen set): the anti-padding check ---
+  PASS H6a  DB surgery left exactly 1 active meal (slot 0)
+  PASS H6b  1-meal plan swap → 200 with 3 alternative(s): a household with ONE meal is not a dead end
+  FAIL H7a  EVERY alternative shows ingredient_overlap = 0 against the empty frozen set (NaN, NaN, NaN) — a padded tuple would score non-zero overlap against the padding meal
+  FAIL H7b  EVERY alternative shows protein_diversity = cuisine_diversity = 1 (NaN/NaN, NaN/NaN, NaN/NaN) — a padded tuple would clash and produce a 0
+
+--- H — the loud failures the ruling required to survive ---
+  PASS H8a  swap on UNOCCUPIED slot 1 → 409 slot_not_active (must be a clear 4xx, never a silent swap)
+  PASS H8b  unoccupied slot is neither a 500 nor a silent 200 (got 409)
+  PASS H9  a plan with ZERO active meals still fails loudly: 409 plan_incomplete (ruling item 4)
+
+--- context (not a check) — is the constrained household actually offered a way out? ---
+  short-plan alternatives offered: 0
+  short-plan none_reason: "no_candidates_in_pool"
+
+pass 19 / 22
+
+FAILURES:
+  H5c: the three frozen-context terms VARY with one real frozen meal (overlaps NaN,NaN,NaN | protein NaN,NaN,NaN | cuisine NaN,NaN,NaN) — without this, H7 would be vacuous
+  H7a: EVERY alternative shows ingredient_overlap = 0 against the empty frozen set (NaN, NaN, NaN) — a padded tuple would score non-zero overlap against the padding meal
+  H7b: EVERY alternative shows protein_diversity = cuisine_diversity = 1 (NaN/NaN, NaN/NaN, NaN/NaN) — a padded tuple would clash and produce a 0

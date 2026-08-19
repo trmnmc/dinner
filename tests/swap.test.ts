@@ -751,3 +751,58 @@ test('for every reason with alternatives, facts are ≤ 3 and reasons.ts renders
     }
   }
 });
+
+// ---------------------------------------------------------------------------
+// 7. Generalised arity (T-045 / KI-9) — a short plan must still be swappable
+// ---------------------------------------------------------------------------
+
+test('a 2-meal plan swaps fine: one frozen meal, returned by the same reference', () => {
+  const request = makeRequest({
+    meals: [meal0, meal1],
+    swap_slot: 0,
+    reason: 'faster',
+    candidates: [makeCandidate('cand-2m', { total_time_seconds: 900, active_time_seconds: 600 })],
+  });
+  const snapshot1 = structuredClone(request.meals[1]);
+  const result = swapMeal(request);
+  const r = expectAlternatives(result);
+  assert.equal(r.alternatives.length, 1, 'expected a real swap outcome with an alternative');
+  assert.equal(r.unchanged.length, 1, 'exactly the one meal that was not swapped');
+  assert.ok(Object.is(r.unchanged[0], meal1), 'unchanged must be the SAME object reference the request carried');
+  assert.deepEqual(r.unchanged[0], snapshot1);
+});
+
+test('a 1-meal plan swaps fine: the frozen set is empty, and that never throws', () => {
+  const request = makeRequest({
+    meals: [meal0],
+    swap_slot: 0,
+    reason: 'faster',
+    candidates: [makeCandidate('cand-1m', { total_time_seconds: 900, active_time_seconds: 600 })],
+  });
+  const result = swapMeal(request);
+  const r = expectAlternatives(result);
+  assert.equal(r.alternatives.length, 1, 'expected a real swap outcome with an alternative');
+  assert.deepEqual(r.unchanged, [], 'nothing else is active, so the frozen set is genuinely empty — never padded');
+  // Pinned semantics: with nothing to clash with, overlap is 0 and both
+  // diversity terms are full credit (1) for every candidate.
+  const terms = r.alternatives[0].rank.terms;
+  assert.ok(eq(terms.ingredient_overlap.raw, ZERO));
+  assert.ok(eq(terms.protein_diversity.raw, ONE));
+  assert.ok(eq(terms.cuisine_diversity.raw, ONE));
+});
+
+test('a 1-meal plan with an empty candidate pool still gives a typed no_alternatives outcome, not a throw', () => {
+  const result = swapMeal(makeRequest({ meals: [meal0], swap_slot: 0, reason: 'faster', candidates: [] }));
+  const r = expectNone(result);
+  assert.equal(r.explanation, 'no_candidates_in_pool');
+  assert.deepEqual(r.unchanged, []);
+});
+
+test('swap_slot pointing at a meal that does not exist is a thrown precondition violation, not undefined behaviour', () => {
+  assert.throws(() => swapMeal(makeRequest({ meals: [meal0], swap_slot: 1 })));
+  assert.throws(() => swapMeal(makeRequest({ meals: [meal0, meal1], swap_slot: 2 })));
+});
+
+test('an empty meals array is a thrown precondition violation, not undefined behaviour', () => {
+  assert.throws(() => swapMeal(makeRequest({ meals: [], swap_slot: 0 })));
+});

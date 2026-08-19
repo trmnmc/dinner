@@ -1,12 +1,22 @@
 /**
- * swap.ts — one-tap swap by explicit reason (wave 1B, T-007).
+ * swap.ts — one-tap swap by explicit reason (wave 1B, T-007; arity
+ * generalised 1-3 in T-045).
  *
  * Invariant 4 (DESIGN.md) lives here and is structural: a swap re-ranks
- * candidates against the FROZEN remaining two meals and NEVER re-runs the
+ * candidates against the FROZEN remaining meals and NEVER re-runs the
  * set pass. This module does not import `planset.ts` AT ALL — there is no
- * way to "helpfully" re-optimise the whole set from here, and the two
+ * way to "helpfully" re-optimise the whole set from here, and the
  * untouched meals are returned as the SAME object references the caller
  * passed in (`unchanged`), so they are provably byte-identical.
+ *
+ * A plan holds ONE to THREE active meals — a household under a tight time
+ * ceiling can be handed a partial (1- or 2-meal) plan by the planner, and
+ * that plan must remain swappable. So `SwapRequest.meals` is 1-3 meals in
+ * slot order, `swap_slot` addresses one of them, and the frozen context is
+ * "every OTHER active meal" — zero, one, or two of them. Zero frozen meals
+ * (a 1-meal plan) is a real, valid case, never padded or faked: nothing is
+ * duplicated to make up a phantom third meal, and nothing throws just
+ * because the context is empty.
  *
  * The nine explicit reasons (`SwapReason`, frozen in recipe.ts) each do two
  * things, both testable:
@@ -19,16 +29,22 @@
  *      `SWAP_CONFIG.rank_weights`), so the ordering measurably moves in
  *      the direction the reason's name promises.
  *
- * Alternatives are then ranked against the two frozen meals: ingredient
- * overlap, protein and cuisine diversity are computed against those two,
+ * Alternatives are then ranked against the frozen meals: ingredient
+ * overlap, protein and cuisine diversity are computed against those,
  * held fixed — the outgoing meal contributes NOTHING to the ranking
- * context. At most `max_alternatives` (three) are returned, each carrying
- * `ReasonFact`s for `reasons.ts` to render — this module emits facts,
- * never user-facing strings.
+ * context. With an empty frozen set (1-meal plan) there is nothing to
+ * clash or overlap with: overlap is 0 and both diversity terms are 1 for
+ * every candidate, which shifts every candidate equally and so cannot
+ * distort the ranking. At most `max_alternatives` (three) are returned,
+ * each carrying `ReasonFact`s for `reasons.ts` to render — this module
+ * emits facts, never user-facing strings.
  *
  * Zero valid alternatives is a representable outcome with a typed
  * explanation and honest counts — never an empty array with no reason,
- * never a throw.
+ * never a throw. A genuinely malformed request (no active meals at all, or
+ * a `swap_slot` with no meal at it) IS a throw — that is a caller contract
+ * violation, not a business outcome, and the HTTP layer is expected to
+ * have already ruled it out before calling in.
  *
  * Invariant 1 binds: all arithmetic is `Rational` via `qty.ts`.
  * Determinism: pure function of the request — no clock, no randomness, no
@@ -148,9 +164,13 @@ export interface SwapMealInput {
 export type SwapSlot = 0 | 1 | 2;
 
 export interface SwapRequest {
-  /** The current three-meal plan, in slot order. */
-  readonly meals: readonly [SwapMealInput, SwapMealInput, SwapMealInput];
-  /** WHICH meal is being swapped; the other two are the frozen context. */
+  /** The current active plan meals, in slot order — 1 to 3 of them (a
+   * household under a tight time ceiling can hold a partial plan; that
+   * plan must still be swappable). `swap_slot` MUST index an element that
+   * exists in this array (see `swapMeal`'s precondition). */
+  readonly meals: readonly SwapMealInput[];
+  /** WHICH meal is being swapped; every OTHER meal in `meals` (zero, one,
+   * or two of them) forms the frozen context. */
   readonly swap_slot: SwapSlot;
   readonly reason: SwapReason;
   /** The same candidate pool the plan was built from (survivors + their
@@ -205,9 +225,10 @@ export type SwapResult =
       readonly kind: 'alternatives';
       readonly reason: SwapReason;
       readonly swap_slot: SwapSlot;
-      /** The two untouched meals, in slot order — the SAME references the
-       * request carried. Provably unchanged. */
-      readonly unchanged: readonly [SwapMealInput, SwapMealInput];
+      /** The untouched meals, in slot order — the SAME references the
+       * request carried. Provably unchanged. Zero to two of them: empty
+       * for a 1-meal plan, never padded. */
+      readonly unchanged: readonly SwapMealInput[];
       /** 1..max_alternatives, best first. */
       readonly alternatives: readonly SwapAlternative[];
       readonly counts: SwapCounts;
@@ -216,7 +237,7 @@ export type SwapResult =
       readonly kind: 'no_alternatives';
       readonly reason: SwapReason;
       readonly swap_slot: SwapSlot;
-      readonly unchanged: readonly [SwapMealInput, SwapMealInput];
+      readonly unchanged: readonly SwapMealInput[];
       /** WHY there is nothing to offer — typed, with the counts above. */
       readonly explanation: SwapNoAlternativesCode;
       readonly counts: SwapCounts;
@@ -462,14 +483,17 @@ function reasonFit(reason: SwapReason, candidate: Recipe, r: ReasonInputs): Rati
 function rankCandidate(
   candidate: SwapMealInput,
   reason: SwapReason,
-  frozen: readonly [SwapMealInput, SwapMealInput],
+  frozen: readonly SwapMealInput[],
   r: ReasonInputs,
 ): SwapRankBreakdown {
   const w = r.config.rank_weights;
 
-  // Ingredient overlap with the FROZEN pair: fraction of the candidate's
-  // required ingredients already needed by the two untouched meals — those
-  // items are on the grocery list regardless.
+  // Ingredient overlap with the FROZEN meals: fraction of the candidate's
+  // required ingredients already needed by the untouched meals — those
+  // items are on the grocery list regardless. An empty frozen set (1-meal
+  // plan) has nothing to overlap with, so this is honestly 0 — not a
+  // divide-by-zero, `own.size === 0` is the only zero-guard needed and it
+  // guards the candidate's own ingredient count, not the frozen count.
   const own = requiredIngredientIds(candidate.recipe);
   const frozenIds = new Set<IngredientId>();
   for (const meal of frozen) {
@@ -481,8 +505,11 @@ function rankCandidate(
   }
   const overlapRaw = own.size === 0 ? ZERO : rational(sharedCount, own.size);
 
-  // Diversity against the FROZEN pair only — the outgoing meal is gone and
-  // must contribute nothing to the context.
+  // Diversity against the FROZEN meals only — the outgoing meal is gone and
+  // must contribute nothing to the context. An empty frozen set means
+  // nothing to clash with, so every candidate scores full diversity credit
+  // (1) — that shifts every candidate equally and so cannot distort the
+  // ranking; it is not special-cased.
   const frozenProteins = new Set(frozen.map((m) => m.recipe.attributes.protein));
   const frozenCuisines = new Set(frozen.map((m) => m.recipe.attributes.cuisine));
   const proteinRaw = frozenProteins.has(candidate.recipe.attributes.protein) ? ZERO : ONE;
@@ -606,7 +633,7 @@ function primaryFact(reason: SwapReason, candidate: Recipe, r: ReasonInputs): Re
 function factsFor(
   reason: SwapReason,
   candidate: SwapMealInput,
-  frozen: readonly [SwapMealInput, SwapMealInput],
+  frozen: readonly SwapMealInput[],
   r: ReasonInputs,
 ): readonly ReasonFact[] {
   const facts: ReasonFact[] = [];
@@ -615,6 +642,9 @@ function factsFor(
 
   // The frozen meal sharing the most required ingredients, ties to the
   // earlier slot — the set-context story the alternative was ranked with.
+  // With an empty frozen set (1-meal plan) there is no other meal to
+  // share with, so `bestMeal` stays null and no `shares_ingredients` fact
+  // is fabricated — correct, not a gap to fill.
   const own = requiredIngredientIds(candidate.recipe);
   let bestMeal: SwapMealInput | null = null;
   let bestShared = 0;
@@ -651,18 +681,33 @@ function factsFor(
 // ---------------------------------------------------------------------------
 
 /**
- * Re-rank the candidate pool for ONE meal slot against the two frozen
- * remaining meals. Returns at most `max_alternatives` alternatives, best
- * first, plus the two untouched meals as the same references the request
- * carried — or a typed `no_alternatives` outcome with honest counts.
+ * Re-rank the candidate pool for ONE meal slot against the frozen
+ * remaining meals (zero to two of them, depending on plan size). Returns
+ * at most `max_alternatives` alternatives, best first, plus the untouched
+ * meals as the same references the request carried — or a typed
+ * `no_alternatives` outcome with honest counts.
+ *
+ * Precondition (thrown, not represented in `SwapResult`): `request.meals`
+ * must hold at least one meal, and `request.swap_slot` must index one of
+ * them. Both are caller contract violations — genuinely malformed plan
+ * state — that the HTTP layer is expected to have already rejected with a
+ * 4xx before ever calling in here; they are not business outcomes like
+ * `no_alternatives`.
  */
 export function swapMeal(request: SwapRequest, config: SwapConfig = SWAP_CONFIG): SwapResult {
-  const [slot0, slot1, slot2] = request.meals;
+  if (request.meals.length === 0) {
+    throw new Error('swapMeal: request.meals must contain at least one active meal');
+  }
+  if (request.swap_slot >= request.meals.length) {
+    throw new Error(
+      `swapMeal: swap_slot ${String(request.swap_slot)} has no meal in a ${String(request.meals.length)}-meal plan`,
+    );
+  }
   const current = request.meals[request.swap_slot];
-  // The frozen context: the SAME references the request carried, in slot
-  // order — provably untouched.
-  const frozenPair: readonly [SwapMealInput, SwapMealInput] =
-    request.swap_slot === 0 ? [slot1, slot2] : request.swap_slot === 1 ? [slot0, slot2] : [slot0, slot1];
+  // The frozen context: every OTHER meal, the SAME references the request
+  // carried, in slot order — provably untouched. Zero to two of them; empty
+  // for a 1-meal plan, never padded or faked.
+  const frozen: readonly SwapMealInput[] = request.meals.filter((_, i) => i !== request.swap_slot);
   const r: ReasonInputs = {
     current,
     signals: request.signals,
@@ -696,7 +741,7 @@ export function swapMeal(request: SwapRequest, config: SwapConfig = SWAP_CONFIG)
       kind: 'no_alternatives',
       reason: request.reason,
       swap_slot: request.swap_slot,
-      unchanged: frozenPair,
+      unchanged: frozen,
       explanation,
       counts,
     };
@@ -705,7 +750,7 @@ export function swapMeal(request: SwapRequest, config: SwapConfig = SWAP_CONFIG)
   const ranked = eligible
     .map((candidate) => ({
       candidate,
-      rank: rankCandidate(candidate, request.reason, frozenPair, r),
+      rank: rankCandidate(candidate, request.reason, frozen, r),
     }))
     .sort((a, b) => {
       const byScore = compare(b.rank.total, a.rank.total);
@@ -719,14 +764,14 @@ export function swapMeal(request: SwapRequest, config: SwapConfig = SWAP_CONFIG)
       recipe: candidate.recipe,
       score: candidate.score,
       rank,
-      facts: factsFor(request.reason, candidate, frozenPair, r),
+      facts: factsFor(request.reason, candidate, frozen, r),
     }));
 
   return {
     kind: 'alternatives',
     reason: request.reason,
     swap_slot: request.swap_slot,
-    unchanged: frozenPair,
+    unchanged: frozen,
     alternatives,
     counts,
   };

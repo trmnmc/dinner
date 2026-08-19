@@ -511,6 +511,124 @@ test('a PARTIAL plan (short, not empty) explains why it is short, both from POST
   }
 });
 
+// ---------------------------------------------------------------------------
+// T-045 / KI-9 — a short (1- or 2-meal) plan must remain swappable, never a
+// permanent 409 dead end.
+// ---------------------------------------------------------------------------
+
+test('a genuinely SHORT (1-meal) plan, produced the way the product produces one, can be swapped instead of dead-ending on 409', async () => {
+  const ts = await startTestServer();
+  try {
+    // Same household constraint as the PARTIAL-plan test above: only the
+    // 26-min-total dish survives a 30-minute total ceiling, so the planner
+    // hands back a genuine 1-meal plan (T-041 behaviour) — not a state we
+    // fabricated for this test.
+    const householdId = await createHousehold(ts.base, {
+      household: { weeknight_active_time_ceiling_seconds: null, weeknight_total_time_ceiling_seconds: 1800 },
+    });
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    assert.equal(jArr(plan['meals']).length, 1, 'sanity: this really is a 1-meal plan');
+    const planId = jStr(plan['plan_id']);
+
+    const swapRes = await api(ts.base, 'POST', `/api/plans/${planId}/meals/0/swap`, {
+      householdId,
+      body: { reason: 'faster' },
+    });
+    // KI-9: before this fix, handleSwap required exactly three active
+    // meals and this call ALWAYS returned 409 plan_incomplete, forever —
+    // there was no recovery path. It must now be a real 200.
+    assert.equal(swapRes.status, 200, JSON.stringify(swapRes.json));
+    const body = j(swapRes.json);
+    const alternatives = jArr(body['alternatives']);
+    // Honest, not fabricated: the shipped catalog has exactly 6 recipes,
+    // and a short plan is defined as "every survivor got chosen" (T-041 /
+    // planset.ts invariant), so the swap candidate pool is genuinely
+    // empty here — the typed `no_alternatives` shape, not a crash, not a
+    // silent lie, and (this is the point of this test) not a 409 either.
+    assert.equal(alternatives.length, 0);
+    assert.equal(jStr(body['none_reason']), 'no_candidates_in_pool');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('a 2-meal plan still returns real, populated alternatives over HTTP — the generalised route path actually ranks candidates, not just avoids 409', async () => {
+  const ts = await startTestServer();
+  try {
+    // The shipped 6-recipe catalog means a PLANNER-produced short plan
+    // (see the 1-meal test above) always exhausts every survivor and so
+    // can never have a leftover candidate to demonstrate a real
+    // alternative against. To prove the generalised route path truly
+    // ranks and returns alternatives for a short plan (not just an empty
+    // no_alternatives shape), we deactivate one meal of a normal 3-meal
+    // plan directly through `db.ts`'s own status-update method — the same
+    // primitive handleSwap's accept branch uses internally — rather than
+    // hand-writing SQL. This is the one place these new tests touch the
+    // db directly, and only because the maths above rules out doing it
+    // through HTTP alone with this catalog size.
+    const householdId = await createHousehold(ts.base);
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    const planId = jStr(plan['plan_id']);
+    const meals = jArr(plan['meals']).map((m) => j(m));
+    assert.equal(meals.length, 3);
+
+    const slot2 = meals.find((m) => jNum(m['slot']) === 2);
+    assert.ok(slot2 !== undefined);
+    ts.started.db.updatePlanMealStatus(householdId, jStr((slot2 as Json)['plan_meal_id']), 'swapped_out');
+
+    let sawAlternatives = false;
+    for (const slot of [0, 1]) {
+      const offerRes = await api(ts.base, 'POST', `/api/plans/${planId}/meals/${String(slot)}/swap`, {
+        householdId,
+        body: { reason: 'different_protein' },
+      });
+      assert.equal(offerRes.status, 200, JSON.stringify(offerRes.json));
+      const alternatives = jArr(j(offerRes.json)['alternatives']);
+      if (alternatives.length > 0) {
+        sawAlternatives = true;
+        break;
+      }
+    }
+    assert.ok(sawAlternatives, 'expected at least one of the two remaining slots to offer a real alternative');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('a slot with no active meal in a short plan is rejected with a clear 4xx, never a silent swap and never a 500', async () => {
+  const ts = await startTestServer();
+  try {
+    const householdId = await createHousehold(ts.base, {
+      household: { weeknight_active_time_ceiling_seconds: null, weeknight_total_time_ceiling_seconds: 1800 },
+    });
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    const planId = jStr(plan['plan_id']);
+    assert.equal(jArr(plan['meals']).length, 1, 'sanity: only slot 0 is active');
+
+    const slot1Res = await api(ts.base, 'POST', `/api/plans/${planId}/meals/1/swap`, {
+      householdId,
+      body: { reason: 'faster' },
+    });
+    assert.equal(slot1Res.status, 409, JSON.stringify(slot1Res.json));
+    assert.equal(jStr(j(j(slot1Res.json)['error'])['code']), 'slot_not_active');
+
+    const slot2Res = await api(ts.base, 'POST', `/api/plans/${planId}/meals/2/swap`, {
+      householdId,
+      body: { reason: 'faster' },
+    });
+    assert.equal(slot2Res.status, 409, JSON.stringify(slot2Res.json));
+    assert.equal(jStr(j(j(slot2Res.json)['error'])['code']), 'slot_not_active');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
 test('when two constraints each independently exclude every recipe, the shortfall names BOTH rather than picking one arbitrarily', async () => {
   const ts = await startTestServer();
   try {

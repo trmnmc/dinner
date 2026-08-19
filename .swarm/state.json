@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 18,
+  "cycle": 19,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -206,6 +206,13 @@
       "decision": "The active-time-block label is PRODUCED in domain/src/reasons.ts and ATTACHED at the route encode boundary in server/src/routes.ts — it is not stored on the domain ActiveTimeBlock type.",
       "why": "DoD 6's mechanism is one shared time renderer, and reasons.ts already owns the only duration-to-text function in the product; a second minute formatter anywhere is precisely the drift the rule exists to prevent. But ActiveTimeBlock is derived recipe data carrying no presentation text, and pushing a label into it would churn unrelated deepEqual assertions in prep.test.ts for no correctness gain. Produce in the domain, attach at the wire. Ruled BEFORE dispatch and recorded in .swarm/runs/cycle-018-inflight.md so the builder could not have reverse-engineered it from the gate.",
       "cycle": 18
+    },
+    {
+      "id": "D-27",
+      "topic": "frozen-contract-deviation",
+      "decision": "Swap arity is generalised from exactly-3 to 1-3 meals. SwapRequest.meals is readonly SwapMealInput[], SwapResult.unchanged and the two frozen parameters are readonly SwapMealInput[], and the frozen context MAY BE EMPTY. DESIGN.md Invariant 4's wording ('re-ranks against the frozen remaining TWO meals') is now imprecise for 1- and 2-meal plans; its SUBSTANCE - swap ranks only against the frozen remaining meals and never re-runs planset - is unchanged and was gate-verified (S3: swap.ts still does not import planset). Recorded as a decision rather than edited into DESIGN.md, which is binding and conductor-owned.",
+      "why": "KI-9 (high, open since cycle 12) was not a route bug: server/src/routes.ts required rows.length === 3 because domain/src/swap.ts typed meals as a fixed 3-tuple. A time-limited household is exactly the household the planner gives a partial plan to, so the users most likely to get a short plan were the users who could then never change it - a permanent dead end. The ruling was made BEFORE dispatch and written to .swarm/runs/cycle-019-inflight.md so the builder could not reverse-engineer it from the gate: no tuple padding, no casts, no planset re-run, no weakening of the 409, slot validation stays real. The empty-frozen-set semantics were checked in the code first and PINNED as correct (overlap 0, protein/cuisine diversity 1, no fabricated shares_ingredients fact) so a builder could not 'fix' behaviour that was already right.",
+      "cycle": 19
     }
   ],
   "known_issues": [
@@ -265,9 +272,10 @@
     {
       "id": "KI-9",
       "severity": "high",
-      "status": "open",
-      "desc": "A constrained household dead-ends. handleSwap requires exactly three active meals, so a 1- or 2-meal plan (which today is what a time-limited household gets) returns 409 plan_incomplete forever with no way to change anything. Filed as T-045. Compounds KI-7: the users most likely to hit the empty/partial plan are exactly those who cannot then swap out of it.",
-      "cycle": 12
+      "status": "resolved",
+      "desc": "A constrained household dead-ends. handleSwap requires exactly three active meals, so a 1- or 2-meal plan (which today is what a time-limited household gets) returns 409 plan_incomplete forever with no way to change anything. Filed as T-045. Compounds KI-7: the users most likely to hit the empty/partial plan are exactly those who cannot then swap out of it. RESOLVED at cycle 19 by T-045, CONDUCTOR-VERIFIED by a fresh 22-check gate authored after the builder returned (/opt/swarm/runs/cycle-019-gate.mjs rev3, output .swarm/runs/cycle-019-verify-T-045.txt, 22/22). The permanent 409 is gone: a 1-meal plan and a 2-meal plan each return 200 with 3 real ranked alternatives (H6b, H5b), a zero-meal plan still fails loudly with 409 plan_incomplete (H9), and an unoccupied slot returns 409 slot_not_active rather than a 500 or a silent swap (H8a/H8b). RESIDUAL, recorded not hidden: on the shipped SIX-recipe catalog a genuinely planner-produced short plan still has an EMPTY candidate pool, because the planner's short plan already contains every survivor - so the constrained household now gets an honest 200 with none_reason 'no_candidates_in_pool' and the copy 'There are no other eligible recipes to offer right now.' instead of a permanent 409. The mechanism is fixed and the dead end is gone; real CHOICE for that household waits on catalog size (T-010/T-011, recipes 7-30). This is a catalog limitation, not a swap defect, and it is not claimed as more than it is.",
+      "cycle": 12,
+      "resolved_cycle": 19
     },
     {
       "id": "KI-10",
@@ -295,8 +303,8 @@
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 0,
-    "window_tokens_attributed": 169067746
+    "wave_streak": 1,
+    "window_tokens_attributed": 178578698
   },
   "qa": {
     "last_look_cycle": 12,
@@ -304,15 +312,15 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 16,
-    "work": "build-wave (single foreground sonnet builder): T-018 post-meal feedback screen",
+    "n": 19,
+    "work": "build-wave (single foreground sonnet builder, gear-1 cap 1): T-045 short-plan swap dead-end (KI-9)",
     "outcome": "1 verified",
     "verified": [
-      "T-018"
+      "T-045"
     ],
     "failed": [],
-    "test_cmd": "355/355 pass",
-    "gate": "cycle-016-gate-rev2 33/33 (rev1 crashed on a harness timer fault, preserved)"
+    "test_cmd": "372/372 pass (364 baseline + 8), tsc --noEmit clean",
+    "gate": "cycle-019-gate rev3 22/22 (rev1 + rev2 preserved with their failing output; all 6 faults were in the gate, each proven by a recorded diagnostic first)"
   },
-  "updated_at": "2026-08-19T06:22:44.000Z"
+  "updated_at": "2026-08-19T07:30:00.000Z"
 }

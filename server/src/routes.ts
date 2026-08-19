@@ -912,28 +912,45 @@ function handleSwap(deps: Deps, ctx: JsonRouteContext): RouteResult {
   }
   const acceptRecipeId: string | null = typeof acceptRaw === 'string' ? acceptRaw : null;
 
+  // T-045 / KI-9: a plan may hold 1, 2, or 3 active meals — a household
+  // under a tight time ceiling can be handed a partial plan by the
+  // planner (T-041), and that plan must remain swappable, never a
+  // permanent dead end. Zero active meals is the only count that is
+  // genuinely un-swappable.
   const rows = deps.db.listPlanMeals(household.id, planId).filter((r) => r.status !== 'swapped_out');
-  if (rows.length !== 3) throw new HttpError(409, 'plan_incomplete', 'This plan does not have three active meals to swap against.');
+  if (rows.length === 0) {
+    throw new HttpError(409, 'plan_incomplete', 'This plan has no active meals to swap.');
+  }
   const bySlot = new Map(rows.map((r) => [r.slot, r]));
-  const row0 = bySlot.get(0);
-  const row1 = bySlot.get(1);
-  const row2 = bySlot.get(2);
-  if (row0 === undefined || row1 === undefined || row2 === undefined) {
-    throw new HttpError(409, 'plan_incomplete', 'This plan is missing a slot.');
+  if (bySlot.size !== rows.length) {
+    // Two active rows sharing a slot is malformed persisted state, never
+    // silently tolerated — loudly, not a 500-by-crash further down.
+    throw new HttpError(500, 'internal_error', 'Plan has duplicate active slots.');
   }
-  const recipe0 = deps.catalogMap.get(row0.recipe_id);
-  const recipe1 = deps.catalogMap.get(row1.recipe_id);
-  const recipe2 = deps.catalogMap.get(row2.recipe_id);
-  if (recipe0 === undefined || recipe1 === undefined || recipe2 === undefined) {
-    throw new HttpError(500, 'internal_error', 'Plan references an unknown recipe.');
+  const targetRow = bySlot.get(slot);
+  if (targetRow === undefined) {
+    // The requested slot isn't OCCUPIED in THIS plan (e.g. slot 1 on a
+    // 1-meal plan) — a clear 4xx, never a silent swap and never a 500.
+    throw new HttpError(409, 'slot_not_active', 'This plan has no active meal in that slot.');
   }
-  const rowsBySlot = [row0, row1, row2] as const;
-  const recipesBySlot = [recipe0, recipe1, recipe2] as const;
-  const meals: readonly [SwapMealInput, SwapMealInput, SwapMealInput] = [
-    { recipe: recipe0, score: row0.score },
-    { recipe: recipe1, score: row1.score },
-    { recipe: recipe2, score: row2.score },
-  ];
+  const sortedRows: readonly PlanMeal[] = [...rows].sort((a, b) => a.slot - b.slot);
+  const recipesBySortedRow: readonly Recipe[] = sortedRows.map((row) => {
+    const recipe = deps.catalogMap.get(row.recipe_id);
+    if (recipe === undefined) throw new HttpError(500, 'internal_error', 'Plan references an unknown recipe.');
+    return recipe;
+  });
+  const meals: readonly SwapMealInput[] = sortedRows.map((row, i) => ({
+    recipe: recipesBySortedRow[i] as Recipe,
+    score: row.score,
+  }));
+  // The position of the requested slot within the dense meals array — equal
+  // to `slot` itself whenever active slots are contiguous from 0 (always
+  // true for plans reachable through this API), computed explicitly rather
+  // than assumed so corrupt data fails loudly instead of indexing wrong.
+  const swapIndex = sortedRows.findIndex((row) => row.slot === slot);
+  if (swapIndex < 0 || swapIndex > 2) {
+    throw new HttpError(500, 'internal_error', 'Could not locate the requested slot among active meals.');
+  }
 
   const members = deps.db.listMembers(household.id);
   const signals = deps.db.listPreferenceSignals(household.id);
@@ -945,11 +962,16 @@ function handleSwap(deps: Deps, ctx: JsonRouteContext): RouteResult {
     .map((recipe, i) => ({ recipe, score: scores[i] as import('../../domain/src/recipe.ts').ScoreBreakdown }))
     .filter((c) => !inPlanIds.has(c.recipe.id));
 
-  const swapResult = swapMeal({ meals, swap_slot: slot, reason, candidates, signals, inventory, context }, SWAP_CONFIG);
+  const swapResult = swapMeal(
+    { meals, swap_slot: swapIndex as 0 | 1 | 2, reason, candidates, signals, inventory, context },
+    SWAP_CONFIG,
+  );
 
   const frozenMeals: MealData[] = [];
-  for (let s = 0; s < 3; s += 1) {
-    if (s !== slot) frozenMeals.push({ slot: s, recipe: recipesBySlot[s] as Recipe, facts: [], planMealId: rowsBySlot[s].id });
+  for (let i = 0; i < sortedRows.length; i += 1) {
+    if (i === swapIndex) continue;
+    const row = sortedRows[i] as PlanMeal;
+    frozenMeals.push({ slot: row.slot, recipe: recipesBySortedRow[i] as Recipe, facts: [], planMealId: row.id });
   }
   const aux: PlanAux = { inventory, signals, context };
 
@@ -971,7 +993,7 @@ function handleSwap(deps: Deps, ctx: JsonRouteContext): RouteResult {
   if (chosen === undefined) {
     throw new HttpError(400, 'accept_recipe_not_offered', 'accept_recipe_id is not among the current alternatives for this reason.');
   }
-  const oldRow = rowsBySlot[slot];
+  const oldRow = targetRow;
   deps.db.updatePlanMealStatus(household.id, oldRow.id, 'swapped_out');
   const now = new Date().toISOString();
   deps.db.insertPlanMeal(household.id, {
