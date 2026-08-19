@@ -1,0 +1,96 @@
+cycle 18 — conductor verification evidence for T-040
+=====================================================
+All commands run by the conductor, in /opt/targets/dinner. The builder saw none of them.
+
+-----------------------------------------------------------------------------
+1. CONDUCTOR GATE — node .swarm/runs/cycle-018-gate.mjs   (imports no domain code)
+-----------------------------------------------------------------------------
+listening on http://127.0.0.1:34133
+PASS G1  household of 3 → plan 3d7967bd-b5d2-46de-91d5-473c840815bc with 3 active meal(s)
+PASS G2  3 active_time_block(s) across 3 meal(s), every one carries a non-empty time_label
+PASS G3  all 3 label(s) match text re-derived here from active_seconds
+       slot 0: 1080s → "18 min hands-on"
+       slot 1: 960s → "16 min hands-on"
+       slot 2: 1500s → "25 min hands-on"
+PASS G4  3 label(s) carry a genuine minute count across 3 distinct value(s) — G3 is not
+         matching a constant string
+PASS G5  3 block(s) span the recipe's whole active duration; every one is byte-identical to
+         the prep header's own hands-on phrasing
+PASS G6  smallest block on the wire is 960s → "16 min hands-on" (the sub-minute
+         "under 1 min" boundary is NOT reachable from this catalog — unit-tested only)
+PASS G7  all 3 block(s) still ship integer active_seconds alongside the label — no client
+         has to parse minutes back out of the prose
+
+pass 7 / 7
+
+-----------------------------------------------------------------------------
+2. MUTATION CHECK — does the wire label actually FLOW from reasons.ts?
+-----------------------------------------------------------------------------
+A green gate proves the label is right. It does not prove the label came from the shared
+renderer rather than from a string built at the route. So: mutate reasons.ts's private
+minuteLabel ("min" -> "minute") and re-observe.
+
+  MUTANT APPLIED to minuteLabel: "min" -> "minute"
+
+  gate against the mutant:
+    PASS G1  ...
+    PASS G2  3 active_time_block(s) ... every one carries a non-empty time_label
+    FAIL G3  slot 0 1080s: got "18 minute hands-on", gate re-derived "18 min hands-on";
+             slot 1 960s:  got "16 minute hands-on", gate re-derived "16 min hands-on";
+             slot 2 1500s: got "25 minute hands-on", gate re-derived "25 min hands-on"
+    FAIL G4  0 label(s) carry a genuine minute count across 0 distinct value(s)
+    PASS G5  3 block(s) ... byte-identical to the prep header's own hands-on phrasing
+    FAIL G6  smallest block on the wire is 960s → "16 minute hands-on"
+    PASS G7  ...
+    pass 4 / 7
+
+  suite against the mutant:
+    ℹ tests 364
+    ℹ pass 355
+    ℹ fail 9
+
+  MUTANT REVERTED. git diff --stat back to the builder's diff exactly:
+    domain/src/reasons.ts | 17 +++++++++++++++++
+    server/src/routes.ts  | 20 ++++++++++++++++++--
+    tests/reasons.test.ts | 36 ++++++++++++++++++++++++++++++++++++
+    tests/routes.test.ts  | 45 +++++++++++++++++++++++++++++++++++++++++++++
+  and minuteLabel restored verbatim:
+    return minutes <= 0 ? `under 1 min ${suffix}` : `${String(minutes)} min ${suffix}`;
+
+Reading: the wire label demonstrably flows through reasons.ts's own minuteLabel — a change
+there changes what the HTTP endpoint ships. The tests pin it (9 red). And note G5 stayed
+PASS under the mutant: both surfaces drifted together, which is exactly why a consistency
+check alone is not a correctness check, and why G3 re-derives the text independently.
+
+-----------------------------------------------------------------------------
+3. FULL test_cmd — npm test (conductor-run, post-revert)
+-----------------------------------------------------------------------------
+ℹ tests 364
+ℹ suites 0
+ℹ pass 364
+ℹ fail 0
+
+358 before this cycle, +6 from the builder. No test weakened, retimed or skipped —
+confirmed by reading the diff, not by asking: tests/reasons.test.ts and tests/routes.test.ts
+are pure additions plus one import line each; no existing assertion's expected value changed.
+
+-----------------------------------------------------------------------------
+4. npm run typecheck
+-----------------------------------------------------------------------------
+> three-good-dinners@0.1.0 typecheck
+> tsc --noEmit
+(clean, no diagnostics)
+
+-----------------------------------------------------------------------------
+5. SECOND-FORMATTER SWEEP — the check that found more than it was looking for
+-----------------------------------------------------------------------------
+grep -rn "hands-on" domain/ server/ web/ --include=*.ts --include=*.js, minus reasons.ts:
+
+  web/js/ui.js:467   function minuteText(minutes, suffix) {
+  web/js/ui.js:468     return minutes <= 0 ? `under 1 min ${suffix}` : `${minutes} min ${suffix}`;
+  web/js/ui.js:502   h('span', {...}, [h('strong', {}, [`${m} min`]), ' hands-on'])
+  web/js/cook.js:143 function durationWords(seconds) { ... `${String(m)} minute${...}` }
+
+server/ is clean — routes.ts introduced no local formatter, so T-040's own scope holds.
+The client findings are OUT of T-040's scope (its acceptance is the wire + the unbuilt
+prep.js) and are filed as T-063, not folded in silently. Details in the journal.

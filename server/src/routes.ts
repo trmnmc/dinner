@@ -77,11 +77,12 @@ import {
 } from '../../domain/src/cooking.ts';
 import type { AttentionWarning, CookingSessionView, NextSafeStop } from '../../domain/src/cooking.ts';
 import { derivePrepPlan } from '../../domain/src/prep.ts';
-import type { PrepPlan } from '../../domain/src/prep.ts';
+import type { ActiveTimeBlock, PrepPlan } from '../../domain/src/prep.ts';
 import {
   MAX_REASON_CODES_PER_MEAL,
   NO_RECOVERY_GUIDANCE_TEXT,
   derivePlanShortfall,
+  renderActiveTimeLabel,
   renderMealReasons,
   renderTotalActiveTime,
   renderTotalActiveTimeFor,
@@ -1254,6 +1255,21 @@ function encodeNextSafeStop(s: NextSafeStop): Record<string, unknown> {
   return { kind: s.kind, step_index: s.step_index, maximum_pause: s.maximum_pause, natural_stopping_point: s.natural_stopping_point };
 }
 
+/** T-040: every `active_time_block` on the wire carries a rendered
+ * `time_label` alongside its raw `active_seconds` — via `reasons.ts`'s
+ * `renderActiveTimeLabel`, the ONE place that turns an active-only duration
+ * into text, so the (not-yet-built) prep screen never hand-formats minutes
+ * itself. `ActiveTimeBlock` itself stays presentation-free (prep.ts); the
+ * label is attached here, at the route encode boundary. */
+function encodeActiveTimeBlock(b: ActiveTimeBlock): Record<string, unknown> {
+  return {
+    start_step_index: b.start_step_index,
+    end_step_index: b.end_step_index,
+    active_seconds: b.active_seconds,
+    time_label: renderActiveTimeLabel(b.active_seconds),
+  };
+}
+
 function encodePrepPlan(p: PrepPlan, recipe: Recipe): Record<string, unknown> {
   const time = renderTotalActiveTimeFor(recipe);
   return {
@@ -1267,7 +1283,7 @@ function encodePrepPlan(p: PrepPlan, recipe: Recipe): Record<string, unknown> {
     do_ahead_tasks: p.do_ahead_tasks,
     first_non_interruptible_step: p.first_non_interruptible_step === null ? null : encodeStepView(p.first_non_interruptible_step),
     first_safe_stopping_point: encodeNextSafeStop(p.first_safe_stopping_point),
-    active_time_blocks: p.active_time_blocks,
+    active_time_blocks: p.active_time_blocks.map(encodeActiveTimeBlock),
   };
 }
 

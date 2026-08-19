@@ -132,6 +132,23 @@ export function renderTotalActiveTimeFor(carrier: {
   return renderTotalActiveTime(carrier.total_time_seconds, carrier.active_time_seconds);
 }
 
+/**
+ * Renders a bare active (hands-on) duration that has no paired total to
+ * hand `renderTotalActiveTime` — `prep.ts`'s `ActiveTimeBlock` carries only
+ * `active_seconds`, so the two-number renderer above (which structurally
+ * requires both a total and an active duration) does not apply. This is
+ * still not a second implementation: it reuses the exact same `minutesOf`
+ * rounding and `minuteLabel` "under 1 min" boundary `renderTotalActiveTime`
+ * uses for its own `active_label`, so for any given active duration the two
+ * produce byte-identical text — a parent can never see two phrasings of the
+ * same duration on two screens (e.g. "7 min hands-on" here and in
+ * `TimeRender.active_label` alike).
+ */
+export function renderActiveTimeLabel(active_seconds: number): string {
+  nonNegInt(active_seconds, 'active_seconds');
+  return minuteLabel(minutesOf(active_seconds), 'hands-on');
+}
+
 // ---------------------------------------------------------------------------
 // Recovery / panic copy — Invariant 6: metadata verbatim, or the one
 // explicit, honest "absent" sentence. Never fabricated.

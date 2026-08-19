@@ -15,6 +15,7 @@ import {
   MAX_REASON_CODES_PER_MEAL,
   NO_RECOVERY_GUIDANCE_TEXT,
   ReasonsError,
+  renderActiveTimeLabel,
   renderMealReasons,
   renderReason,
   renderRecoveryGuidance,
@@ -80,6 +81,41 @@ test('renderTotalActiveTime: rejects negative or non-integer seconds', () => {
 test('renderTotalActiveTimeFor: same renderer, applied to a recipe-shaped carrier', () => {
   const t = renderTotalActiveTimeFor({ total_time_seconds: 1320, active_time_seconds: 420 });
   assert.equal(t.combined_label, '22 min total, 7 min hands-on');
+});
+
+// ---------------------------------------------------------------------------
+// renderActiveTimeLabel — T-040: the bare active-only label for
+// `prep.ts`'s `ActiveTimeBlock`, which carries no `total_seconds` to pair
+// with `renderTotalActiveTime`. Must never drift from that renderer's own
+// `active_label` for the same duration (that IS the point of the item).
+// ---------------------------------------------------------------------------
+
+test('renderActiveTimeLabel: sub-minute boundary — 0 seconds and a value that rounds to 0 both render "under 1 min hands-on"', () => {
+  assert.equal(renderActiveTimeLabel(0), 'under 1 min hands-on');
+  assert.equal(renderActiveTimeLabel(29), 'under 1 min hands-on');
+});
+
+test('renderActiveTimeLabel: exactly 60s renders "1 min hands-on"', () => {
+  assert.equal(renderActiveTimeLabel(60), '1 min hands-on');
+});
+
+test('renderActiveTimeLabel: exact half-minute rounds away from zero (750s = 12.5 min -> 13 min hands-on)', () => {
+  assert.equal(renderActiveTimeLabel(750), '13 min hands-on');
+});
+
+test('renderActiveTimeLabel: rejects negative or non-integer seconds', () => {
+  assert.throws(() => renderActiveTimeLabel(-1), (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input');
+  assert.throws(() => renderActiveTimeLabel(60.5), (e: unknown) => e instanceof ReasonsError && e.code === 'malformed_input');
+});
+
+test('renderActiveTimeLabel: IDENTICAL to renderTotalActiveTime\'s active_label for the same active duration — the anti-drift assertion', () => {
+  for (const seconds of [0, 1, 29, 30, 45, 59, 60, 61, 90, 420, 421, 750, 1000, 3599, 3600]) {
+    const fromHelper = renderActiveTimeLabel(seconds);
+    // total_seconds must be >= active_seconds for renderTotalActiveTime to
+    // accept it; passing the same value for both isolates the active side.
+    const fromPairedRenderer = renderTotalActiveTime(seconds, seconds).active_label;
+    assert.equal(fromHelper, fromPairedRenderer, `drifted at ${String(seconds)}s`);
+  }
 });
 
 // ---------------------------------------------------------------------------

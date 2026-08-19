@@ -333,7 +333,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. DESIGN ruling binds: FEWER FULLY-VALID RECIPES BEAT PARTIALLY-VALID ONES — if time pressures, ship fewer complete recipes rather than more incomplete ones; the gate excludes incomplete recipes anyway. Owns prefixes r07–r18 only; do not touch batch-1 or batch-3 files, the registry, or the gate. || CYCLE 11: T-009 established the pattern to copy — see data/recipes/r01..r06.json. Conventions RULED IN by the conductor gate: quantities authored as plain human strings (verified to parse to exact bigint Rationals, 69/69); UUID-SHAPED literal ids (validateRecipe requires only a non-empty string, and readable ids are worth more than random ones in a hand-authored catalog); canned goods quantified as unit \"count\" since the registry carries no per-can weight. ALSO BINDING: keep pasta ingredient ids and dish names recognisable — swap.ts's no_pasta reason matches configured name fragments against ingredient ids, display names and the recipe name, so an unrecognisable pasta id would silently show pasta to a user who asked for none."
+      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. DESIGN ruling binds: FEWER FULLY-VALID RECIPES BEAT PARTIALLY-VALID ONES — if time pressures, ship fewer complete recipes rather than more incomplete ones; the gate excludes incomplete recipes anyway. Owns prefixes r07–r18 only; do not touch batch-1 or batch-3 files, the registry, or the gate. || CYCLE 11: T-009 established the pattern to copy — see data/recipes/r01..r06.json. Conventions RULED IN by the conductor gate: quantities authored as plain human strings (verified to parse to exact bigint Rationals, 69/69); UUID-SHAPED literal ids (validateRecipe requires only a non-empty string, and readable ids are worth more than random ones in a hand-authored catalog); canned goods quantified as unit \"count\" since the registry carries no per-can weight. ALSO BINDING: keep pasta ingredient ids and dish names recognisable — swap.ts's no_pasta reason matches configured name fragments against ingredient ids, display names and the recipe name, so an unrecognisable pasta id would silently show pasta to a user who asked for none. HEADS-UP (cycle 18): tests/routes.test.ts currently asserts maxBlocksInOneMeal === 1. Any recipe authored here with an unattended step yields a second active_time_block and turns that test red for a correct change. Take T-064 first, or in the same wave."
     },
     {
       "id": "T-011",
@@ -372,7 +372,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. Same graceful-degradation ruling as T-010. Owns prefixes r19–r30 only. Runs in parallel with T-010 — coordinate nothing, just stay inside the assigned file range. If registry ingredients are missing, that is a gap to report, not a license to edit data/ingredients.json (owned by T-008). || CYCLE 11: T-009 established the pattern to copy — see data/recipes/r01..r06.json. Conventions RULED IN by the conductor gate: quantities authored as plain human strings (verified to parse to exact bigint Rationals, 69/69); UUID-SHAPED literal ids (validateRecipe requires only a non-empty string, and readable ids are worth more than random ones in a hand-authored catalog); canned goods quantified as unit \"count\" since the registry carries no per-can weight. ALSO BINDING: keep pasta ingredient ids and dish names recognisable — swap.ts's no_pasta reason matches configured name fragments against ingredient ids, display names and the recipe name, so an unrecognisable pasta id would silently show pasta to a user who asked for none."
+      "notes": "FROZEN CONTRACT (cycle 3): step fields follow domain/src/recipe.ts, not SPEC.md's names — `maximum_pause` union (not `maximum_pause_seconds`), `timer_duration_seconds` (not `timer_duration`), `recovery_instruction` as an instruction|none_available union. Same graceful-degradation ruling as T-010. Owns prefixes r19–r30 only. Runs in parallel with T-010 — coordinate nothing, just stay inside the assigned file range. If registry ingredients are missing, that is a gap to report, not a license to edit data/ingredients.json (owned by T-008). || CYCLE 11: T-009 established the pattern to copy — see data/recipes/r01..r06.json. Conventions RULED IN by the conductor gate: quantities authored as plain human strings (verified to parse to exact bigint Rationals, 69/69); UUID-SHAPED literal ids (validateRecipe requires only a non-empty string, and readable ids are worth more than random ones in a hand-authored catalog); canned goods quantified as unit \"count\" since the registry carries no per-can weight. ALSO BINDING: keep pasta ingredient ids and dish names recognisable — swap.ts's no_pasta reason matches configured name fragments against ingredient ids, display names and the recipe name, so an unrecognisable pasta id would silently show pasta to a user who asked for none. HEADS-UP (cycle 18): tests/routes.test.ts currently asserts maxBlocksInOneMeal === 1. Any recipe authored here with an unattended step yields a second active_time_block and turns that test red for a correct change. Take T-064 first, or in the same wave."
     },
     {
       "id": "T-012",
@@ -1387,13 +1387,15 @@
       "kind": "fix",
       "effort": "S",
       "priority": 2,
-      "status": "todo",
+      "status": "done",
       "model": "sonnet",
       "files_hint": [
         "server/src/routes.ts",
         "tests/routes.test.ts"
       ],
-      "acceptance": "Every active_time_block carries a rendered label from domain/src/reasons.ts, so web/js/prep.js (T-019) never formats a duration itself. The single shared time renderer is the mechanism DoD 6 relies on; a block without a label reintroduces exactly the per-screen drift it exists to prevent. Recorded by the cycle-12 conductor gate as F3b (ruling D-17), filed rather than waived."
+      "acceptance": "Every active_time_block carries a rendered label from domain/src/reasons.ts, so web/js/prep.js (T-019) never formats a duration itself. The single shared time renderer is the mechanism DoD 6 relies on; a block without a label reintroduces exactly the per-screen drift it exists to prevent. Recorded by the cycle-12 conductor gate as F3b (ruling D-17), filed rather than waived.",
+      "done_cycle": 18,
+      "notes": "Verified cycle 18. Conductor gate .swarm/runs/cycle-018-gate.mjs 7/7 (imports no domain code; re-derives every label from active_seconds with its own integer rounding). Mutation-checked: mutating reasons.ts minuteLabel changes the HTTP wire label (gate drops to 4/7) and turns the suite red (9 fail), so the label demonstrably flows through the ONE shared renderer rather than a route-local string. Implemented per ruling D-18: renderActiveTimeLabel() added to domain/src/reasons.ts reusing the existing private minutesOf/minuteLabel; attached at the route encode boundary via encodeActiveTimeBlock in routes.ts; the domain ActiveTimeBlock type left presentation-free. Suite 358 -> 364, typecheck clean."
     },
     {
       "attempts": 0,
@@ -1639,7 +1641,7 @@
       "model": "sonnet",
       "attempts": 0,
       "created_cycle": 15,
-      "notes": "Split out of T-019 at cycle 15. T-043 is DONE as of cycle 17 — handleGetPrep now scales to the plan meal's target_servings and the conductor gate proved prep agrees with grocery on 15 wire pairs, so the prep screen will no longer render numbers that contradict the list the parent shopped from. Still soft-blocked on T-040 (active_time_blocks ship no time_label, forcing the screen to hand-format minutes) — that is presentation, not arithmetic, so T-057 can proceed if T-040 is taken in the same wave."
+      "notes": "Split out of T-019 at cycle 15. T-043 is DONE as of cycle 17 — handleGetPrep now scales to the plan meal's target_servings and the conductor gate proved prep agrees with grocery on 15 wire pairs, so the prep screen will no longer render numbers that contradict the list the parent shopped from. Still soft-blocked on T-040 (active_time_blocks ship no time_label, forcing the screen to hand-format minutes) — that is presentation, not arithmetic, so T-057 can proceed if T-040 is taken in the same wave. UNBLOCKED as of cycle 18: T-040 is done, so every active_time_block now ships a time_label and the prep screen must render that string verbatim rather than compute minutes itself. Both soft blocks are cleared (T-043 the arithmetic, T-040 the formatting); T-057 needs gear 2+ for its M effort."
     },
     {
       "id": "T-058",
@@ -1758,6 +1760,46 @@
       "created_cycle": 17,
       "acceptance": "A grocery line whose every contributing recipe line is authored `optional: true` is marked as such on the wire and in the UI, so a parent can skip it knowingly. Conductor-verified at cycle 17: all six catalog recipes carry optional lines (r01 feta + flat_leaf_parsley, r02 lime + cilantro, r03 lime + red_pepper_flakes, r04 lemon + cilantro, r05 sesame_seeds + red_pepper_flakes, r06 sesame_seeds) and aggregate.ts never reads the `optional` flag, so they land on the list looking exactly as required as the chicken.",
       "notes": "RULING (conductor, cycle 17): do NOT drop optional lines from the list — a parent who skips buying the parsley because the app hid it still ends up without parsley. Buying them is right; presenting them as mandatory is not. The thing to fix is the missing signal. Note also that recipe.ts:79 documents `optional` as \"excluded from hard requirements\", which the grocery path does not honour — one of the two must change, and this item says it is the comment. The builder that surfaced this attributed the quote to SPEC.md; it is a code comment, and SPEC.md line 87 does not rule on garnishes at all."
+    },
+    {
+      "id": "T-063",
+      "title": "The client re-implements the shared time renderer three different ways",
+      "kind": "fix",
+      "priority": 2,
+      "value": "H",
+      "effort": "M",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "web/js/ui.js",
+        "web/js/cook.js",
+        "server/src/routes.ts"
+      ],
+      "packages": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 18,
+      "acceptance": "No file under web/ converts seconds into displayed minutes. Every duration a screen shows is a label string the server already rendered via domain/src/reasons.ts, taken verbatim. Proven by a test that fails if seconds-to-minutes arithmetic reappears anywhere in web/, plus a wire-level check that every duration a screen displays has a server-rendered label available for it.",
+      "notes": "Found by the cycle-18 conductor second-formatter sweep while gating T-040 (evidence: .swarm/runs/cycle-018-verify-T-040.txt section 5). Three distinct violations, worst first. (1) web/js/ui.js:502 builds the text inline from the raw minute count and bypasses even the client own helper, so at a sub-minute active duration it renders \"0 min hands-on\" where the server renders \"under 1 min hands-on\" — a real phrasing split inside one product, though whether the current catalog can produce a sub-minute active duration is UNVERIFIED and should be checked before assuming a user can see it. (2) web/js/ui.js:467-469 minuteText is a verbatim line-for-line reimplementation of reasons.ts:91 minuteLabel — two copies of one function in two languages, pinned against each other by nothing; they agree today by luck, not by construction. (3) web/js/cook.js:143 durationWords is a THIRD phrasing entirely (\"18 minutes\" where the rest of the product says \"18 min\"). T-040 closed this hole for prep active_time_blocks only; its acceptance was scoped to the wire and the not-yet-built prep.js, so these were filed rather than folded in. Same DoD 6 mechanism T-040 serves — the difference is that T-040 was one missing field and this is a whole duplicated renderer."
+    },
+    {
+      "id": "T-064",
+      "title": "A routes test pins a catalog fixture fact that recipe batches 2 and 3 will legitimately break",
+      "kind": "fix",
+      "priority": 3,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "tests/routes.test.ts"
+      ],
+      "packages": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 18,
+      "acceptance": "The T-040 routes test no longer fails when a recipe yields more than one active_time_block. Its genuine non-vacuity guard (at least one block actually asserted on) is kept; the assertion that no meal has more than one block is replaced by something that cannot break on a correct catalog change.",
+      "notes": "Found by the cycle-18 conductor while reading the T-040 test diff. tests/routes.test.ts asserts maxBlocksInOneMeal === 1 to document that today six recipes all have every step active, so deriveActiveTimeBlocks always coalesces to one block per recipe. The builder flagged the catalog limitation honestly and this assertion was a good-faith attempt to make the gap visible rather than silently assumed — but it pins a fact that is SUPPOSED to change: T-010 and T-011 author recipes 7-30, and any recipe with an unattended step (unattended time being this product stated differentiator) produces a second block and turns this test red for an entirely correct change. The blocksSeen > 0 assertion above it already does the anti-vacuity job. Deliberately NOT fixed during cycle 18: the conductor does not edit a builder tests inside its own verification gate, because a gate that rewrites the thing it is judging is not a gate."
     }
   ]
 }

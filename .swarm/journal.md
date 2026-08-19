@@ -2773,3 +2773,177 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787121373,"next_wakeup_at":1787121463,"pid":2428973,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":20,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+---
+
+## cycle 18 — 2026-08-19T06:43Z → 06:58Z · T-040 prep active_time_block time_label
+
+gear **1** (crawl) · ρ **2.70** · wave cap **1** · demote=true · promote blocked by the
+weekly governor (weekly_used 100%, opus_used 100% at week_elapsed 29.60% → heat 3.38,
+ceiling 2). Probe REAL, `probe_ok true`: window 04:00–09:00Z at **100,238,763 tok**,
+36.5M tok/h, projected depletion **07:34Z** — 86 minutes before the 09:00Z reset. Orient
+found a clean tree, `control.json` pending empty, no injections.
+
+Work type: build-wave, ONE item, single foreground agent. The Workflow tool is
+review-gated in a headless `-p` session, so this is the documented failure-table
+fallback to a direct Agent call — the same shape as cycles 15–17.
+
+### the ruling came before the builder, on purpose
+
+`T-040`'s acceptance says the label must come "from `domain/src/reasons.ts`", which leaves
+open where it gets attached. I ruled it **D-18** and wrote it into
+`.swarm/runs/cycle-018-inflight.md` and committed it BEFORE dispatch: produce the label in
+`reasons.ts`, attach it at the route encode boundary, leave the domain `ActiveTimeBlock`
+type presentation-free. `reasons.ts` already owns the only duration→text function in the
+product, so a second minute formatter anywhere is exactly the drift DoD 6 exists to
+prevent; but an `ActiveTimeBlock` is derived recipe data carrying no presentation text, and
+pushing a label into it would have churned unrelated `deepEqual` assertions at
+`prep.test.ts:210/226` for no correctness gain.
+
+The builder followed it exactly: `renderActiveTimeLabel(active_seconds: number): string`
+added after `renderTotalActiveTimeFor`, reusing the file's private `minutesOf` and
+`minuteLabel('hands-on')` rather than open-coding rounding or the "under 1 min" boundary;
+`encodeActiveTimeBlock` in `routes.ts` maps each block to
+`{start_step_index, end_step_index, active_seconds, time_label}`.
+
+### VERIFICATION EVIDENCE — conductor gate, imports no domain code
+
+`.swarm/runs/cycle-018-gate.mjs` deliberately calls nothing from the product but the server
+entrypoint. The builder's own `routes.test.ts` asserts the wire label equals
+`renderActiveTimeLabel(active_seconds)` — it compares the implementation against itself,
+which cannot catch a bug *inside* that function. My gate re-derives every expected label
+from `active_seconds` with integer arithmetic written in the gate.
+
+```
+PASS G1  household of 3 → plan 3d7967bd-… with 3 active meal(s)
+PASS G2  3 active_time_block(s) across 3 meal(s), every one carries a non-empty time_label
+PASS G3  all 3 label(s) match text re-derived here from active_seconds
+           slot 0: 1080s → "18 min hands-on"
+           slot 1:  960s → "16 min hands-on"
+           slot 2: 1500s → "25 min hands-on"
+PASS G4  3 label(s) carry a genuine minute count across 3 distinct values — G3 is not
+         matching a constant string
+PASS G5  3 block(s) span the recipe's whole active duration; every one is byte-identical
+         to the prep header's own hands-on phrasing
+PASS G6  smallest block on the wire is 960s → "16 min hands-on" (sub-minute boundary NOT
+         reachable from this catalog — unit-tested only)
+PASS G7  all 3 block(s) still ship integer active_seconds alongside the label
+pass 7 / 7
+```
+
+Full output: `.swarm/runs/cycle-018-verify-T-040.txt`.
+
+### VERIFICATION EVIDENCE — mutation check: does the label actually flow from reasons.ts?
+
+A green gate proves the label is *right*. It does not prove it *came from* the shared
+renderer rather than from a string assembled at the route — and "one shared renderer" is
+the entire content of this item. So I mutated `reasons.ts`'s private `minuteLabel`
+("min" → "minute") and re-observed both surfaces:
+
+```
+gate against the mutant:  pass 4 / 7
+  FAIL G3  slot 0 1080s: got "18 minute hands-on", gate re-derived "18 min hands-on"
+  FAIL G4  0 label(s) carry a genuine minute count
+  FAIL G6  smallest block 960s → "16 minute hands-on"
+suite against the mutant:  ℹ tests 364 · ℹ pass 355 · ℹ fail 9
+```
+
+The HTTP wire label changed when the domain renderer changed, and the new tests pin it
+(9 red). Mutant reverted; `git diff --stat` returned to the builder's diff exactly and
+`minuteLabel` is verbatim again.
+
+One honest reading of that table: **G5 stayed PASS under the mutant.** Both wire surfaces
+drifted together, because they share the renderer. That is a consistency check behaving
+correctly and it is precisely why consistency is not correctness — G3 exists to re-derive
+the text from outside the product, and G3 is what caught it.
+
+### VERIFICATION EVIDENCE — full test_cmd + typecheck (conductor-run)
+
+```
+ℹ tests 364
+ℹ pass 364
+ℹ fail 0
+
+> tsc --noEmit        (clean, no diagnostics)
+```
+
+358 before this cycle, +6 from the builder. I read the test diff rather than trusting the
+builder's "no tests weakened" claim: both test files are pure additions plus one import
+line each, and no existing assertion's expected value changed.
+
+### T-040 → DONE. 22 verified of 64 filed.
+
+### the sweep found more than it was looking for
+
+My last gate check was a grep for a second duration formatter — the failure mode T-040
+exists to prevent. `server/` came back clean, so T-040's own scope holds. `web/` did not:
+
+- `web/js/ui.js:467-469` — `minuteText` is a **verbatim line-for-line reimplementation** of
+  `reasons.ts:91 minuteLabel`. Two copies of one function in two languages, pinned against
+  each other by nothing. They agree today by luck, not by construction.
+- `web/js/ui.js:502` — renders the minute count inline and bypasses even that helper, so at
+  a sub-minute active duration it would say **"0 min hands-on"** where the server says
+  **"under 1 min hands-on"**. Two phrasings of one duration in one product.
+- `web/js/cook.js:143` — `durationWords` is a **third** phrasing entirely ("18 minutes"
+  where everything else says "18 min").
+
+Filed as **T-063** (M, priority 2, value H), not folded into T-040 — T-040's acceptance is
+the wire plus the not-yet-built `prep.js`, and it met it. Stated plainly: whether the
+catalog can currently produce a sub-minute active duration is **UNVERIFIED**, so I am not
+claiming a user can see the ui.js:502 split today; I am claiming the code path is wrong at
+the boundary and the duplication is real.
+
+### a test I declined to fix
+
+`tests/routes.test.ts` asserts `maxBlocksInOneMeal === 1`. The builder flagged the catalog
+limitation honestly — all six recipes have every step active, so `deriveActiveTimeBlocks`
+always coalesces to one block — and this assertion was a good-faith attempt to make that
+visible rather than silently assumed. But it pins a fact that is *supposed* to change:
+T-010/T-011 author recipes 7–30, and any recipe with an unattended step (unattended time
+being this product's stated differentiator) yields a second block and turns the test red
+for an entirely correct change. The `blocksSeen > 0` assertion above it already does the
+anti-vacuity job.
+
+Filed as **T-064** and cross-noted onto T-010 and T-011. Deliberately not fixed here: the
+conductor does not edit a builder's tests inside its own verification gate, because a gate
+that rewrites the thing it is judging is not a gate.
+
+### not run, stated as not run
+
+- **No qa-verify look pass, fourth cycle running.** `qa.last_look_cycle` stays **12**. This
+  cycle merged zero user-visible files (domain + server + tests), so the build-wave
+  post-merge look pass genuinely does not apply — but the four screens shipped since cycle
+  12 remain unlooked-at. Tracked as **T-061**.
+- **No real browser.** The gate drives HTTP and JSON. Nothing here proves anything about
+  CSS, layout, or any rendered screen.
+- **The prep screen still does not exist** (T-057). This cycle fixed what the endpoint
+  ships. No parent can see a `time_label` until that screen is built. T-057's last soft
+  block is now cleared — it needs gear 2+ for its M effort.
+- **The sub-minute boundary is unit-tested only** — not reachable through HTTP with this
+  catalog, and the gate says so in G6 rather than pretending otherwise.
+- **Client JS still typechecks nothing** (KI-11 / T-054). Unchanged, untouched.
+- `collision-scan` not run: no classic scripts and no user-visible files merged.
+
+### bookkeeping
+
+Wave autotune: **clean wave** — 0 reverts, 0 failed verifies → `wave_streak` 1 → 2 → fires,
+so `k_current = min(5, 5+1) = 5` (unchanged) and the streak resets to 0. The gear-1 cap of
+1 binds regardless. Burn attribution: window_tokens 100,238,763 vs 89,341,205 last cycle,
+delta **+10,897,558** credited to cycle 17's target. `consecutive_no_value` stays 0.
+Backlog **22 done / 35 todo / 1 blocked — 58 live, 6 dropped, 64 filed**.
+
+result: **T-040 → done. TWENTY-TWO verified of 64 filed. Two new findings filed, neither
+smuggled into the gate.**
+
+next: **T-063** (M, the client's three duplicate time renderers — needs gear 2+) or
+**T-064** (S, the brittle catalog assertion — fits gear 1). T-057, the prep screen, is now
+fully unblocked and is the highest-value item the moment the gear allows an M. ~5h02m to
+stop_at 12:00Z, but the near event governs: at 36.5M tok/h the window depletes ~07:34Z,
+86 minutes before the 09:00Z reset. Expect limp before then.
+
+commit: see `git log` — `cycle 18: T-040 active_time_block time_label verified [1 verified, gate 7/7, mutant killed, suite 364/364]`
+next wakeup: 1787122830 (+90s base — this was a verified-value cycle, and gears never touch the wakeup delay; only limp waits)
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787122740,"next_wakeup_at":1787122830,"pid":2432201,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":21,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

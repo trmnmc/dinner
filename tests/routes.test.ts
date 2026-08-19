@@ -22,6 +22,7 @@ import type { StartedServer } from '../server/src/main.ts';
 import { rational, eq } from '../domain/src/qty.ts';
 import { canonicalizeQuantity } from '../domain/src/units.ts';
 import type { IngredientQuantity, Unit } from '../domain/src/recipe.ts';
+import { renderActiveTimeLabel } from '../domain/src/reasons.ts';
 
 // ---------------------------------------------------------------------------
 // JSON navigation helpers (unknown, never any)
@@ -707,6 +708,50 @@ test('T-043: prep quantities agree with the grocery list for the same plan meal,
       }
     }
     assert.ok(compared > 0, 'expected at least one directly comparable required-ingredient line across the plan');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('T-040: every active_time_block on a real prep response carries a time_label matching renderActiveTimeLabel, never hand-formatted', async () => {
+  const ts = await startTestServer();
+  try {
+    const householdId = await createHousehold(ts.base);
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    const planId = jStr(plan['plan_id']);
+    const meals = jArr(plan['meals']).map((m) => j(m));
+
+    let blocksSeen = 0;
+    let maxBlocksInOneMeal = 0;
+    for (const meal of meals) {
+      const slot = jNum(meal['slot']);
+      const prepRes = await api(ts.base, 'GET', `/api/plans/${planId}/meals/${String(slot)}/prep`, { householdId });
+      assert.equal(prepRes.status, 200, JSON.stringify(prepRes.json));
+      const prep = j(j(prepRes.json)['prep']);
+      const blocks = jArr(prep['active_time_blocks']).map((b) => j(b));
+      maxBlocksInOneMeal = Math.max(maxBlocksInOneMeal, blocks.length);
+      for (const block of blocks) {
+        const activeSeconds = jNum(block['active_seconds']);
+        const label = jStr(block['time_label']);
+        // The anti-drift assertion: the wire label must be BYTE-IDENTICAL to
+        // what the shared renderer produces for this same active duration —
+        // never a route-local reformat of the minutes.
+        assert.equal(label, renderActiveTimeLabel(activeSeconds));
+        blocksSeen++;
+      }
+    }
+    assert.ok(blocksSeen > 0, 'expected at least one active_time_block across the plan to assert time_label on');
+    // NOTE: the current 6-recipe catalog (data/recipes/r01..r06.json) has
+    // every step's active_duration_seconds > 0 in every recipe, so
+    // deriveActiveTimeBlocks (prep.ts) always coalesces to exactly ONE
+    // contiguous block per recipe — there is no multi-block plan meal
+    // reachable through the frozen HTTP surface with today's fixture data.
+    // This assertion documents that fact rather than silently assuming it;
+    // the per-block loop above still proves every block (whatever the
+    // count) carries the correct label.
+    assert.equal(maxBlocksInOneMeal, 1, 'catalog fixture assumption: today every recipe yields exactly one active_time_block (see note above)');
   } finally {
     await stopTestServer(ts);
   }
