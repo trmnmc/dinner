@@ -145,6 +145,6 @@
     "n": 7,
     "work": "build-wave k=2 (foreground agents): T-003 scaling+aggregation+traceability, T-029 score.ts regression tests",
     "outcome": "both verified done: T-003 gate 43/43, T-029 mutation gate killed 11/13; 187/187 suite green; 2 surviving mutants filed as T-031",
-    "commit": "PENDING"
+    "commit": "dc495b4"
   }
 }
