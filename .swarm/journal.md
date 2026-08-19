@@ -3140,3 +3140,18 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787124502,"next_wakeup_at":1787124592,"pid":2440196,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":22,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+---
+
+## cycle 20 — 2026-08-19 07:35Z — IN FLIGHT
+
+clock: now 1787124919 · stop_at 1787140800 (12:00Z, 4h25m left) · usage_reset_at 09:00Z
+budget: REAL probe ok. window 121,884,803 tok · 33,936,239 tok/h · projected depletion
+1787125853 (07:50Z) — 70 min BEFORE the 09:00Z reset. rho 5.46 -> gear_target 1.
+weekly governor binding: weekly_used 100%, opus_used 100% at week_elapsed 30.11% =>
+heat 3.32, ceiling 2, promote_blocked. APPLIED gear 1 (crawl), wave cap 1, demote=true.
+orient: tree clean at 544841e. control: 0 pending, 0 inject. cycles_since_recycle 22 -> 23.
+step 3: cycle % 5 == 0 -> full SPEC.md re-read (done) + backlog hygiene this cycle.
+pick: T-053 (S, fix, sonnet — gear 1 permits S-effort sonnet builds; fix never demotes
+below sonnet). ONE foreground agent, wave cap 1.
+
