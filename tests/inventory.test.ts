@@ -51,6 +51,7 @@ function entry(
     store_section: 'other',
     density_g_per_ml: density,
     per_item_weight_g: perItemWeight,
+    package_options: [],
   };
 }
 

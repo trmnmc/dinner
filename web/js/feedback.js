@@ -87,11 +87,13 @@ const REASON_OPTIONS = [
   { value: 'not_filling', label: 'Not filling' },
 ];
 
+/** @param {string|null} value */
 function verdictLabel(value) {
   const opt = VERDICT_OPTIONS.find((o) => o.value === value);
   return opt ? opt.label : value;
 }
 
+/** @param {string|null} value */
 function reasonLabel(value) {
   const opt = REASON_OPTIONS.find((o) => o.value === value);
   return opt ? opt.label : value;
@@ -134,13 +136,18 @@ export function renderFeedback(container, params) {
   const planMealId = params.planMealId;
 
   let destroyed = false;
+  /** @type {ReturnType<typeof mountPrimaryAction>|null} */
   let primaryBar = null;
+  /** @type {ReturnType<typeof mountReactionGrid>|null} */
   let reactionGrid = null;
+  /** @type {ReturnType<typeof createChipGroup>|null} */
   let reasonChips = null;
+  /** @type {number|null} */
   let safetyNetTimer = null;
+  /** @type {(() => void)|null} */
   let pagehideHandler = null;
 
-  /** @type {string} */
+  /** @type {string|null} */
   let verdict = null;
   /** @type {string|null} */
   let reason = null;
@@ -177,6 +184,7 @@ export function renderFeedback(container, params) {
     }
   }
 
+  /** @param {(Node|string|null)[]} children */
   function screenShell(children) {
     return h('div', { class: 'screen' }, [
       h('div', { class: 'screen-header' }, [
@@ -198,6 +206,10 @@ export function renderFeedback(container, params) {
     container.replaceChildren(screenShell([createLoadingState({ label: 'Loading this dinner…' })]));
   }
 
+  /**
+   * @param {unknown} err
+   * @param {() => void} retry
+   */
   function drawLoadError(err, retry) {
     unmountPrimary();
     unmountReactionGrid();
@@ -409,7 +421,9 @@ export function renderFeedback(container, params) {
     try {
       const { plan } = await getCurrentPlan();
       if (destroyed) return;
-      const found = (plan.meals || []).find((m) => m.plan_meal_id === planMealId);
+      /** @type {(m: {plan_meal_id: string|null, recipe_id: string, name: string}) => boolean} */
+      const matchesPlanMealId = (m) => m.plan_meal_id === planMealId;
+      const found = (plan.meals || []).find(matchesPlanMealId);
       if (!found) {
         drawNotFound();
         return;

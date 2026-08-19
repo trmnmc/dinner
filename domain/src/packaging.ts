@@ -74,31 +74,21 @@ import {
   sub,
   toMixedString,
 } from './qty.ts';
-import type { Unit, UnitDimension } from './recipe.ts';
+import type { UnitDimension } from './recipe.ts';
 import type { CanonicalUnit, NotConvertible } from './units.ts';
 import { CANONICAL_UNIT_BY_DIMENSION, convertAmount, toCanonical, unitDimension } from './units.ts';
-import type { IngredientRegistryEntry } from './catalog.ts';
+import type { IngredientRegistryEntry, PackageOption } from './catalog.ts';
+
+// `PackageOption` now lives in catalog.ts — it is registry-owned curated
+// data (`data/ingredients.json` → `parseIngredientRegistry`) exactly like
+// `density_g_per_ml` / `per_item_weight_g`, not something this module
+// invents. Re-exported here so existing `from './packaging.ts'` imports
+// (this file's own tests included) keep working unchanged.
+export type { PackageOption } from './catalog.ts';
 
 // ---------------------------------------------------------------------------
 // Input / output shapes
 // ---------------------------------------------------------------------------
-
-/** One purchasable package form of an ingredient. Curated in data (or a
- * generic fallback, which MUST set `is_estimate: true`). */
-export interface PackageOption {
-  /** Stable id, unique within the ingredient's option list. */
-  readonly id: string;
-  /** Noun phrase for one package, e.g. "15 oz can", "bunch". */
-  readonly label_singular: string;
-  /** Noun phrase for several, e.g. "15 oz cans", "bunches". */
-  readonly label_plural: string;
-  /** Usable yield of ONE package, in `yield_unit`. Must be positive. */
-  readonly yield_amount: Rational;
-  readonly yield_unit: Unit;
-  /** True for generic fallbacks ("one bunch", "one ~2 lb package") — the
-   * selection is then flagged an estimate, never presented as exact. */
-  readonly is_estimate: boolean;
-}
 
 export interface ChosenPackage {
   readonly option: PackageOption;

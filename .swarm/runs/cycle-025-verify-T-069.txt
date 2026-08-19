@@ -1,0 +1,48 @@
+authored on disk: 97 ingredients, 104 package options
+
+listening on http://127.0.0.1:43343
+PASS P0  real 3-meal plan created over HTTP: plan_id=1575f800-b07a-44d8-aad1-c797aef6105b meals=3
+PASS P0b  GET /api/plans/:planId/grocery -> 200, 7 sections, 22 measured lines
+
+=== P1 — the acceptance as literally written ===
+PASS P1a  lines with a non-null package_label: 22/22
+PASS P1b  lines with is_estimate true: 7/22
+PASS P1c  lines with non-zero expected_surplus: 18/22
+
+=== P2 — every label is sourced from data/ingredients.json ===
+PASS P2a  labels traceable to an option authored for that same ingredient: 22/22
+PASS P2b  distinct authored option ids reached the wire: 22 (e.g. honey-1, olive_oil-1, rice_vinegar-1, soy_sauce-1)
+
+=== P3 — is_estimate matches the authored option it names ===
+PASS P3a  estimate flag matches disk on 22/22 labelled lines
+PASS P3b  the flag discriminates on this very list: 7 estimated / 15 exact — a hardcoded constant would fail P3a
+
+=== P4/P5 — expected_surplus arithmetic, exact rationals ===
+PASS P4  surplus == package yield − (Σ contributions − inventory) on 22/22 lines
+PASS P5  underbuying prohibited — lines with negative surplus: 0
+
+  --- every line as the grocery screen receives it ---
+    honey                    label="one 12 oz bear"                   est=false option=honey-1 surplus=224.787 ml
+    olive_oil                label="one 1 L bottle"                   est=false option=olive_oil-1 surplus=955.640 ml
+    rice_vinegar             label="one 12 fl oz bottle"              est=false option=rice_vinegar-1 surplus=325.309 ml
+    soy_sauce                label="one 10 fl oz bottle"              est=false option=soy_sauce-1 surplus=236.588 ml
+    toasted_sesame_oil       label="one 5 fl oz bottle"               est=false option=toasted_sesame_oil-1 surplus=113.365 ml
+    vegetable_oil            label="one 48 fl oz bottle"              est=false option=vegetable_oil-1 surplus=1404.743 ml
+    feta                     label="one 6 oz tub"                     est=false option=feta-1 surplus=95.097 g
+    large_egg                label="one dozen"                        est=false option=large_egg-1 surplus=6.000 count
+    unsalted_butter          label="one 1 lb box (4 sticks)"          est=false option=unsalted_butter-1 surplus=442.919 ml
+    long_grain_white_rice    label="one 2 lb bag"                     est=false option=long_grain_white_rice-1 surplus=607.185 g
+    frozen_peas              label="one 16 oz bag, about 8 cups"      est=true  option=frozen_peas-1 surplus=1656.118 ml
+    chicken_thigh_boneless   label="two ~1.5 lb packages"             est=true  option=chicken_thigh_boneless-1 surplus=460.777 g
+    carrot                   label="three carrots"                    est=false option=carrot-1 surplus=0.000 count
+    english_cucumber         label="one cucumber"                     est=false option=english_cucumber-1 surplus=0.000 count
+    firm_tofu                label="two 14 oz blocks"                 est=false option=firm_tofu-1 surplus=393.787 g
+    flat_leaf_parsley        label="one bunch, chopped"               est=true  option=flat_leaf_parsley-1 surplus=147.868 ml
+    garlic                   label="one head of garlic"               est=true  option=garlic-1 surplus=2.000 count
+    lemon                    label="two lemons"                       est=false option=lemon-1 surplus=0.000 count
+    russet_potato            label="four potatoes"                    est=false option=russet_potato-1 surplus=0.000 count
+    scallion                 label="two bunches"                      est=true  option=scallion-1 surplus=5.000 count
+    dried_oregano            label="one spice jar"                    est=true  option=dried_oregano-1 surplus=34.502 ml
+    sesame_seeds             label="one spice jar"                    est=true  option=sesame_seeds-1 surplus=128.152 ml
+
+T-069 GATE: 11 pass / 0 fail

@@ -1,0 +1,10 @@
+listening on http://127.0.0.1:46037
+plan meals: 0:Cold Sesame Tofu and Cucumber Sala | 1:Japanese-Style Soy-Butter Egg Frie
+swap → 200: {"alternatives":[],"none_reason":"no_candidates_in_pool","message":"There are no other recipes in the catalog to offer for this slot right now — that's a catalog gap, not something about your preferences."}
+PASS G14a  a vegetarian household exhausts the pool: 0 alternatives, none_reason=no_candidates_in_pool
+PASS G14b  the sentence ON THE WIRE is byte-identical to what reasons.ts renders — routes.ts delegates, it does not carry its own copy
+   wire: "There are no other recipes in the catalog to offer for this slot right now — that's a catalog gap, not something about your preferences."
+PASS G14c  neither defect's text reaches a user, and the dead "0" is gone from the live response
+PASS G14d  the reassurance clause reaches the user intact
+
+=== T-038 G14 rev2: 4 passed, 0 failed ===

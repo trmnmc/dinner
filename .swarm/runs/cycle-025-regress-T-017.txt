@@ -1,0 +1,32 @@
+listening on http://127.0.0.1:33975
+
+--- c23 rev2 ground truth: 7 sections, 22 lines (22 measured), 0 confirmation questions, 7 estimated, 20 with surplus ---
+
+=== the list as a ledger ===
+PASS R1  screen renders (1305 chars)
+PASS R2  all 7 wire sections appear as headings
+PASS R3  all 22 measured lines rendered
+PASS R4  no raw rationals (the cycle-14 R21 regression)
+PASS R5  tabular figures: app.css declares font-variant-numeric on {num, tabular} and the quantity node carries class="grocery-line__qty num"
+PASS R6  estimated lines are labelled
+NOT RUN R7  inline confirmation questions — questions require an `inferred` inventory entry, and the only HTTP write path (assumed_staples) stores `assumed_staple`, which subtracts and never asks. Unreachable by D-2 (confirmed-only inventory). Domain logic is unit-tested; the UI clause is not user-reachable.
+
+=== the provenance drawer ===
+probe: olive oil — 1 contribution(s), deducted 12.5 ml, purchase 1000 ml
+PASS R8  the "why am I buying …?" affordance exists on the olive oil line
+PASS R9  1/1 contributing recipes named by name
+PASS R10  1/1 contributing amounts rendered (wire: Greek Sheet-Pan Chicken =55.4503679296875)
+PASS R11  the 12.5 ml inventory deduction is stated in words AND numbers (accepted forms 12/13/12.5/12.5)
+PASS R12  expected surplus is spoken to
+PASS R13  no raw rationals in the drawer
+PASS R14  the quantity editor is reachable from the drawer
+
+=== protected user edits ===
+PASS R15  PATCH user_edited_quantity on "honey" → 200
+PASS R16  the edit and the generated value are SEPARATE columns after regeneration (edited=1234, generated=239.57343485915493)
+PASS R17  the edited amount is VISIBLE on the honey row after a full re-render, marked as edited, and the generated 239.57 is NOT shown as the buy amount — row reads "Honeyone 12 oz bear · edited1234 mlOlive oilone 1 L bottle10"
+PASS R18  still no raw rationals after the edit round-trip
+
+=== T-017 GATE rev2: 17 passed, 0 failed, 1 not run (unreachable) ===
+not run:
+  - R7: inline confirmation questions — questions require an `inferred` inventory entry, and the only HTTP write path (assumed_staples) stores `assumed_staple`, which subtracts and never asks. Unreachable by D-2 (confirmed-only inventory). Domain logic is unit-tested; the UI clause is not user-reachable.

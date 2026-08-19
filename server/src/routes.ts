@@ -1118,11 +1118,13 @@ function handleGetGrocery(deps: Deps, ctx: JsonRouteContext): RouteResult {
       });
       continue;
     }
-    // No curated PackageOption data exists anywhere in this repo (see
-    // return summary) — every line resolves through packaging.ts's
-    // documented "loose" path (no options ⇒ buy exactly the requirement,
-    // zero surplus, package_description null), never a guessed package.
-    const selection = selectPackages(line.purchase_requirement, line.dimension, [], mustRegistryEntry(deps.registry, line.ingredient_id));
+    // T-069: package options are curated per-ingredient in
+    // data/ingredients.json and parsed onto the registry entry by
+    // parseIngredientRegistry (catalog.ts) — pass them through so
+    // selectPackages can actually choose a package, instead of forcing
+    // every line down the "loose" (no options) path with a hardcoded [].
+    const registryEntry = mustRegistryEntry(deps.registry, line.ingredient_id);
+    const selection = selectPackages(line.purchase_requirement, line.dimension, registryEntry.package_options, registryEntry);
     const key = `${line.ingredient_id}::${line.unit}`;
     const existing = existingByKey.get(key);
     const lineId = existing?.id ?? randomUUID();

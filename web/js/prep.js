@@ -98,6 +98,7 @@ const MEALS_PER_PLAN = 3;
 // Copy helpers
 // ---------------------------------------------------------------------------
 
+/** @param {string} s */
 function capitalize(s) {
   if (!s) return '';
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -105,9 +106,11 @@ function capitalize(s) {
 
 /** Only `fl_oz` needs a display fix-up among the recipe's authored units
  * (`domain/src/recipe.ts` `Unit`) — every other value already reads as a
- * word (`g`, `kg`, `oz`, `lb`, `ml`, `l`, `tsp`, `tbsp`, `cup`, `count`). */
+ * word (`g`, `kg`, `oz`, `lb`, `ml`, `l`, `tsp`, `tbsp`, `cup`, `count`).
+ * @type {Record<string, string>} */
 const UNIT_LABELS = { fl_oz: 'fl oz' };
 
+/** @param {string} unit */
 function unitLabel(unit) {
   return UNIT_LABELS[unit] || unit;
 }
@@ -116,6 +119,7 @@ function unitLabel(unit) {
  * as `grocery.js`'s `UNIT_DISPLAY_DECIMALS`, extended to cover every
  * recipe-authored `Unit` (grocery only ever sees the three canonical
  * units; a prep ingredient line can carry any of them). */
+/** @type {Record<string, number>} */
 const QTY_DISPLAY_DECIMALS = {
   g: 0,
   kg: 2,
@@ -130,10 +134,12 @@ const QTY_DISPLAY_DECIMALS = {
   count: 2,
 };
 
+/** @param {string} unit */
 function qtyDecimals(unit) {
   return QTY_DISPLAY_DECIMALS[unit] ?? 2;
 }
 
+/** @param {{n: string, d: string}} q */
 function isZeroQty(q) {
   return q.n === '0';
 }
@@ -160,7 +166,11 @@ function formatAmount(q, unit) {
 }
 
 /**
- * @param {{kind: 'to_taste'}|{kind: 'exact', amount, unit}|{kind: 'range', min, max, unit}} quantity
+ * @typedef {{n: string, d: string}} Qty
+ */
+
+/**
+ * @param {{kind: 'to_taste'}|{kind: 'exact', amount: Qty, unit: string}|{kind: 'range', min: Qty, max: Qty, unit: string}} quantity
  * @returns {string}
  */
 function formatIngredientQuantity(quantity) {
@@ -217,6 +227,17 @@ function safeStopText(stop) {
 // its own section, honest about absence rather than an empty region.
 // ---------------------------------------------------------------------------
 
+/**
+ * @typedef {Object} IngredientLine
+ * @property {string} id
+ * @property {string} ingredient_id
+ * @property {string} display_name
+ * @property {{kind: 'to_taste'}|{kind: 'exact', amount: Qty, unit: string}|{kind: 'range', min: Qty, max: Qty, unit: string}} quantity
+ * @property {string} preparation
+ * @property {boolean} optional
+ */
+
+/** @param {IngredientLine} line */
 function ingredientListItem(line) {
   return h('li', { class: 'prep-ingredient' }, [
     h('span', { class: 'prep-ingredient__name' }, [capitalize(line.display_name)]),
@@ -356,6 +377,7 @@ function activeTimeBlocksSection(blocks) {
  */
 export function renderPrep(container, params) {
   let destroyed = false;
+  /** @type {ReturnType<typeof mountPrimaryAction>|null} */
   let primaryBar = null;
   /** @type {any|null} */
   let currentMeal = null;
@@ -364,7 +386,8 @@ export function renderPrep(container, params) {
   /** Cached only once "Start cooking" is tapped — mirrors plan.js's
    * `startCooking`, which does the same lookup for the same reason
    * (`target_servings` is not part of MealView, so this mirrors how
-   * `POST /api/plans` itself sets a plan meal's target servings). */
+   * `POST /api/plans` itself sets a plan meal's target servings).
+   * @type {number|null} */
   let cachedHouseholdSize = null;
 
   function unmountPrimary() {
@@ -374,6 +397,7 @@ export function renderPrep(container, params) {
     }
   }
 
+  /** @param {(Node|string|null)[]} children */
   function screenShell(children) {
     return h('div', { class: 'screen' }, [
       h('div', { class: 'screen-header' }, [
@@ -392,6 +416,10 @@ export function renderPrep(container, params) {
     container.replaceChildren(screenShell([createLoadingState({ label: 'Loading your prep plan…' })]));
   }
 
+  /**
+   * @param {unknown} err
+   * @param {() => void} retry
+   */
   function drawError(err, retry) {
     unmountPrimary();
     const message = err instanceof ApiError ? err.message : 'Could not load your prep plan.';
@@ -464,7 +492,10 @@ export function renderPrep(container, params) {
       if (cachedHouseholdSize === null) {
         const { household } = await getHousehold();
         if (destroyed) return;
-        cachedHouseholdSize = household.household_size;
+        // `household.household_size` is always a number on the frozen
+        // contract's `HouseholdView` (`getHousehold()`'s JSDoc types the
+        // whole payload as `any`, out of this item's scope).
+        cachedHouseholdSize = /** @type {number} */ (household.household_size);
       }
       const { session } = await createCookingSession({
         plan_meal_id: currentMeal.plan_meal_id,
@@ -502,16 +533,21 @@ export function renderPrep(container, params) {
 
     const slotParam = params.slot;
     const slotNum = Number(slotParam);
+    /** @type {(m: {slot: number}) => boolean} */
+    const matchesSlot = (m) => m.slot === slotNum;
     const meal =
       !plan.is_empty && Array.isArray(plan.meals) && Number.isInteger(slotNum)
-        ? plan.meals.find((m) => m.slot === slotNum)
+        ? plan.meals.find(matchesSlot)
         : undefined;
     if (!meal) {
       drawNoMealAtSlot();
       return;
     }
     currentMeal = meal;
-    planId = plan.plan_id;
+    // `plan.plan_id` is always a string on the frozen contract's `PlanView`
+    // (`getCurrentPlan()`'s JSDoc types the whole payload as `any`, out of
+    // this item's scope).
+    planId = /** @type {string} */ (plan.plan_id);
 
     try {
       const { prep } = await getPrepPlan(planId, slotParam);

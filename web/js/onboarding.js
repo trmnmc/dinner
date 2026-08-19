@@ -108,6 +108,11 @@ const STAPLE_PRESETS = [
   { id: 'long_grain_white_rice', label: 'White rice', amount: '900', unit: 'g', defaultOn: false },
 ];
 
+/**
+ * @param {string} label
+ * @param {string|null} hint
+ * @param {HTMLElement} control
+ */
 function fieldWrap(label, hint, control) {
   const children = [h('span', { class: 'field__label' }, [label])];
   if (hint) children.push(h('span', { class: 'field__hint' }, [hint]));
@@ -115,6 +120,12 @@ function fieldWrap(label, hint, control) {
   return h('div', { class: 'field' }, children);
 }
 
+/**
+ * @param {number} initial
+ * @param {number} min
+ * @param {number} max
+ * @param {(v: number) => void} onChange
+ */
 function stepperControl(initial, min, max, onChange) {
   let value = initial;
   const display = h('span', { class: 'stepper__value num' }, [String(value)]);
@@ -172,11 +183,26 @@ function progressDots(step, total) {
 }
 
 /**
+ * @typedef {Object} OnboardingState
+ * @property {string} household_name
+ * @property {number} household_size
+ * @property {'stick_to_favourites'|'mostly_familiar'|'adventurous'} novelty_preference
+ * @property {string} total_time
+ * @property {string} active_time
+ * @property {string} display_name
+ * @property {string[]} dietary_restrictions
+ * @property {string[]} allergies
+ * @property {string[]} never_recommend
+ * @property {Set<string>} staples
+ */
+
+/**
  * Mount the onboarding flow into `container`.
  * @param {HTMLElement} container
  * @returns {() => void} cleanup
  */
 export function renderOnboarding(container) {
+  /** @type {OnboardingState} */
   const state = {
     household_name: '',
     household_size: 2,
@@ -191,6 +217,7 @@ export function renderOnboarding(container) {
   };
 
   let step = 0;
+  /** @type {ReturnType<typeof mountPrimaryAction>|null} */
   let primaryBar = null;
   let submitting = false;
   const TOTAL_STEPS = 3;
@@ -210,8 +237,9 @@ export function renderOnboarding(container) {
       autocapitalize: 'words',
       placeholder: 'e.g. The Riveras',
       '.value': state.household_name,
+      /** @param {Event} e */
       onInput: (e) => {
-        state.household_name = e.target.value;
+        state.household_name = /** @type {HTMLInputElement} */ (e.target).value;
       },
     });
 
@@ -225,7 +253,10 @@ export function renderOnboarding(container) {
       selected: [state.novelty_preference],
       ariaLabel: 'How adventurous should dinners be',
       onChange: (sel) => {
-        state.novelty_preference = sel[0] || 'mostly_familiar';
+        // NOVELTY_OPTIONS' values are exactly the three literal members of
+        // OnboardingState['novelty_preference'], so a selection here can
+        // only ever be one of them (or absent, hence the fallback).
+        state.novelty_preference = /** @type {OnboardingState['novelty_preference']} */ (sel[0]) || 'mostly_familiar';
       },
     });
 
@@ -258,6 +289,7 @@ export function renderOnboarding(container) {
     ]);
   }
 
+  /** @param {() => void} revalidate */
   function stepAbout(revalidate) {
     const nameInput = h('input', {
       class: 'input',
@@ -267,8 +299,9 @@ export function renderOnboarding(container) {
       placeholder: 'Your name',
       '.value': state.display_name,
       'aria-required': 'true',
+      /** @param {Event} e */
       onInput: (e) => {
-        state.display_name = e.target.value;
+        state.display_name = /** @type {HTMLInputElement} */ (e.target).value;
         revalidate();
       },
     });
@@ -359,7 +392,11 @@ export function renderOnboarding(container) {
   }
 
   async function submit() {
-    if (submitting) return;
+    // `submit` only ever runs as the mounted primary bar's own onClick
+    // handler (see `draw()` below), so `primaryBar` is always set here —
+    // the guard exists only to satisfy the checker, not to handle a real
+    // "no bar mounted" case.
+    if (submitting || !primaryBar) return;
     submitting = true;
     primaryBar.setDisabled(true);
     primaryBar.setLabel('Setting up…');
@@ -376,6 +413,7 @@ export function renderOnboarding(container) {
     }
   }
 
+  /** @type {HTMLElement|null} */
   let errorHost = null;
 
   function clearError() {
@@ -384,6 +422,7 @@ export function renderOnboarding(container) {
     }
   }
 
+  /** @param {string} message */
   function showError(message) {
     if (!errorHost) return;
     errorHost.replaceChildren(createErrorState({ title: 'Setup did not go through', message }));
@@ -401,6 +440,10 @@ export function renderOnboarding(container) {
     const isValid = () => (step === 1 ? state.display_name.trim().length > 0 : true);
 
     const revalidate = () => {
+      // Only wired up as the step-2 name input's onInput handler while its
+      // primary bar is mounted (see `stepAbout` below) — never called
+      // before `primaryBar` is set.
+      if (!primaryBar) return;
       primaryBar.setDisabled(!isValid());
     };
 

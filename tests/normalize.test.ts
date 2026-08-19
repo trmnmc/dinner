@@ -167,6 +167,7 @@ const ambiguousRegistry = parseIngredientRegistry({
       store_section: 'dairy_eggs',
       density_g_per_ml: null,
       per_item_weight_g: null,
+      package_options: [],
     },
     {
       id: 'unsalted_butter',
@@ -176,6 +177,7 @@ const ambiguousRegistry = parseIngredientRegistry({
       store_section: 'dairy_eggs',
       density_g_per_ml: null,
       per_item_weight_g: null,
+      package_options: [],
     },
   ],
 });

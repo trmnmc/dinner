@@ -77,6 +77,27 @@ import {
 // Ingredient registry
 // ---------------------------------------------------------------------------
 
+/** One purchasable package form of an ingredient, curated in
+ * `data/ingredients.json` (or a generic fallback, which MUST set
+ * `is_estimate: true`). Canonical home is here — `package_options` is
+ * registry-owned curated data exactly like `density_g_per_ml` /
+ * `per_item_weight_g` — and `packaging.ts` re-exports this type so its
+ * existing callers/imports are unaffected. */
+export interface PackageOption {
+  /** Stable id, unique within the ingredient's option list. */
+  readonly id: string;
+  /** Noun phrase for one package, e.g. "15 oz can", "bunch". */
+  readonly label_singular: string;
+  /** Noun phrase for several, e.g. "15 oz cans", "bunches". */
+  readonly label_plural: string;
+  /** Usable yield of ONE package, in `yield_unit`. Must be positive. */
+  readonly yield_amount: Rational;
+  readonly yield_unit: Unit;
+  /** True for generic fallbacks ("one bunch", "one ~2 lb package") — the
+   * selection is then flagged an estimate, never presented as exact. */
+  readonly is_estimate: boolean;
+}
+
 export interface IngredientRegistryEntry {
   readonly id: IngredientId;
   readonly display_name: string;
@@ -92,6 +113,11 @@ export interface IngredientRegistryEntry {
   /** Curated weight of one item in grams for count↔mass conversion; null =
    * no curated value. */
   readonly per_item_weight_g: Rational | null;
+  /** Curated purchasable package forms (packaging.ts's `selectPackages`
+   * consumes this directly). Key must be PRESENT — `[]` is the explicit
+   * "sold loose, no curated packages" state, matching the null-must-be-
+   * explicit convention above; packaging.ts treats [] as "loose" already. */
+  readonly package_options: readonly PackageOption[];
 }
 
 export type IngredientRegistry = ReadonlyMap<IngredientId, IngredientRegistryEntry>;
@@ -376,6 +402,7 @@ export function parseIngredientRegistry(data: unknown): IngredientRegistry {
 
     const density = parseCuratedRational(raw, 'density_g_per_ml', path, fail);
     const perItem = parseCuratedRational(raw, 'per_item_weight_g', path, fail);
+    const packageOptions = parsePackageOptions(raw, path, fail);
 
     if (id !== null && aliases !== null) {
       for (const name of [id, ...aliases]) {
@@ -397,6 +424,7 @@ export function parseIngredientRegistry(data: unknown): IngredientRegistry {
       storeSection !== null &&
       density.ok &&
       perItem.ok &&
+      packageOptions.ok &&
       !entries.has(id)
     ) {
       entries.set(id, {
@@ -407,6 +435,7 @@ export function parseIngredientRegistry(data: unknown): IngredientRegistry {
         store_section: storeSection,
         density_g_per_ml: density.value,
         per_item_weight_g: perItem.value,
+        package_options: packageOptions.value,
       });
     }
   });
@@ -433,6 +462,100 @@ function parseCuratedRational(
     return { ok: false, value: null };
   }
   return { ok: true, value: r };
+}
+
+/** Parse `package_options`: an array of curated `PackageOption`s (possibly
+ * empty — packaging.ts's own "sold loose" state). The key must be PRESENT,
+ * same convention as `density_g_per_ml` / `per_item_weight_g`. Every option
+ * is validated in full even after the first defect, so one malformed entry
+ * never masks a second — same accumulate-then-throw idiom as the rest of
+ * this parser. `yield_amount` is parsed through `parseExactAmount`, the
+ * exact same curated-rational path as every other quantity in this file
+ * (never a bare float). */
+function parsePackageOptions(
+  obj: JsonObject,
+  path: string,
+  fail: (path: string, message: string) => void,
+): { readonly ok: boolean; readonly value: readonly PackageOption[] } {
+  const key = 'package_options';
+  if (!(key in obj)) {
+    fail(`${path}.${key}`, `${key} must be present — write [] explicitly when the ingredient has no curated packages`);
+    return { ok: false, value: [] };
+  }
+  const raw = obj[key];
+  if (!Array.isArray(raw)) {
+    fail(`${path}.${key}`, `${key} must be an array`);
+    return { ok: false, value: [] };
+  }
+
+  let ok = true;
+  const seenIds = new Set<string>();
+  const options: PackageOption[] = [];
+
+  raw.forEach((rawOption: unknown, i: number) => {
+    const optPath = `${path}.${key}[${String(i)}]`;
+    if (!isJsonObject(rawOption)) {
+      fail(optPath, 'package option must be an object');
+      ok = false;
+      return;
+    }
+
+    const optionId = isNonEmptyString(rawOption['id']) ? rawOption['id'].trim() : null;
+    if (optionId === null) {
+      fail(`${optPath}.id`, 'id must be a non-empty string');
+      ok = false;
+    } else if (seenIds.has(optionId)) {
+      fail(`${optPath}.id`, `id ${JSON.stringify(optionId)} duplicates another option on the same ingredient`);
+      ok = false;
+    } else {
+      seenIds.add(optionId);
+    }
+
+    const labelSingular = isNonEmptyString(rawOption['label_singular']) ? rawOption['label_singular'] : null;
+    if (labelSingular === null) fail(`${optPath}.label_singular`, 'label_singular must be a non-empty string');
+
+    const labelPlural = isNonEmptyString(rawOption['label_plural']) ? rawOption['label_plural'] : null;
+    if (labelPlural === null) fail(`${optPath}.label_plural`, 'label_plural must be a non-empty string');
+
+    const yieldAmount = parseExactAmount(rawOption['yield_amount']);
+    if (yieldAmount === null || sign(yieldAmount) !== 1) {
+      fail(
+        `${optPath}.yield_amount`,
+        `yield_amount must be an exact positive rational (e.g. "3" or {"num":"3","den":"1"}), got ${JSON.stringify(rawOption['yield_amount'])}`,
+      );
+    }
+
+    const yieldUnit = memberOf(ALL_UNITS, rawOption['yield_unit']);
+    if (yieldUnit === null) {
+      fail(`${optPath}.yield_unit`, `invalid yield_unit ${JSON.stringify(rawOption['yield_unit'])}`);
+    }
+
+    const isEstimate = typeof rawOption['is_estimate'] === 'boolean' ? rawOption['is_estimate'] : null;
+    if (isEstimate === null) fail(`${optPath}.is_estimate`, 'is_estimate must be a boolean');
+
+    if (
+      optionId !== null &&
+      labelSingular !== null &&
+      labelPlural !== null &&
+      yieldAmount !== null &&
+      sign(yieldAmount) === 1 &&
+      yieldUnit !== null &&
+      isEstimate !== null
+    ) {
+      options.push({
+        id: optionId,
+        label_singular: labelSingular,
+        label_plural: labelPlural,
+        yield_amount: yieldAmount,
+        yield_unit: yieldUnit,
+        is_estimate: isEstimate,
+      });
+    } else {
+      ok = false;
+    }
+  });
+
+  return { ok, value: options };
 }
 
 // ---------------------------------------------------------------------------

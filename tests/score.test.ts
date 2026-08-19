@@ -84,6 +84,7 @@ function entry(id: string, allergens: IngredientRegistryEntry['allergen_classes'
     store_section: 'other',
     density_g_per_ml: null,
     per_item_weight_g: null,
+    package_options: [],
   };
 }
 

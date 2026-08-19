@@ -232,9 +232,11 @@ export function renderCook(container, params) {
   const sessionId = params.sessionId;
 
   let destroyed = false;
+  /** @type {ReturnType<typeof mountPrimaryAction>|null} */
   let primaryBar = null;
   /** @type {SessionView|null} */
   let session = null;
+  /** @type {number|null} */
   let tickInterval = null;
   /** @type {Map<string, {el: HTMLElement, clockEl: HTMLElement}>} */
   let timerNodes = new Map();
@@ -399,13 +401,14 @@ export function renderCook(container, params) {
     /** @type {(Node|null)[]} */
     const controls = [];
     if (session && session.status === 'active' && session.step !== null) {
+      const activeSession = session;
       controls.push(
         h(
           'button',
           {
             type: 'button',
             class: 'btn btn--secondary',
-            onClick: () => sendEvent({ kind: 'session_paused', at_step_index: session.current_step_index }),
+            onClick: () => sendEvent({ kind: 'session_paused', at_step_index: activeSession.current_step_index }),
           },
           ['Pause cooking'],
         ),
@@ -421,21 +424,22 @@ export function renderCook(container, params) {
 
   function mountPrimary() {
     if (!session) return;
-    if (session.status === 'paused') {
+    const s = session;
+    if (s.status === 'paused') {
       primaryBar = mountPrimaryAction({
         label: 'Resume cooking',
-        onClick: () => sendEvent({ kind: 'session_resumed', at_step_index: session.current_step_index }),
+        onClick: () => sendEvent({ kind: 'session_resumed', at_step_index: s.current_step_index }),
       });
       return;
     }
-    if (session.step === null) {
+    if (s.step === null) {
       primaryBar = mountPrimaryAction({ label: 'Finish cooking', onClick: () => sendEvent({ kind: 'session_completed' }) });
       return;
     }
     primaryBar = mountPrimaryAction({
       label: 'Mark step done',
-      onClick: () => sendEvent({ kind: 'step_completed', step_index: session.current_step_index }),
-      ariaLabel: `Mark step ${String(session.current_step_index + 1)} done`,
+      onClick: () => sendEvent({ kind: 'step_completed', step_index: s.current_step_index }),
+      ariaLabel: `Mark step ${String(s.current_step_index + 1)} done`,
     });
   }
 
@@ -498,7 +502,9 @@ export function renderCook(container, params) {
     try {
       const { plan } = await getCurrentPlan();
       if (destroyed) return;
-      const meal = (plan.meals || []).find((m) => m.recipe_id === completedSession.recipe_id);
+      /** @type {(m: {recipe_id: string, plan_meal_id: string|null}) => boolean} */
+      const matchesCompletedRecipe = (m) => m.recipe_id === completedSession.recipe_id;
+      const meal = (plan.meals || []).find(matchesCompletedRecipe);
       if (!meal || !meal.plan_meal_id) {
         if (primaryBar) {
           primaryBar.setDisabled(false);
@@ -526,11 +532,12 @@ export function renderCook(container, params) {
     if (!session) return;
 
     if (session.status === 'completed') {
+      const completed = session;
       drawTerminal({
         title: 'Cooking complete',
         message: 'Nice work — this session is done.',
         iconName: 'check',
-        primary: { label: 'How did it go?', onClick: () => goToFeedback(session) },
+        primary: { label: 'How did it go?', onClick: () => goToFeedback(completed) },
       });
       return;
     }

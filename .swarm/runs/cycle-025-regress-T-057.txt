@@ -1,0 +1,11 @@
+listening on http://127.0.0.1:46167
+PASS slot 0  all 8 exact quantities rendered as the wire states them
+PASS slot 0  to-taste "kosher salt" stays non-numeric ("Kosher saltTo tasteBlack ")
+PASS slot 0  to-taste "black pepper" stays non-numeric ("Black pepperTo tasteOption")
+PASS slot 1  all 10 exact quantities rendered as the wire states them
+PASS slot 1  to-taste "red pepper flakes" stays non-numeric ("Red pepper flakesTo tasteEquipm")
+PASS slot 2  all 11 exact quantities rendered as the wire states them
+PASS slot 2  to-taste "kosher salt" stays non-numeric ("Kosher saltTo tasteBlack ")
+PASS slot 2  to-taste "black pepper" stays non-numeric ("Black pepperTo tasteOption")
+
+=== T-057 P11 addendum: 8 passed, 0 failed ===

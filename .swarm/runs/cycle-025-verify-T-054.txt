@@ -1,0 +1,22 @@
+PASS W1  npx tsc -p tsconfig.web.json -> exit 0 (clean)
+PASS W2  --listFiles covers 10/10 client files on disk (api.js, calibrate.js, cook.js, feedback.js, grocery.js, onboarding.js, plan.js, prep.js, router.js, ui.js)
+PASS W3  allowJs+checkJs+strict, lib=["es2024","dom"], no exclude, include=["web/js/**/*.js"]
+PASS W4a  error suppressions in client code: 0
+PASS W4b  NEW {any} annotations added by this wave (diff vs HEAD): 0 — pre-existing ones are counted in the PROBE below, not here
+
+=== W5 — the checker must FAIL on a real type error in client code ===
+PASS W5:ui.js  shared module every screen imports -> npm test exit 2, names the file: true, restored identically: true
+        error TS2339: Property 'notARealMethod' does not exist on type '1'.
+PASS W5:grocery.js  a leaf screen -> npm test exit 2, names the file: true, restored identically: true
+        error TS2339: Property 'notARealMethod' does not exist on type '1'.
+PASS W5:cook.js  the file whose NaN-label defect this item exists to have caught -> npm test exit 2, names the file: true, restored identically: true
+        error TS2339: Property 'notARealMethod' does not exist on type '1'.
+
+=== W6 — the wired-up command is green on the real tree ===
+PASS W6  npm test -> exit 0, 402 pass / 0 fail
+
+=== PROBE — reported, NOT part of the acceptance and NOT scored ===
+  PROBE-1  {any} annotations still present in client code: 13. checkJs enforces them AS any — these lines are checked but unconstrained. Not regressions (W4b shows this wave added none); a real remaining gap.
+  PROBE-2  browser code referencing the node global `process`: tsc exit 0 -> ACCEPTED (tsconfig.web.json omits "types", so @types/node is ambient in client code — a real residual gap, file it); router.js restored identically: true
+
+T-054 GATE: 9 pass / 0 fail   (failability kills: 3/3)

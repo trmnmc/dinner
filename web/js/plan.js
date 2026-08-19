@@ -129,6 +129,7 @@ const NOVELTY_LABELS = { familiar: 'Familiar', adjacent: 'Adjacent twist', novel
  * ingredient ids (`olive_oil`, `chicken_stock`, …) have no display-name
  * field in `MealView.owned_ingredient_ids` (that only exists on grocery
  * lines), so this is the same convention, not a second one. */
+/** @param {string} s */
 function titleCase(s) {
   if (!s) return '';
   return String(s)
@@ -313,16 +314,20 @@ export function renderPlan(container, params) {
   void params; // /plan carries no route params; kept for router's call shape.
 
   let destroyed = false;
+  /** @type {ReturnType<typeof mountPrimaryAction>|null} */
   let primaryBar = null;
   /** @type {PlanView|null} */
   let plan = null;
+  /** @type {ReturnType<typeof openSheet>['close']|null} */
   let closeActiveSheet = null;
   /** Cached only after the first "Start cooking" tap — most visits never
-   * need it, so this avoids an extra request on every plan load. */
+   * need it, so this avoids an extra request on every plan load.
+   * @type {number|null} */
   let cachedHouseholdSize = null;
   /** Set once `checkResumable` resolves; drives the resume banner in
    * `drawPlan`. `undefined` = not checked yet (render nothing extra),
-   * `null` = checked, nothing to resume. */
+   * `null` = checked, nothing to resume.
+   * @type {{sessionId: string, mealName: string, stepIndex: number, totalSteps: number}|null|undefined} */
   let resumeInfo = undefined;
 
   function unmountPrimary() {
@@ -339,6 +344,7 @@ export function renderPlan(container, params) {
     }
   }
 
+  /** @param {(Node|string|null)[]} children */
   function screenShell(children) {
     return h('div', { class: 'screen' }, [
       h('div', { class: 'screen-header' }, [
@@ -358,6 +364,10 @@ export function renderPlan(container, params) {
     container.replaceChildren(screenShell([createLoadingState({ label: 'Loading your plan…' })]));
   }
 
+  /**
+   * @param {unknown} err
+   * @param {() => void} retry
+   */
   function drawError(err, retry) {
     unmountPrimary();
     closeSheetIfOpen();
@@ -520,7 +530,10 @@ export function renderPlan(container, params) {
       if (cachedHouseholdSize === null) {
         const { household } = await getHousehold();
         if (destroyed) return;
-        cachedHouseholdSize = household.household_size;
+        // `household.household_size` is always a number on the frozen
+        // contract's `HouseholdView` (`getHousehold()`'s JSDoc types the
+        // whole payload as `any`, out of this item's scope).
+        cachedHouseholdSize = /** @type {number} */ (household.household_size);
       }
       const { session } = await createCookingSession({
         plan_meal_id: meal.plan_meal_id,
@@ -611,6 +624,10 @@ export function renderPlan(container, params) {
       );
     }
 
+    /**
+     * @param {string} reason
+     * @param {unknown} err
+     */
     function drawFetchError(reason, err) {
       const message = err instanceof ApiError ? err.message : 'Could not load alternatives.';
       contentHost.replaceChildren(

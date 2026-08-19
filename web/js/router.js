@@ -36,7 +36,9 @@ import { renderFeedback } from './feedback.js';
  * @property {string} [label] - human name used in the "not built yet" panel
  */
 
+/** @param {string} label */
 function notBuiltYet(label) {
+  /** @param {HTMLElement} container */
   return (container) => {
     container.replaceChildren(
       h('div', { class: 'screen screen--centered' }, [
@@ -114,6 +116,7 @@ export function navigate(path, opts = {}) {
   }
 }
 
+/** @type {(() => void)|null} */
 let currentCleanup = null;
 
 function render() {

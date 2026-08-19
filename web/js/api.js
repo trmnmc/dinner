@@ -142,6 +142,10 @@ async function request(path, opts = {}) {
 
 /** @typedef {{n: string, d: string}} QuantityJson */
 
+/**
+ * @param {bigint} a
+ * @param {bigint} b
+ */
 function bgcd(a, b) {
   let x = a < 0n ? -a : a;
   let y = b < 0n ? -b : b;
@@ -153,7 +157,11 @@ function bgcd(a, b) {
   return x;
 }
 
-/** Normalise to lowest terms, denominator > 0. */
+/**
+ * Normalise to lowest terms, denominator > 0.
+ * @param {bigint} num
+ * @param {bigint} den
+ */
 function normalise(num, den) {
   if (den === 0n) throw new ApiError('malformed_input', 'quantity has a zero denominator');
   if (num === 0n) return { num: 0n, den: 1n };

@@ -793,6 +793,52 @@ test('grocery list has a populated provenance drawer, and a user quantity edit s
   }
 });
 
+test('T-069: a real 3-meal plan grocery list renders package labels, estimates, and surplus sourced from data/ingredients.json — not a test fixture', async () => {
+  const ts = await startTestServer();
+  try {
+    const householdId = await createHousehold(ts.base);
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    const planId = jStr(plan['plan_id']);
+    const meals = jArr(plan['meals']);
+    assert.equal(meals.length, 3, 'expected a full 3-meal plan for a fresh household with no time ceilings');
+
+    const groceryRes = await api(ts.base, 'GET', `/api/plans/${planId}/grocery`, { householdId });
+    assert.equal(groceryRes.status, 200, JSON.stringify(groceryRes.json));
+    const sections = jArr(j(j(groceryRes.json)['list'])['sections']).map((s) => j(s));
+    const lines: Json[] = [];
+    for (const section of sections) lines.push(...jArr(section['lines']).map((l) => j(l)));
+    assert.ok(lines.length > 0, 'expected at least one purchasable grocery line');
+
+    const withLabel = lines.filter((l) => l['package_label'] !== null);
+    const estimated = lines.filter((l) => l['is_estimate'] === true);
+    const withSurplus = lines.filter((l) => {
+      const surplus = j(j(l['provenance'])['expected_surplus']);
+      return BigInt(jStr(surplus['n'])) !== 0n;
+    });
+
+    assert.ok(
+      withLabel.length >= 1,
+      `expected >=1 line with a non-null package_label, got 0 of ${String(lines.length)}`,
+    );
+    assert.ok(
+      estimated.length >= 1,
+      `expected >=1 line flagged is_estimate, got 0 of ${String(lines.length)}`,
+    );
+    assert.ok(
+      withSurplus.length >= 1,
+      `expected >=1 line with non-zero expected_surplus, got 0 of ${String(lines.length)}`,
+    );
+    for (const l of withLabel) {
+      assert.equal(typeof l['package_label'], 'string');
+      assert.ok((l['package_label'] as string).length > 0);
+    }
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
 test('T-043: prep quantities agree with the grocery list for the same plan meal, scaled to household size (not servings_default)', async () => {
   const ts = await startTestServer();
   try {

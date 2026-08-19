@@ -1,0 +1,14 @@
+api.js             88 literals @HEAD ->   88 now   identical
+calibrate.js       67 literals @HEAD ->   67 now   identical
+cook.js           219 literals @HEAD ->  219 now   identical
+feedback.js       126 literals @HEAD ->  126 now   identical
+grocery.js        246 literals @HEAD ->  246 now   identical
+onboarding.js     254 literals @HEAD ->  254 now   identical
+plan.js           214 literals @HEAD ->  214 now   identical
+prep.js           191 literals @HEAD ->  191 now   identical
+router.js          52 literals @HEAD ->   52 now   identical
+ui.js             176 literals @HEAD ->  178 now   CHANGED
+    + "icon(): \""
+    + "\" produced no element"
+
+string-literal delta across all 10 client files: +2 / -0

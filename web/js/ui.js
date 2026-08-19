@@ -53,7 +53,10 @@ export function h(tag, attrs = {}, children = []) {
     } else if (key.startsWith('on') && typeof value === 'function') {
       el.addEventListener(key.slice(2).toLowerCase(), value);
     } else if (key.startsWith('.')) {
-      el[key.slice(1)] = value;
+      // Dynamic DOM-property assignment (e.g. `.value`) — `HTMLElement` has
+      // no index signature, so this goes through `Reflect.set` instead of
+      // bracket assignment. Behaviour is identical to `el[prop] = value`.
+      Reflect.set(el, key.slice(1), value);
     } else if (value === true) {
       el.setAttribute(key, '');
     } else {
@@ -88,20 +91,28 @@ const ICONS = {
 
 /**
  * @param {keyof typeof ICONS} name
- * @returns {SVGSVGElement}
+ * @returns {Element}
  */
 export function icon(name) {
   const wrap = h('span', { class: 'icon', html: ICONS[name] || ICONS.info });
-  return wrap.firstElementChild;
+  const el = wrap.firstElementChild;
+  // `wrap.innerHTML` is always one of the trusted `ICONS` strings, each a
+  // single root SVG element, so this is never actually null — the guard
+  // only exists so the return type can be `Element` instead of a fiction.
+  if (el === null) throw new Error(`icon(): "${name}" produced no element`);
+  return el;
 }
 
 // ---------------------------------------------------------------------------
 // Aria-live announcer — one polite region, one assertive region, reused.
 // ---------------------------------------------------------------------------
 
+/** @type {HTMLElement|null} */
 let politeRegion = null;
+/** @type {HTMLElement|null} */
 let assertiveRegion = null;
 
+/** @param {boolean} assertive */
 function region(assertive) {
   const id = assertive ? 'aria-live-assertive' : 'aria-live-polite';
   let el = document.getElementById(id);
@@ -139,13 +150,20 @@ export function announce(message, opts = {}) {
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/**
+ * @typedef {Object} SheetHandle
+ * @property {(opts?: {immediate?: boolean}) => void} close
+ * @property {HTMLElement} element
+ */
+
+/** @type {SheetHandle|null} */
 let activeSheet = null;
 
 /**
  * Open a bottom sheet. Only one sheet is active at a time — opening a
  * second one closes the first.
  * @param {{title: string, content: HTMLElement, labelledby?: string, onClose?: () => void}} opts
- * @returns {{close: () => void, element: HTMLElement}}
+ * @returns {SheetHandle}
  */
 export function openSheet({ title, content, onClose }) {
   if (activeSheet) activeSheet.close({ immediate: true });
@@ -187,6 +205,7 @@ export function openSheet({ title, content, onClose }) {
     window.setTimeout(finish, exitMs);
   }
 
+  /** @param {KeyboardEvent} e */
   function onKeydown(e) {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -194,7 +213,7 @@ export function openSheet({ title, content, onClose }) {
       return;
     }
     if (e.key !== 'Tab') return;
-    const focusable = Array.from(sheetEl.querySelectorAll(FOCUSABLE_SELECTOR));
+    const focusable = /** @type {HTMLElement[]} */ (Array.from(sheetEl.querySelectorAll(FOCUSABLE_SELECTOR)));
     if (focusable.length === 0) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
@@ -214,7 +233,7 @@ export function openSheet({ title, content, onClose }) {
   requestAnimationFrame(() => {
     backdrop.dataset.open = 'true';
     sheetEl.dataset.open = 'true';
-    const focusable = sheetEl.querySelector(FOCUSABLE_SELECTOR);
+    const focusable = /** @type {HTMLElement|null} */ (sheetEl.querySelector(FOCUSABLE_SELECTOR));
     (focusable || sheetEl).focus({ preventScroll: true });
   });
 
@@ -226,6 +245,18 @@ export function openSheet({ title, content, onClose }) {
 // Undo snackbar — undo, never a confirmation modal.
 // ---------------------------------------------------------------------------
 
+/**
+ * @typedef {Object} SnackbarHandle
+ * @property {(opts?: {immediate?: boolean}) => void} dismiss
+ */
+
+/**
+ * @typedef {Object} ActiveSnackbar
+ * @property {HTMLElement} bar
+ * @property {(opts?: {immediate?: boolean}) => void} dismiss
+ */
+
+/** @type {ActiveSnackbar|null} */
 let activeSnackbar = null;
 
 /**
@@ -233,12 +264,13 @@ let activeSnackbar = null;
  * happened. There is no confirm-before-acting dialog in this product —
  * every such action fires immediately and offers undo instead.
  * @param {{message: string, onUndo: () => void, actionLabel?: string, duration?: number}} opts
- * @returns {{dismiss: () => void}}
+ * @returns {SnackbarHandle}
  */
 export function showUndoSnackbar({ message, onUndo, actionLabel = 'Undo', duration = 6000 }) {
   if (activeSnackbar) activeSnackbar.dismiss({ immediate: true });
 
   const root = document.getElementById('snackbar-root') || document.body;
+  /** @type {number|null} */
   let timer = null;
 
   const bar = h('div', { class: 'snackbar', role: 'status', 'data-open': 'false' }, [
@@ -371,6 +403,15 @@ export function createStatusBadge({ text, tone = 'neutral', iconName }) {
 // The ONE dominant, bottom-anchored primary action.
 // ---------------------------------------------------------------------------
 
+/**
+ * @typedef {Object} PrimaryBarHandle
+ * @property {HTMLElement} element
+ * @property {(v: boolean) => void} setDisabled
+ * @property {(v: string) => void} setLabel
+ * @property {() => void} unmount
+ */
+
+/** @type {PrimaryBarHandle|null} */
 let activePrimaryBar = null;
 
 /**
@@ -378,28 +419,31 @@ let activePrimaryBar = null;
  * one removes any previous primary action bar — there is structurally never
  * more than one on screen at a time.
  * @param {{label: string, onClick: () => void, disabled?: boolean, ariaLabel?: string}} opts
- * @returns {{setDisabled: (v: boolean) => void, setLabel: (v: string) => void, unmount: () => void, element: HTMLElement}}
+ * @returns {PrimaryBarHandle}
  */
 export function mountPrimaryAction({ label, onClick, disabled = false, ariaLabel }) {
   if (activePrimaryBar) activePrimaryBar.unmount();
 
-  const btn = h(
-    'button',
-    {
-      type: 'button',
-      class: 'btn btn--primary',
-      disabled,
-      'aria-label': ariaLabel || undefined,
-      onClick: (e) => {
-        if (btn.disabled) return;
-        onClick(e);
+  const btn = /** @type {HTMLButtonElement} */ (
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'btn btn--primary',
+        disabled,
+        'aria-label': ariaLabel || undefined,
+        onClick: () => {
+          if (btn.disabled) return;
+          onClick();
+        },
       },
-    },
-    [label],
+      [label],
+    )
   );
   const bar = h('div', { class: 'primary-action-bar' }, [btn]);
   document.body.appendChild(bar);
 
+  /** @type {PrimaryBarHandle} */
   const api = {
     element: bar,
     setDisabled: (v) => {
@@ -430,15 +474,17 @@ export function mountReactionGrid(reactions) {
     activePrimaryBar.unmount();
   }
   const buttons = reactions.map((r) =>
-    h(
-      'button',
-      {
-        type: 'button',
-        class: 'reaction-btn',
-        dataset: { reaction: r.value },
-        onClick: () => r.onClick(),
-      },
-      [r.label],
+    /** @type {HTMLButtonElement} */ (
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'reaction-btn',
+          dataset: { reaction: r.value },
+          onClick: () => r.onClick(),
+        },
+        [r.label],
+      )
     ),
   );
   const grid = h('div', { class: 'reaction-grid', role: 'group', 'aria-label': 'React to this meal' }, buttons);
@@ -460,10 +506,15 @@ export function mountReactionGrid(reactions) {
  * @typedef {{total_seconds?: number, active_seconds?: number, time_label?: string}} TimeFields
  */
 
+/** @param {number} seconds */
 function minutesFromSeconds(seconds) {
   return Math.round(seconds / 60);
 }
 
+/**
+ * @param {number} minutes
+ * @param {string} suffix
+ */
 function minuteText(minutes, suffix) {
   return minutes <= 0 ? `under 1 min ${suffix}` : `${minutes} min ${suffix}`;
 }
@@ -473,6 +524,8 @@ function minuteText(minutes, suffix) {
  * numeral when there is one to show, or the plain "under 1 min ..." phrase
  * — byte-identical to `minuteText` — when rounding lands on zero, so the
  * on-screen text never disagrees with the `aria-label` fallback below.
+ * @param {number} minutes
+ * @param {string} suffix
  */
 function timeSpanChildren(minutes, suffix) {
   return minutes <= 0 ? [minuteText(minutes, suffix)] : [h('strong', {}, [`${minutes} min`]), ` ${suffix}`];

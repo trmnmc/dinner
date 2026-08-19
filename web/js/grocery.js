@@ -61,11 +61,13 @@ import { navigate } from './router.js';
  * @typedef {{list_id: string, sections: GrocerySection[], to_taste: ToTasteItem[], confirmation_questions: ConfirmationQuestion[]}} GroceryListView
  */
 
+/** @param {string} s */
 function capitalize(s) {
   if (!s) return '';
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** @param {string} section */
 function sectionLabel(section) {
   return String(section)
     .split('_')
@@ -73,6 +75,7 @@ function sectionLabel(section) {
     .join(' ');
 }
 
+/** @param {Qty} qty */
 function isZero(qty) {
   return qty.n === '0';
 }
@@ -94,9 +97,11 @@ function isZero(qty) {
 // Canonical units on this screen are always exactly "g", "ml", or "count"
 // (domain/src/units.ts converts every recipe/inventory unit to one of
 // these before a grocery line is built), so three buckets cover every case.
+/** @type {Record<string, number>} */
 const UNIT_DISPLAY_DECIMALS = { g: 0, ml: 0, count: 1 };
 const INFO_ZERO_GUARD_MAX_DECIMALS = 3;
 
+/** @param {string} unit */
 function unitDisplayDecimals(unit) {
   return UNIT_DISPLAY_DECIMALS[unit] ?? 1;
 }
@@ -164,9 +169,13 @@ function formatInfoQty(q, unit) {
  */
 export function renderGrocery(container, _params) {
   let destroyed = false;
+  /** @type {ReturnType<typeof mountPrimaryAction>|null} */
   let primaryBar = null;
+  /** @type {ReturnType<typeof openSheet>|null} */
   let currentSheet = null;
+  /** @type {ReturnType<typeof showUndoSnackbar>|null} */
   let snackbarHandle = null;
+  /** @type {string|null} */
   let planId = null;
 
   /** @type {Map<string, GroceryLine>} */
@@ -195,6 +204,7 @@ export function renderGrocery(container, _params) {
     }
   }
 
+  /** @param {(Node|string|null)[]} children */
   function screenShell(children) {
     return h('div', { class: 'screen' }, [
       h('div', { class: 'screen-header' }, [
@@ -213,6 +223,10 @@ export function renderGrocery(container, _params) {
     container.replaceChildren(screenShell([createLoadingState({ label: 'Loading your grocery list…' })]));
   }
 
+  /**
+   * @param {unknown} err
+   * @param {() => void} retry
+   */
   function drawError(err, retry) {
     unmountPrimary();
     const message = err instanceof ApiError ? err.message : 'Could not load your grocery list.';
@@ -261,6 +275,7 @@ export function renderGrocery(container, _params) {
   // not the whole scrolled list).
   // -------------------------------------------------------------------
 
+  /** @param {GroceryLine} updated */
   function applyLineUpdate(updated) {
     lineIndex.set(updated.line_id, updated);
     const old = rowElements.get(updated.line_id);
@@ -270,6 +285,7 @@ export function renderGrocery(container, _params) {
     rowElements.set(updated.line_id, fresh);
   }
 
+  /** @param {GroceryLine} line */
   async function toggleChecked(line) {
     const previous = line.checked;
     const optimistic = { ...line, checked: !previous };
@@ -286,6 +302,11 @@ export function renderGrocery(container, _params) {
     }
   }
 
+  /**
+   * @param {string} lineId
+   * @param {Qty|null} previousValue
+   * @param {string} displayName
+   */
   async function revertQuantity(lineId, previousValue, displayName) {
     try {
       const { line: updated } = await patchGroceryLine(lineId, { user_edited_quantity: previousValue });
@@ -298,6 +319,7 @@ export function renderGrocery(container, _params) {
     }
   }
 
+  /** @param {GroceryLine} line */
   function buildLineRow(line) {
     const effective = line.user_edited_quantity || line.purchase_quantity;
     const qtyText = formatPurchaseQty(effective, line.unit);
@@ -344,6 +366,7 @@ export function renderGrocery(container, _params) {
     return row;
   }
 
+  /** @param {GroceryLine} line */
   function mountLineRow(line) {
     lineIndex.set(line.line_id, line);
     const el = buildLineRow(line);
@@ -357,6 +380,7 @@ export function renderGrocery(container, _params) {
   // editor (protected user edits, undo instead of a confirm dialog).
   // -------------------------------------------------------------------
 
+  /** @param {GroceryLine} line */
   function openProvenanceDrawer(line) {
     const current = lineIndex.get(line.line_id) || line;
     const errorHost = h('div', {});
@@ -516,6 +540,7 @@ export function renderGrocery(container, _params) {
     });
   }
 
+  /** @param {ToTasteItem} item */
   function openToTasteDrawer(item) {
     const content = h('div', { class: 'grocery-drawer' }, [
       h('h3', { class: 'grocery-drawer__heading' }, ['Why is this on my list?']),
@@ -545,6 +570,7 @@ export function renderGrocery(container, _params) {
   // Happy-path assembly
   // -------------------------------------------------------------------
 
+  /** @param {ConfirmationQuestion[]} questions */
   function confirmationBlock(questions) {
     if (!questions.length) return null;
     return h('div', { class: 'grocery-questions' }, [
@@ -560,6 +586,7 @@ export function renderGrocery(container, _params) {
     ]);
   }
 
+  /** @param {ToTasteItem[]} items */
   function toTasteBlock(items) {
     if (!items.length) return null;
     return h('section', { class: 'grocery-section' }, [
@@ -593,6 +620,7 @@ export function renderGrocery(container, _params) {
     ]);
   }
 
+  /** @param {GrocerySection} section */
   function sectionBlock(section) {
     return h('section', { class: 'grocery-section' }, [
       h('h2', { class: 'grocery-section__title' }, [sectionLabel(section.section)]),
@@ -618,7 +646,11 @@ export function renderGrocery(container, _params) {
     try {
       const { plan } = await getCurrentPlan();
       if (destroyed) return;
-      planId = plan.plan_id;
+      // `plan.plan_id` is always a string on the frozen contract's
+      // `PlanView` — `getCurrentPlan()`'s JSDoc types the whole payload as
+      // `any` (api.js is out of this item's scope), so this documents that
+      // known shape rather than guessing at it.
+      planId = /** @type {string} */ (plan.plan_id);
     } catch (err) {
       if (destroyed) return;
       if (err instanceof ApiError && err.code === 'no_current_plan') {

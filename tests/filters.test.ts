@@ -45,6 +45,7 @@ function entry(id: string, allergens: readonly Allergen[]): IngredientRegistryEn
     store_section: 'other',
     density_g_per_ml: null,
     per_item_weight_g: null,
+    package_options: [],
   };
 }
 

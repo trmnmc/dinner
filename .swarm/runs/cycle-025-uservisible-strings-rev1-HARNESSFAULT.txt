@@ -1,0 +1,24 @@
+api.js             66 literals @HEAD ->   66 now   identical
+calibrate.js       58 literals @HEAD ->   58 now   identical
+cook.js           178 literals @HEAD ->  178 now   CHANGED
+    + "Mark step ${String(s.current_step_index + 1)} done"
+    - "Mark step ${String(session.current_step_index + 1)} done"
+feedback.js       115 literals @HEAD ->  115 now   identical
+grocery.js        214 literals @HEAD ->  214 now   identical
+onboarding.js     106 literals @HEAD ->  128 now   CHANGED
+    + "+"
+    + "Fewer people"
+    + "More people"
+    + "aria-label"
+    + "button"
+    + "div"
+    + "field"
+    + "field__hint"
+plan.js           191 literals @HEAD ->  191 now   identical
+prep.js           163 literals @HEAD ->  163 now   identical
+router.js          49 literals @HEAD ->   49 now   identical
+ui.js             168 literals @HEAD ->  169 now   CHANGED
+    + "icon(): \"${name}\" produced no element"
+
+string-literal delta across all 10 client files: +16 / -1
+VERDICT: shipped strings changed — inspect the deltas above before trusting the behaviour-preserving claim.

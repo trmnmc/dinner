@@ -4133,3 +4133,207 @@ the cycle-24 scoping error, applied.
 
 If this block is the last one in the file, the cycle died mid-wave: the two scopes
 above are where to look.
+
+---
+
+## cycle 25 — 2026-08-19T10:08Z → 11:15Z · BUILD · T-069 + T-054 + T-065 verified
+
+**clock** 1787134243 at open, stop_at 1787140800 (12:00:00Z) — 1 h 49 m of run left,
+admission window 5657 s, so build-wave (2700 s) admitted with room. **probe** REAL,
+`probe_ok: true`: window_tokens 27,509,034 → **51,766,264** since the 09:00Z reset,
+ρ **0.98** → gear_target 2, applied **gear 2** (no hysteresis move). Governor engaged —
+weekly 100 % / opus 100 % at 31.63 % week-elapsed, heat 3.16, ceiling 2, promote blocked.
+Projected depletion 1787140876 (**12:01Z**) now lands one minute AFTER stop_at; cycle 24
+projected 11:46Z, so the window eased rather than tightened. Tree clean at orient.
+**Control channel**: `swarm-notify.sh poll` was DENIED by the harness (KI-1 family) —
+journaled and non-fatal per cycle.md step 2, continuing with file-sourced `pending[]`
+only: `runs/control.json` carries **0 pending, 0 applied, no injections**.
+
+Cycle 25 is a `cycle % 5 == 0` cycle: **full SPEC.md re-read** (done before dispatch —
+the packaging clause of the grocery must-have and DoD 5 are what put T-069 first) plus
+**backlog hygiene** (below).
+
+Effective wave size = min(k_current 5, gear cap 2, hard max 5) = **2**, dispatched as two
+DIRECT foreground Agent calls — Workflow is review-gated in `-p` sessions, and foreground
+because **KI-4** guillotines background tasks at 600 s (both agents ran past it: 428 s and
+738 s). In-flight marker committed before dispatch (938e51e).
+
+**Scopes were derived from the seam each acceptance names, not from the stored
+`files_hint`** — that is D-33, last cycle's scoping error, applied. For T-069 the stored
+hint pointed at `data/ingredients.json`; I read the actual code first and found the two
+real edit sites (`catalog.ts` parse + `routes.ts:1125`), which is what made the item
+completable this time.
+
+### T-069 — the authored catalog reaches the grocery screen. 22/22 lines labelled.
+
+Two edits plus one supporting move: `parseIngredientRegistry` now parses `package_options`
+in the file's own accumulate-then-throw idiom (unique option ids within the entry, exact
+positive rationals via the existing parser — never a bare float, valid `Unit`, real boolean
+`is_estimate`, non-empty labels), and `handleGetGrocery` passes `registryEntry.package_options`
+where a hardcoded `[]` used to be. `PackageOption` moved from `packaging.ts` into
+`catalog.ts` with a type re-export, so the seam has one direction of dependency and every
+existing import site compiles unchanged.
+
+The counting clauses are the easy half — cycle 24 already ran them at 0/22, 0/22, 0/22.
+The clause carrying the item is "**sourced from** the package options now authored in
+`data/ingredients.json`". A route that fabricated a plausible label from `display_name`,
+or hardcoded `is_estimate: false`, or invented a surplus, would satisfy the counts and
+still be a lie. So the gate re-parses `data/ingredients.json` itself and demands
+traceability, and it does the surplus arithmetic in BigInt rather than trusting the engine.
+
+VERIFICATION EVIDENCE — `.swarm/runs/cycle-025-verify-T-069.txt` (11/11):
+
+```
+PASS P1a  lines with a non-null package_label: 22/22
+PASS P1b  lines with is_estimate true: 7/22
+PASS P1c  lines with non-zero expected_surplus: 18/22
+PASS P2a  labels traceable to an option authored for that same ingredient: 22/22
+PASS P2b  distinct authored option ids reached the wire: 22 (e.g. honey-1, olive_oil-1, ...)
+PASS P3a  estimate flag matches disk on 22/22 labelled lines
+PASS P3b  the flag discriminates on this very list: 7 estimated / 15 exact
+PASS P4   surplus == package yield − (Σ contributions − inventory) on 22/22 lines
+PASS P5   underbuying prohibited — lines with negative surplus: 0
+    frozen_peas   label="one 16 oz bag, about 8 cups"  est=true   option=frozen_peas-1  surplus=1656.118 ml
+    garlic        label="one head of garlic"           est=true   option=garlic-1       surplus=2.000 count
+    firm_tofu     label="two 14 oz blocks"             est=false  option=firm_tofu-1    surplus=393.787 g
+```
+
+**Failability, proven not assumed** — `.swarm/runs/cycle-025-mutants-T-069.txt`, all three
+KILLED, every file restored byte-identically by sha256:
+
+```
+M1 routes.ts passes [] again          -> exit 1, 5/6 fail [P1a,P1b,P1c,P2a,P2b,P3b]  label 0/22
+M2 catalog.ts parses then discards    -> exit 1, 5/6 fail [P1a,P1b,P1c,P2a,P2b,P3b]  label 0/22
+M3 routes.ts hardcodes is_estimate    -> exit 1, 2 fail  [P1b,P3a]  frozen_peas: wire=false authored=true
+```
+
+M2 matters as much as M1: it proves BOTH halves of the seam are load-bearing, so a later
+change that keeps the route honest while breaking the loader cannot pass. M3 is the reason
+P3 exists — under it every label stays real and only the estimate flag lies, and the gate
+still catches it on `frozen_peas`.
+
+### T-054 — the client is typechecked for the first time. KI-11 closed.
+
+`tsconfig.web.json` (allowJs + checkJs + **full strict**, `lib: ["es2024","dom"]`, no
+`exclude`) covers all 10 `web/js` files; `--listFiles` returned **0** before this cycle.
+First enablement produced **182 errors**, resolved by JSDoc annotations, narrowing captures
+and the codebase's existing `/** @type {T} */ (expr)` cast idiom — 0 suppressions, 0 new
+`{any}`, nothing excluded.
+
+I made the `package.json` edit myself (manifest files are out of every builder's scope):
+`typecheck` = `typecheck:node && typecheck:web`. Wiring it into `npm test` rather than
+leaving a side script is the whole point — hard rule 4's green-main check now covers the
+client. Recorded as **D-34**.
+
+VERIFICATION EVIDENCE — `.swarm/runs/cycle-025-verify-T-054.txt` (9/9, 3/3 kills):
+
+```
+PASS W2  --listFiles covers 10/10 client files on disk (api, calibrate, cook, feedback,
+         grocery, onboarding, plan, prep, router, ui)
+PASS W3  allowJs+checkJs+strict, lib=["es2024","dom"], no exclude
+PASS W4a error suppressions in client code: 0        PASS W4b NEW {any} added: 0
+=== W5 — the checker must FAIL on a real type error in client code ===
+PASS W5:ui.js       shared module every screen imports -> npm test exit 2, names the file: true, restored identically: true
+PASS W5:grocery.js  a leaf screen                      -> npm test exit 2, names the file: true, restored identically: true
+PASS W5:cook.js     the NaN-label file                 -> npm test exit 2, names the file: true, restored identically: true
+        error TS2339: Property 'notARealMethod' does not exist on type '1'.
+PASS W6  npm test -> exit 0, 402 pass / 0 fail
+```
+
+W5 is the acceptance's own clause and the only one that distinguishes a real checker from
+a vacuous green: a config with an empty `include` passes W1 and W6 and checks nothing.
+
+**Two honest findings from the gate's PROBES, reported as probes and NOT scored** — they
+sit outside T-054's acceptance, so they did not fail it, and they are filed rather than
+quietly fixed: **T-071**, `tsconfig.web.json` omits `"types"`, so `@types/node` is ambient
+in browser code (measured: `process.version` in `router.js` leaves tsc at exit 0 — the main
+tsconfig pins `types: ["node"]`, the web one inherits everything); **T-072**, 13
+pre-existing `{any}` annotations survive in `prep.js`/`cook.js` and are now enforced AS
+`any`. The honest sentence for the report is: **the client is typechecked, it is not yet
+fully typed.**
+
+### the regression question I would not take on faith
+
+T-054 edited all ten client files. "Annotation-only" is a claim, and the qa-verify look
+pass that would normally cover a user-visible change could not run here (Workflow is
+review-gated headless) — so it is reported as **NOT RUN**, never as passed. What I ran
+instead, all of it authored before this wave and unseen by its builder:
+
+```
+cycle-024 gate T-058 (drives the real cook.js screen)     15 pass / 0 fail
+cycle-023 gate T-017 (drives the real grocery screen)     17 pass / 0 fail, 1 unreachable
+cycle-023 gate T-038 (drives the real swap copy path)      4 pass / 0 fail
+cycle-023 gate T-057 (quantity rendering addendum)         8 pass / 0 fail
+```
+
+Plus a string-literal diff of every client file at HEAD against the working tree —
+`.swarm/runs/cycle-025-uservisible-strings.txt`:
+
+```
+nine of ten files: literals identical
+ui.js  176 -> 178   + "icon(): \""   + "\" produced no element"
+string-literal delta across all 10 client files: +2 / -0
+```
+
+The two additions are one provably-unreachable guard's message (`ICONS[name] || ICONS.info`
+always yields a single root element). Not one shipped string a user can read changed.
+
+**That check failed first, in MY harness, and rev1 is preserved beside rev2 with its
+output.** rev1 stripped comments with regexes, block-comments first; `onboarding.js:29` at
+HEAD is a LINE comment containing the glob `data/recipes/*`, whose `/*` opened a fake block
+that swallowed ~40 lines of real stepper code down to the next `*/`. A JSDoc block added by
+this wave closed the fake comment earlier, so those literals "reappeared" and rev1 reported
+22 phantom additions in `onboarding.js` — "Fewer people", "More people", "field__hint" —
+every one of which `git show HEAD` proves was already there. rev2 stops hand-rolling a
+lexer and walks the real TypeScript AST (the compiler is already a devDependency). Strictly
+stronger, not weaker: it cannot be fooled by a glob, a regex literal, a `//` inside a
+string, or a nested template. **The lesson generalises past this file: do not lex a
+language you have a parser for.**
+
+### T-065 — closed by re-running last cycle's gate, unmodified
+
+The cycle-24 gate scored 8 pass / 3 fail on exactly the live half T-069 has now wired.
+Re-run byte-identical, with no edit to the check: **11 pass / 0 fail**
+(`.swarm/runs/cycle-025-verify-T-065.txt`) — L2 22/22 labelled, L3 7/22 estimated, L4 18/22
+with surplus. That is the cheapest verified item of the run and the honest way to close it:
+the gate that failed is the gate that passed.
+
+### bookkeeping
+
+**wave autotune**: 0 reverted merges, 0 failed verifies → a CLEAN wave → `wave_streak`
+0 → **1**; k stays **5** (the streak needs 2). The gear cap of 2 is what actually binds.
+**burn attribution**: delta 27,509,034 → 51,766,264 is positive (no reset), credited to
+cycle 24's target → `window_tokens_attributed` **51,766,264**.
+`cycles_since_recycle` 2 → **3**. `consecutive_no_value` stays **0**.
+**collision-scan**: `applicable: false` (ES modules throughout) — recorded, not counted as
+a pass.
+
+**known_issues**: **KI-11 → RESOLVED** (with T-071/T-072 filed as its honest residue).
+Still open: **KI-1, KI-2, KI-3, KI-4, KI-6 — and all five are SWARM-side**, barred from
+repair by hard rule 5. For the first time this run there is **no open target-side
+known_issue**.
+
+**backlog hygiene** (the `% 5` pass): 72 items — 31 done, 31 todo, 9 dropped, 1 blocked.
+Beyond the three verified and the two filed: **T-055 dropped as a duplicate of T-066** —
+the same defect (inventory confirmation questions need an `inferred` entry that no HTTP
+write path can produce) filed from two ends at cycles 14 and 23. T-066 is kept because its
+acceptance is strictly better: it allows the honest resolution — record in SPEC.md that
+confirmations are unreachable under D-2's confirmed-only design — as well as the build.
+Live items are at 31, within the ~30 cap, so nothing else was dropped: dropping an item
+needs a reason, and "the backlog is long" is not one.
+
+result: **THREE items verified — T-069, T-054, T-065 — one known_issue closed, and the
+target-side known_issue list is empty for the first time.** 31 verified of 72 filed. Two of
+D-4's three prior-art-unoccupied differentiators — package-size selection and leftover
+optimisation — render on a real user's grocery list tonight rather than existing as
+unreachable code.
+
+next: **~30 minutes to the WRAP_UP trigger at 11:45Z.** A 2700 s build wave will not admit;
+an S-effort item admits under the final-hour 900 s carve-out, and a taste pass (900 s) is
+the other candidate — the run has never had one (`last_taste_cycle: null`), and a
+fundamental verdict would still be worth knowing in the report even with no clock left to
+act on it.
+
+```runfile-mirror
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787134243,"next_wakeup_at":1787136943,"pid":2463691,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.98,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":51766264,"window_cost_usd":32.160379400000004,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":49368622,"projected_depletion_at":1787140876,"last_probe_ts":1787134243,"last_real_probe_ts":1787134243,"probe_failures":0,"probe_note":"Cycle 25 REAL probe, probe_ok true. window_tokens 27,509,034 -> 51,766,264 since the 09:00Z reset; rho 0.98 => gear_target 2, applied gear 2 (no hysteresis move). Governor engaged: weekly 100% / opus 100% at week_elapsed 31.63% => heat 3.16, ceiling 2, promote blocked. Projected depletion 1787140876 (~12:01Z) now lands just AFTER stop_at 12:00:00Z (cycle 24 projected 11:46Z) \u2014 the window is expected to survive to wrap-up by ~1 min.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":31.63,"weekly_heat":3.16,"opus_heat":3.16,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":3,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

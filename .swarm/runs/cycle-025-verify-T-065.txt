@@ -1,0 +1,24 @@
+=== D — data half (sentence 1) ===
+PASS D1  registry parses, 97 ingredients
+PASS D2  ingredients with zero package options: 0
+PASS D3  malformed options: 0 (104 distinct option ids)
+PASS D4  duplicate option ids: 0
+PASS D5  48 distinct ingredient ids required across shipped recipes; unresolved/optionless: 0
+PASS D6  is_estimate split — 32 estimated / 72 exact of 104
+
+=== L — live half (sentence 2): GET /api/plans/:planId/grocery ===
+listening on http://127.0.0.1:36741
+PASS L0  real plan created: plan_id=7cf55463-e893-436e-b45a-7ee0c09c5974 meals=3
+PASS L1  grocery 200, 7 sections, 22 measured lines (+3 to-taste)
+PASS L2  lines with a non-null package_label: 22/22
+PASS L3  lines with is_estimate true: 7/22
+PASS L4  lines with non-zero expected_surplus: 18/22
+  --- first 6 lines as the grocery screen receives them ---
+    honey                  label="one 12 oz bear" est=false surplus={"n":"510715314417","d":"2272000000"}
+    olive oil              label="one 1 L bottle" est=false surplus={"n":"30580470581","d":"32000000"}
+    rice vinegar           label="one 12 fl oz bottle" est=false surplus={"n":"5204941203","d":"16000000"}
+    soy sauce              label="one 10 fl oz bottle" est=false surplus={"n":"473176473","d":"2000000"}
+    toasted sesame oil     label="one 5 fl oz bottle" est=false surplus={"n":"3627686293","d":"32000000"}
+    vegetable oil          label="one 48 fl oz bottle" est=false surplus={"n":"8990352987","d":"6400000"}
+
+T-065 GATE: 11 pass / 0 fail

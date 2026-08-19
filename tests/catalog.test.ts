@@ -230,6 +230,7 @@ test('registry parsing rejects malformed entries with CatalogDataError', () => {
     store_section: 'dry_goods',
     density_g_per_ml: null,
     per_item_weight_g: null,
+    package_options: [],
   };
   // zero density (must be positive)
   assert.throws(
@@ -259,6 +260,129 @@ test('registry parsing rejects malformed entries with CatalogDataError', () => {
   );
   // duplicate id
   assert.throws(() => parseIngredientRegistry({ ingredients: [base, base] }), CatalogDataError);
+});
+
+// ---------------------------------------------------------------------------
+// T-069: package_options is registry-owned curated data, parsed with the
+// same accumulate-then-throw idiom as every other curated field — loud on
+// any defect, never a silent drop.
+// ---------------------------------------------------------------------------
+
+test('T-069: package_options must be present, and every option is validated in full', () => {
+  const base = {
+    id: 'x',
+    display_name: 'x',
+    aliases: [],
+    allergen_classes: [],
+    store_section: 'dry_goods',
+    density_g_per_ml: null,
+    per_item_weight_g: null,
+    package_options: [],
+  };
+  const validOption = {
+    id: 'x-1',
+    label_singular: 'bag',
+    label_plural: 'bags',
+    yield_amount: '3',
+    yield_unit: 'lb',
+    is_estimate: false,
+  };
+
+  // key omitted entirely: an authoring error, same as an omitted density key.
+  const { package_options: _omitted, ...missingKey } = base;
+  assert.throws(() => parseIngredientRegistry({ ingredients: [missingKey] }), CatalogDataError);
+
+  // [] is legal — an ingredient can be curated as "sold loose".
+  assert.doesNotThrow(() => parseIngredientRegistry({ ingredients: [base] }));
+
+  // a well-formed option is legal, and survives onto the parsed entry.
+  const withOption = parseIngredientRegistry({
+    ingredients: [{ ...base, package_options: [validOption] }],
+  });
+  const parsedEntry = withOption.get('x');
+  assert.ok(parsedEntry !== undefined);
+  assert.equal(parsedEntry.package_options.length, 1);
+  assert.deepEqual(parsedEntry.package_options[0], {
+    id: 'x-1',
+    label_singular: 'bag',
+    label_plural: 'bags',
+    yield_amount: { num: 3n, den: 1n },
+    yield_unit: 'lb',
+    is_estimate: false,
+  });
+
+  // duplicate option id within the same ingredient's list.
+  assert.throws(
+    () =>
+      parseIngredientRegistry({
+        ingredients: [{ ...base, package_options: [validOption, { ...validOption, label_singular: 'other' }] }],
+      }),
+    CatalogDataError,
+  );
+  // non-positive yield_amount.
+  assert.throws(
+    () =>
+      parseIngredientRegistry({
+        ingredients: [{ ...base, package_options: [{ ...validOption, yield_amount: '0' }] }],
+      }),
+    CatalogDataError,
+  );
+  // a bare float yield_amount is rejected, never coerced (Invariant 1).
+  assert.throws(
+    () =>
+      parseIngredientRegistry({
+        ingredients: [{ ...base, package_options: [{ ...validOption, yield_amount: 3 }] }],
+      }),
+    CatalogDataError,
+  );
+  // invalid yield_unit.
+  assert.throws(
+    () =>
+      parseIngredientRegistry({
+        ingredients: [{ ...base, package_options: [{ ...validOption, yield_unit: 'gallon' }] }],
+      }),
+    CatalogDataError,
+  );
+  // is_estimate not a real boolean.
+  assert.throws(
+    () =>
+      parseIngredientRegistry({
+        ingredients: [{ ...base, package_options: [{ ...validOption, is_estimate: 'false' }] }],
+      }),
+    CatalogDataError,
+  );
+  // empty label.
+  assert.throws(
+    () =>
+      parseIngredientRegistry({
+        ingredients: [{ ...base, package_options: [{ ...validOption, label_singular: '  ' }] }],
+      }),
+    CatalogDataError,
+  );
+  // package_options not an array at all.
+  assert.throws(
+    () => parseIngredientRegistry({ ingredients: [{ ...base, package_options: 'nope' }] }),
+    CatalogDataError,
+  );
+});
+
+test('T-069: the committed registry carries the curated package options — 104 options across 97 ingredients, and selectPackages can use them directly', () => {
+  let total = 0;
+  for (const entry of registry.values()) total += entry.package_options.length;
+  assert.equal(registry.size, 97);
+  assert.equal(total, 104);
+
+  const onion = registry.get('yellow_onion');
+  assert.ok(onion !== undefined);
+  assert.deepEqual(
+    onion.package_options.map((o) => o.id),
+    ['yellow_onion-1', 'yellow_onion-2'],
+  );
+  const bagOption = onion.package_options[1];
+  assert.ok(bagOption !== undefined);
+  assert.deepEqual(bagOption.yield_amount, { num: 3n, den: 1n });
+  assert.equal(bagOption.yield_unit, 'lb');
+  assert.equal(bagOption.is_estimate, false);
 });
 
 // ---------------------------------------------------------------------------

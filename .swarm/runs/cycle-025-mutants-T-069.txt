@@ -1,0 +1,36 @@
+
+=== M1: routes.ts passes [] to selectPackages again (the pre-cycle-25 defect) ===
+  gate exit=1 -> KILLED
+  T-069 GATE: 5 pass / 6 fail
+  failing checks: [P1a,P1b,P1c,P2a,P2b,P3b]
+    - P1a: lines with a non-null package_label: 0/22
+    - P1b: lines with is_estimate true: 0/22
+    - P1c: lines with non-zero expected_surplus: 0/22
+    - P2a: labels traceable to an option authored for that same ingredient: 0/0
+  server/src/routes.ts sha256 before: f1410a45b8934745cea076b87260dde38b8788c2ae3172b70e6461ccf6fc4709
+  server/src/routes.ts sha256 after : f1410a45b8934745cea076b87260dde38b8788c2ae3172b70e6461ccf6fc4709   RESTORED IDENTICALLY: true
+
+=== M2: catalog.ts parses package_options then discards them (the loader half) ===
+  gate exit=1 -> KILLED
+  T-069 GATE: 5 pass / 6 fail
+  failing checks: [P1a,P1b,P1c,P2a,P2b,P3b]
+    - P1a: lines with a non-null package_label: 0/22
+    - P1b: lines with is_estimate true: 0/22
+    - P1c: lines with non-zero expected_surplus: 0/22
+    - P2a: labels traceable to an option authored for that same ingredient: 0/0
+  domain/src/catalog.ts sha256 before: baab3c522ad0704e710d9a930153bec47550d4f7a144af7458626f9c1c9b6b77
+  domain/src/catalog.ts sha256 after : baab3c522ad0704e710d9a930153bec47550d4f7a144af7458626f9c1c9b6b77   RESTORED IDENTICALLY: true
+
+=== M3: routes.ts hardcodes is_estimate: false on the wire, labels untouched ===
+  gate exit=1 -> KILLED
+  T-069 GATE: 9 pass / 2 fail
+  failing checks: [P1b,P3a]
+    - P1b: lines with is_estimate true: 0/22
+    - P3a: estimate flag matches disk on 15/22 labelled lines -> frozen_peas: wire=false authored=true (frozen_peas-1) | 
+  server/src/routes.ts sha256 before: f1410a45b8934745cea076b87260dde38b8788c2ae3172b70e6461ccf6fc4709
+  server/src/routes.ts sha256 after : f1410a45b8934745cea076b87260dde38b8788c2ae3172b70e6461ccf6fc4709   RESTORED IDENTICALLY: true
+
+=== post-run tree check (must be clean of mutant residue) ===
+domain/src/catalog.ts | 123 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ server/src/routes.ts  |  12 +++--
+ 2 files changed, 130 insertions(+), 5 deletions(-)

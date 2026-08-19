@@ -1,0 +1,8 @@
+{
+  "applicable": false,
+  "files_scanned": [],
+  "collisions": [],
+  "load_errors": [],
+  "allowlisted": []
+}
+collision-scan: no classic scripts found — not applicable

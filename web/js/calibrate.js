@@ -28,6 +28,13 @@ import { navigate } from './router.js';
 
 const CARD_COUNT = 12;
 
+/**
+ * @typedef {Object} ReactionDef
+ * @property {'looks_good'|'not_for_me'|'never_recommend'|'too_much_work'} value
+ * @property {string} label
+ */
+
+/** @type {ReactionDef[]} */
 const REACTIONS = [
   { value: 'looks_good', label: 'Looks good' },
   { value: 'not_for_me', label: 'Not for me' },
@@ -35,6 +42,21 @@ const REACTIONS = [
   { value: 'too_much_work', label: 'Too much work' },
 ];
 
+/**
+ * Wire shape of one calibration card (`encodeCardView`, server/src/routes.ts).
+ * @typedef {Object} CardView
+ * @property {string} recipe_id
+ * @property {string} name
+ * @property {number} total_seconds
+ * @property {number} active_seconds
+ * @property {string} time_label
+ * @property {string} cuisine
+ * @property {string} protein
+ * @property {string} effort
+ * @property {number} dish_count
+ */
+
+/** @param {string} s */
 function titleCase(s) {
   if (!s) return '';
   return String(s)
@@ -43,6 +65,7 @@ function titleCase(s) {
     .join(' ');
 }
 
+/** @param {CardView} card */
 function cardMetaBadges(card) {
   const badges = [];
   if (card.cuisine) badges.push(createStatusBadge({ text: titleCase(card.cuisine) }));
@@ -60,7 +83,9 @@ function cardMetaBadges(card) {
  * @returns {() => void} cleanup
  */
 export function renderCalibrate(container) {
+  /** @type {ReturnType<typeof mountReactionGrid>|null} */
   let reactionGrid = null;
+  /** @type {ReturnType<typeof showUndoSnackbar>|null} */
   let snackbarHandle = null;
   let destroyed = false;
 
@@ -78,6 +103,7 @@ export function renderCalibrate(container) {
     }
   }
 
+  /** @param {(Node|string|null)[]} children */
   function screenShell(children) {
     return h('div', { class: 'screen' }, [
       h('div', { class: 'screen-header' }, [
@@ -96,6 +122,7 @@ export function renderCalibrate(container) {
     container.replaceChildren(screenShell([createLoadingState({ label: 'Loading calibration cards…' })]));
   }
 
+  /** @param {unknown} err */
   function drawError(err) {
     unmountGrid();
     const message = err instanceof ApiError ? err.message : 'Could not load calibration cards.';
@@ -134,12 +161,13 @@ export function renderCalibrate(container) {
     ]);
   }
 
-  /** @type {any[]} */
+  /** @type {CardView[]} */
   let cards = [];
-  /** @type {{recipe_id: string, reaction: string}[]} */
+  /** @type {{recipe_id: string, reaction: ReactionDef['value']}[]} */
   const reactions = [];
   let index = 0;
   let submitting = false;
+  /** @type {HTMLElement|null} */
   let saveErrorHost = null;
 
   function drawCard() {
@@ -173,6 +201,10 @@ export function renderCalibrate(container) {
     );
   }
 
+  /**
+   * @param {CardView} card
+   * @param {ReactionDef} reactionDef
+   */
   function react(card, reactionDef) {
     reactions.push({ recipe_id: card.recipe_id, reaction: reactionDef.value });
     const isLastCard = index === cards.length - 1;
