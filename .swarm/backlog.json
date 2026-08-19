@@ -447,7 +447,7 @@
         "T-001",
         "T-003",
         "T-004",
-        "T-005",
+        "T-034",
         "T-006",
         "T-007",
         "T-008",
@@ -488,7 +488,7 @@
       "status": "todo",
       "deps": [
         "T-001",
-        "T-005"
+        "T-034"
       ],
       "files_hint": [
         "web/index.html",
@@ -582,7 +582,7 @@
       "status": "todo",
       "deps": [
         "T-001",
-        "T-005"
+        "T-034"
       ],
       "files_hint": [
         "web/js/feedback.js"
@@ -909,7 +909,7 @@
       "effort": "M",
       "status": "todo",
       "deps": [
-        "T-005",
+        "T-034",
         "T-006",
         "T-020",
         "T-021",
@@ -1058,7 +1058,7 @@
       "effort": "S",
       "status": "todo",
       "deps": [
-        "T-005"
+        "T-034"
       ],
       "files_hint": [
         "tests/calibration.test.ts"
