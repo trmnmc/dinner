@@ -13,9 +13,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { startServer } from '../server/src/main.ts';
 import type { StartedServer } from '../server/src/main.ts';
@@ -154,6 +155,44 @@ async function createHousehold(base: string, overrides: HouseholdOverrides = {})
   const res = await api(base, 'POST', '/api/households', { body: householdPayload(overrides) });
   assert.equal(res.status, 201, JSON.stringify(res.json));
   return jStr(j(res.json)['household_id']);
+}
+
+// ---------------------------------------------------------------------------
+// T-058 fixture: a REAL shipped recipe (not a synthetic one), because the
+// acceptance criteria for the timer fix is specifically about the actual
+// catalog data — every recipe's timer duration must come verbatim from
+// `data/recipes/*.json`, never derived. Read directly off disk, same idiom
+// `tests/catalog.test.ts` uses for its registry fixture.
+// ---------------------------------------------------------------------------
+
+const dataDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'recipes');
+
+interface TimerFixture {
+  readonly recipeId: string;
+  readonly timerStepIndex: number;
+  readonly timerDurationSeconds: number;
+  readonly noTimerStepIndex: number;
+}
+
+/** r01.json has a timer step (index 2, 2100s) and timerless steps (0, 1) —
+ * see grep of `data/recipes/*.json` — read live rather than hardcoded so
+ * this test fails loudly, not silently, if the fixture data ever changes. */
+function loadTimerFixture(): TimerFixture {
+  const raw: unknown = JSON.parse(readFileSync(join(dataDir, 'r01.json'), 'utf8'));
+  const recipe = j(raw);
+  const steps = jArr(recipe['steps']).map((s) => j(s));
+  const withTimer = steps.find((s) => typeof s['timer_duration_seconds'] === 'number');
+  const withoutTimer = steps.find((s) => s['timer_duration_seconds'] === null);
+  assert.ok(withTimer, 'fixture recipe r01 must have at least one step with a timer');
+  assert.ok(withoutTimer, 'fixture recipe r01 must have at least one step without a timer');
+  const timerStep = withTimer as Json;
+  const noTimerStep = withoutTimer as Json;
+  return {
+    recipeId: jStr(recipe['id']),
+    timerStepIndex: jNum(timerStep['index']),
+    timerDurationSeconds: jNum(timerStep['timer_duration_seconds']),
+    noTimerStepIndex: jNum(noTimerStep['index']),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -952,6 +991,99 @@ test('cooking session: create, complete a step, prep, and full feedback loop', a
     assert.equal(badFeedback.status, 400);
     assert.equal(jStr(j(j(badFeedback.json)['error'])['code']), 'invalid_plan_meal_id');
     assert.ok(jNum(j(feedbackRes.json)['signals_updated']) > 0);
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('cooking session: step view exposes timer_duration_seconds honestly, and one tap starts a real timer (T-058 / KI-12)', async () => {
+  const ts = await startTestServer();
+  try {
+    const fixture = loadTimerFixture();
+    const householdId = await createHousehold(ts.base);
+
+    const sessionRes = await api(ts.base, 'POST', '/api/cooking/sessions', {
+      householdId,
+      body: { plan_meal_id: null, recipe_id: fixture.recipeId, target_servings: 2 },
+    });
+    assert.equal(sessionRes.status, 201, JSON.stringify(sessionRes.json));
+    let session = j(j(sessionRes.json)['session']);
+    const sessionId = jStr(session['session_id']);
+    let stepIndex = jNum(session['current_step_index']);
+
+    // Walk the session forward to the step that has a timer. Every step
+    // along the way must honestly report null — never a guessed duration.
+    while (stepIndex < fixture.timerStepIndex) {
+      const step = j(session['step']);
+      assert.equal(step['timer_duration_seconds'], null, `step ${String(stepIndex)} unexpectedly reports a timer`);
+      const stepRes = await api(ts.base, 'POST', `/api/cooking/sessions/${sessionId}/events`, {
+        householdId,
+        body: { payload: { kind: 'step_completed', step_index: stepIndex } },
+      });
+      assert.equal(stepRes.status, 200, JSON.stringify(stepRes.json));
+      session = j(j(stepRes.json)['session']);
+      stepIndex = jNum(session['current_step_index']);
+    }
+
+    const currentStep = j(session['step']);
+    assert.equal(jNum(currentStep['index']), fixture.timerStepIndex);
+    assert.equal(
+      jNum(currentStep['timer_duration_seconds']),
+      fixture.timerDurationSeconds,
+      'the wire duration must be the recipe-authoritative value, never derived from total-minus-active',
+    );
+    assert.deepEqual(jArr(session['timers']), [], 'no timer running yet');
+
+    // The one-tap start: the client sends ONLY step_index — never a
+    // duration or an end instant (routes.ts derives both server-side).
+    const beforeMs = Date.now();
+    const startRes = await api(ts.base, 'POST', `/api/cooking/sessions/${sessionId}/events`, {
+      householdId,
+      body: { payload: { kind: 'timer_started', step_index: fixture.timerStepIndex } },
+    });
+    const afterMs = Date.now();
+    assert.equal(startRes.status, 200, JSON.stringify(startRes.json));
+    const startedSession = j(j(startRes.json)['session']);
+    const timers = jArr(startedSession['timers']);
+    assert.equal(timers.length, 1);
+    const timer = j(timers[0]);
+    assert.equal(jNum(timer['step_index']), fixture.timerStepIndex);
+    assert.equal(jBool(timer['expired']), false);
+    // Reconstructed the instant it was created, so remaining_seconds must
+    // equal the authoritative duration exactly — not something the client
+    // could have supplied.
+    assert.equal(jNum(timer['remaining_seconds']), fixture.timerDurationSeconds);
+
+    const endsMs = Date.parse(jStr(timer['ends_at_utc']));
+    const impliedStartMs = endsMs - fixture.timerDurationSeconds * 1000;
+    assert.ok(
+      impliedStartMs >= beforeMs - 1000 && impliedStartMs <= afterMs + 1000,
+      'ends_at_utc must be an ABSOLUTE instant (server now + authoritative duration), never a remaining-seconds snapshot',
+    );
+
+    // A fresh GET re-reconstructs purely from the persisted log — the same
+    // absolute end instant must come back (kill-safety contract).
+    const getRes = await api(ts.base, 'GET', `/api/cooking/sessions/${sessionId}`, { householdId });
+    assert.equal(getRes.status, 200);
+    const revivedTimer = j(jArr(j(j(getRes.json)['session'])['timers'])[0]);
+    assert.equal(jStr(revivedTimer['ends_at_utc']), jStr(timer['ends_at_utc']));
+
+    // Starting a timer on a step that has none is a clean, specific 400 —
+    // never a fabricated timer and never a 500.
+    const badRes = await api(ts.base, 'POST', `/api/cooking/sessions/${sessionId}/events`, {
+      householdId,
+      body: { payload: { kind: 'timer_started', step_index: fixture.noTimerStepIndex } },
+    });
+    assert.equal(badRes.status, 400, JSON.stringify(badRes.json));
+    assert.equal(jStr(j(j(badRes.json)['error'])['code']), 'no_timer_on_step');
+
+    // An out-of-range step_index is a plain invalid_event_payload, not a 500.
+    const oobRes = await api(ts.base, 'POST', `/api/cooking/sessions/${sessionId}/events`, {
+      householdId,
+      body: { payload: { kind: 'timer_started', step_index: 9999 } },
+    });
+    assert.equal(oobRes.status, 400, JSON.stringify(oobRes.json));
+    assert.equal(jStr(j(j(oobRes.json)['error'])['code']), 'invalid_event_payload');
   } finally {
     await stopTestServer(ts);
   }

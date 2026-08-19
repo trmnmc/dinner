@@ -1349,13 +1349,15 @@
       "kind": "feature",
       "effort": "M",
       "priority": 2,
-      "status": "todo",
+      "status": "dropped",
       "model": "sonnet",
       "files_hint": [
         "data/ingredients.json",
         "tests/catalog.test.ts"
       ],
-      "acceptance": "Every purchasable ingredient carries package options so the grocery list can state a buyable amount with the generic fallback the SPEC names (\"one bunch\", \"one ~2 lb package\", \"two 15 oz cans\") and label it estimated. Conductor-measured cycle 12: 20 of 28 lines are non-integer fractions with package_label null — including \"1/2 count crushed tomatoes\" and \"473176473/64000000 ml honey\" (cycle-012-verify-lookfindings.txt lines 37-41). packaging.ts and its tests are already built and waiting on this data."
+      "acceptance": "Every purchasable ingredient carries package options so the grocery list can state a buyable amount with the generic fallback the SPEC names (\"one bunch\", \"one ~2 lb package\", \"two 15 oz cans\") and label it estimated. Conductor-measured cycle 12: 20 of 28 lines are non-integer fractions with package_label null — including \"1/2 count crushed tomatoes\" and \"473176473/64000000 ml honey\" (cycle-012-verify-lookfindings.txt lines 37-41). packaging.ts and its tests are already built and waiting on this data.",
+      "dropped_cycle": 24,
+      "notes": "\n\nDROPPED at cycle 24 as a DUPLICATE, not as unwanted work. T-044 (\"No package options exist, so 20 of 28 grocery lines are unbuyable fractions\", filed cycle 12) and T-065 (\"Catalog ships zero package options...\", filed cycle 23) are the same defect found from two ends. Its data half was DELIVERED this cycle under T-065 (104 options across all 97 ingredients, gate D1-D6 6/6) and its live half is now tracked by T-069. Nothing T-044 asked for is lost; it is carried by T-065 + T-069."
     },
     {
       "attempts": 0,
@@ -1655,7 +1657,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-019"
       ],
@@ -1675,7 +1677,9 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Conductor-found at cycle 15 by grepping for producers of the timer_started event: there are none anywhere in web/ or in server business logic — only server/src/routes.ts:1418, the validator that would accept one. Root cause is a contract gap the T-019 builder documented in cook.js's header rather than papering over: encodeStepView (routes.ts:1239) never emits the step's timer_duration_seconds nor any has-a-timer flag, so the client cannot honestly offer 'start timer' — deriving a duration from total minus active would be WRONG for several shipped recipes, and a wrong kitchen timer is worse than none. Fix is two-sided: add timer_duration_seconds to encodeStepView, then add the one-tap start action to cook.js. Cycle 15's gate proved rendering, ticking, expiry and acknowledgement all work correctly once a timer exists (C12-C14) — this is purely the missing way IN. Same shape as T-055 (inventory confirmation questions unreachable)."
+      "notes": "Conductor-found at cycle 15 by grepping for producers of the timer_started event: there are none anywhere in web/ or in server business logic — only server/src/routes.ts:1418, the validator that would accept one. Root cause is a contract gap the T-019 builder documented in cook.js's header rather than papering over: encodeStepView (routes.ts:1239) never emits the step's timer_duration_seconds nor any has-a-timer flag, so the client cannot honestly offer 'start timer' — deriving a duration from total minus active would be WRONG for several shipped recipes, and a wrong kitchen timer is worse than none. Fix is two-sided: add timer_duration_seconds to encodeStepView, then add the one-tap start action to cook.js. Cycle 15's gate proved rendering, ticking, expiry and acknowledgement all work correctly once a timer exists (C12-C14) — this is purely the missing way IN. Same shape as T-055 (inventory confirmation questions unreachable).",
+      "verified_cycle": 24,
+      "verification": "Conductor gate cycle-024-gate-T-058.mjs rev2, 15/15 (.swarm/runs/cycle-024-verify-T-058.txt). Every expected duration re-read off data/recipes/*.json by the gate itself; no domain module supplied an expectation. Failability proven: M1 (field deleted) and M2 (derived as total-minus-active) each killed by T2+T3+T10b, routes.ts sha256-restored identically (cycle-024-mutants-T-058.txt)."
     },
     {
       "id": "T-059",
@@ -1829,9 +1833,10 @@
       ],
       "route_class": "core",
       "model": "sonnet",
-      "attempts": 0,
+      "attempts": 1,
       "created_cycle": 23,
-      "notes": "FOUND BY THE CYCLE-23 T-017 GATE, not by a builder. domain/src/packaging.ts is fully implemented and unit-tested (package selection, integer package counts, generic-fallback is_estimate flagging, surplus arithmetic), and routes.ts encodes package_label / is_estimate / expected_surplus onto every grocery line. But data/ingredients.json carries only id, display_name, aliases, allergen_classes, store_section, density_g_per_ml, per_item_weight_g for all 97 ingredients - NO package options at all. Conductor-measured on a live 22-line grocery list for a 3-meal plan: 0 lines estimated, 0 lines with non-zero surplus, package_label null on every line checked. Consequence: three separate clauses of T-017 acceptance are unrenderable, and D-4 named package-size selection and leftover optimization as two of the three differentiators prior-art scouting found UNOCCUPIED across all five competitor products. The moat is written but has no data behind it. This is data authoring plus a validation gate, not new engine code - the engine is done. Add the catalog gate check that every required ingredient has >=1 package option so this cannot silently regress (same shape as the existing ingredient-id/allergen-class cross-check, DESIGN.md invariant 5)."
+      "notes": "FOUND BY THE CYCLE-23 T-017 GATE, not by a builder. domain/src/packaging.ts is fully implemented and unit-tested (package selection, integer package counts, generic-fallback is_estimate flagging, surplus arithmetic), and routes.ts encodes package_label / is_estimate / expected_surplus onto every grocery line. But data/ingredients.json carries only id, display_name, aliases, allergen_classes, store_section, density_g_per_ml, per_item_weight_g for all 97 ingredients - NO package options at all. Conductor-measured on a live 22-line grocery list for a 3-meal plan: 0 lines estimated, 0 lines with non-zero surplus, package_label null on every line checked. Consequence: three separate clauses of T-017 acceptance are unrenderable, and D-4 named package-size selection and leftover optimization as two of the three differentiators prior-art scouting found UNOCCUPIED across all five competitor products. The moat is written but has no data behind it. This is data authoring plus a validation gate, not new engine code - the engine is done. Add the catalog gate check that every required ingredient has >=1 package option so this cannot silently regress (same shape as the existing ingredient-id/allergen-class cross-check, DESIGN.md invariant 5).\n\nCYCLE 24 GATE RESULT — 8 pass / 3 fail (.swarm/runs/cycle-024-verify-T-065.txt). The DATA half of the acceptance is DONE and proven: all 97 ingredients carry >=1 well-formed package option (104 options, 0 malformed, 0 duplicate ids), all 48 ingredient ids any shipped recipe can require resolve, and the is_estimate flag is used in both directions (32 estimated / 72 exact). The LIVE half FAILS: on a real 3-meal plan the grocery endpoint returns 22 measured lines with package_label null on 22/22, is_estimate true on 0/22 and non-zero expected_surplus on 0/22. Root cause is NOT the data: server/src/routes.ts:1125 calls selectPackages(..., [], ...) with a hardcoded empty options array, and domain/src/catalog.ts never parses a package_options field at all (grep for \"package\" in catalog.ts returns nothing). Both files were outside this item's file scope. CONDUCTOR SCOPING ERROR, recorded as such: I composed the wave from this item's stored files_hint (data/ingredients.json, tests/packaging.test.ts) and from its own note that \"the engine is done\", without checking the catalog->routes seam; routes.ts was in the concurrent T-058 builder's scope, so the wiring could not have been added this cycle in any case. The authored data is real, verified, committed value that stays. The wiring is filed as T-069, and this item is blocked on it.",
+      "blocked_by": "T-069"
     },
     {
       "id": "T-066",
@@ -1904,6 +1909,53 @@
       "attempts": 0,
       "created_cycle": 23,
       "notes": "FROM THE CYCLE-23 QA LOOK PASS — DEGRADED (browserless: no Chromium and no browse CLI on this host, so nothing below is a judgment about rendered pixels). Six findings consolidated into ONE item because they are all small edits to a single file; filing eight separate items would have pushed the live backlog past the ~30 cap for no gain. (1) SAFE-STOP TENSE, certain: prep.js:201 renders \"Safe to stop right now, during step 1.\" — phrasing lifted verbatim from cook.js:187 where \"right now\" is true mid-session. On the prep screen the parent has not started cooking, so it asserts a state that is not happening. Wants a pre-cook phrasing for kind \"now\". (2) \"PAUSE ANYWHERE\" OVERCLAIM, real but LATENT — conductor-verified both ways. The agent is right that prep.ts:154-158 derives first_non_interruptible_step from requires_continuous_attention ALONE, while safe_to_pause_before/during/after and maximum_pause are independent fields (recipe.ts:117-125), so a null does NOT prove \"pause anywhere\". BUT the conductor also checked the shipped data: across all 35 steps in the 6-recipe catalog, ZERO steps are not-continuous-attention yet not fully pausable, so the copy is not wrong for any recipe that exists today. It becomes wrong the first time such a step is authored, and D-2 plans a 30-recipe catalog. Fix the copy to claim only what the null proves, and/or add the invariant to the catalog validation gate. Recorded as latent rather than active so nobody re-derives this at 5am. (3) DECORATIVE BADGE, certain: prep.js:446 renders a static \"Prep plan\" status badge restating the h1 — the rendered screen opens \"PrepPrep planEverything to line up…\". Elsewhere badges carry real status (cook.js \"Paused\", plan.js \"Safe to pause anytime\"); a decorative one dilutes the pattern and contradicts tokens.css's \"nothing decorating harder than the numbers\". (4) JARGON, certain: prep.js:428 empty state says \"This slot doesn't have an active dinner in your current plan.\" plan.js keeps \"slot\" internal and says \"Dinner N of 3\" to users. (5) LIVE-REGION ROLES, certain: prep.js:301 and :317 put role=\"status\" on panels rendered ONCE at mount, copied from cook.js:308,313 where those panels update during a live session (and where the attention warning is role=\"alert\", not \"status\"). On static content they do nothing useful and some screen readers announce them on insertion. (6) OPTIONAL LIST UNLABELLED, certain: prep.js:242-243 introduces the optional ingredients with a bare <p> subhead over an unlabelled <ul>, so a screen-reader user navigating by list meets a second ingredient list with nothing distinguishing it from the required one — blurring exactly the must-have/nice-to-have split the code comment says must never blur. DELIBERATELY NOT FILED, with reasons: the \"N count\" unit rendering (\"Lemons 3 count\") is stilted but is the SAME convention grocery.js:334 uses, so a prep-only fix would create the cross-screen divergence this pass exists to prevent — it belongs in a shared helper or nowhere; and the raw 2px icon margins at prep.css:147,174 are pre-existing shared debt identical to cook.css:55,78 and plan.css:41, so the only accurate local fix is amending prep.css's own header comment, which currently claims \"no raw px\". The pass found NO token violations otherwise: every colour, size, radius and duration in prep.css is a var() token, and the section/list/warning vocabulary deliberately reuses grocery/cook/plan rather than inventing new patterns. STILL UNVERIFIED BY ANYONE (what a browser pass would need): real wrapping of long ingredient names against the nowrap quantity column, rendered contrast of the danger-bordered attention panel in both colour schemes, true 44px hit areas on a small viewport, whether six stacked sections scan as a checklist or a wall at real phone height, and screen-reader behaviour on load."
+    },
+    {
+      "id": "T-069",
+      "title": "Authored package options never reach the grocery list — catalog.ts drops them and routes.ts passes []",
+      "kind": "fix",
+      "priority": 1,
+      "value": "H",
+      "effort": "M",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "domain/src/catalog.ts",
+        "server/src/routes.ts",
+        "tests/catalog.test.ts"
+      ],
+      "acceptance": "A grocery list for a real 3-meal plan, fetched from GET /api/plans/:planId/grocery, contains at least one line with a non-null package_label, at least one is_estimate line, and at least one line with non-zero expected_surplus — sourced from the package options now authored in data/ingredients.json, not from a fixture.",
+      "packages": [],
+      "must_haves": [
+        "Consolidated grocery list"
+      ],
+      "dod": [
+        5
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 24,
+      "notes": "FOUND BY THE CYCLE-24 T-065 GATE. data/ingredients.json now carries 104 package options across all 97 ingredients (cycle 24, verified 6/6 on the data half). They are inert: IngredientRegistryEntry / parseIngredientRegistry in domain/src/catalog.ts have no package_options field, so the loader silently discards them, and server/src/routes.ts:1125 passes a hardcoded [] to selectPackages regardless. Measured live this cycle: 22/22 grocery lines have package_label null, 0 estimated, 0 with surplus. This is the ONLY thing standing between the authored catalog and the three differentiator clauses of T-017/T-065 — packaging.ts is fully implemented and unit-tested, and D-4 named package-size selection and leftover optimisation as two of the three prior-art-unoccupied differentiators. Two edits: teach the registry parser the field, then pass the entry's options instead of []. T-065 is blocked on this."
+    },
+    {
+      "id": "T-070",
+      "title": "Start-timer control renders \"Start NaN minutes timer\" if the duration is ever absent, and its label is ungrammatical",
+      "kind": "fix",
+      "priority": 3,
+      "value": "L",
+      "effort": "S",
+      "status": "todo",
+      "deps": [],
+      "files_hint": [
+        "web/js/cook.js"
+      ],
+      "acceptance": "The start-timer control renders only when the step's timer duration is a positive finite number, and never renders a label containing NaN, undefined or null. Its copy reads as English a parent would say out loud.",
+      "packages": [],
+      "model": "sonnet",
+      "attempts": 0,
+      "created_cycle": 24,
+      "notes": "FOUND BY THE CYCLE-24 FAILABILITY RUN, not by a test. cook.js:573 gates the control on `step.timer_duration_seconds !== null`. Under mutant M1 (the field deleted from encodeStepView) the value is `undefined`, which is `!== null`, so the control rendered anyway with the label \"Start NaN minutes timer\" (cycle-024-mutants-T-058.txt). NOT a shipped defect — the field is present on every payload today, and the cycle-24 gate proves it — so this is hardening, not a bug fix: a finite-number check instead of a null check. Second, smaller point in the same three lines: the label reads \"Start 35 minutes timer\"; \"Start 35-minute timer\" is what a person says. KI-11 is why neither was caught statically — tsconfig excludes web/**, so the JSDoc `number|null` on StepView is never enforced."
     }
   ]
 }

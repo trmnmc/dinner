@@ -3902,3 +3902,197 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787131788,"next_wakeup_at":1787131878,"pid":2452477,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.75,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":411729,"window_cost_usd":0.7066764999999999,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":37287726,"projected_depletion_at":1787144280,"last_probe_ts":1787130437,"last_real_probe_ts":1787130437,"probe_failures":0,"probe_note":"Cycle 23 REAL probe. Window RESET at 09:00Z confirmed: window_tokens 141,578,956 -> 411,729. rho 0.75 => gear_target 2; hysteresis from gear 1 lands applied gear 2. Governor ENGAGED this probe (weekly.ok true) — weekly_used 100% / opus_used 100% at week_elapsed 31.01% => heat 3.22, ceiling 2, promote_blocked. Ceiling 2 and gear_target 2 agree, so the governor is not the binding constraint this cycle but WOULD block any promotion above 2. KI-2 zero-envelope blind spot did NOT recur this probe.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":31.01,"weekly_heat":3.22,"opus_heat":3.22,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":1,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+---
+
+## cycle 24 — 2026-08-19T09:37Z → 10:40Z · BUILD · T-058 verified, T-065 half-landed
+
+**clock** 1787132242 at open, stop_at 1787140800 (12:00:00Z) — 2 h 23 m of run left, so
+build-wave (2700 s budget) admitted with room. **probe** REAL, `probe_ok: true`:
+window_tokens 411,729 → **27,509,034** since the 09:00Z reset, ρ **1.10** → gear_target 2,
+applied **gear 2** (no hysteresis move). Governor engaged — weekly 100 % / opus 100 % at
+31.31 % week-elapsed, heat 3.19, ceiling 2, promote blocked; ceiling and gear_target agree,
+so the governor is not binding this cycle but would veto any promotion. Projected depletion
+1787139985 (**11:46Z**) lands ~14 min BEFORE stop_at — the run is expected to graze the
+window edge right at wrap-up. Control channel: 0 pending, 0 applied, no injections.
+Tree clean at orient; nothing to salvage.
+
+Effective wave size = min(k_current 5, gear cap 2, hard max 5) = **2**. Dispatched as two
+DIRECT foreground Agent calls, the documented headless fallback (Workflow is review-gated
+in `-p` sessions), foreground specifically because of **KI-4** — the pacer guillotines
+background tasks at 600 s and both agents ran longer than that (712 s and 488 s). An
+in-flight marker was committed BEFORE dispatch (a1a5968).
+
+### T-058 — kitchen timers are reachable. KI-12 closed.
+
+The item was two-sided and both sides landed: `encodeStepView` now emits the recipe's
+authoritative `timer_duration_seconds`, `session.timers[].step_index` is exposed so the
+client can tell "already running" from "not started", and `cook.js` renders one tap whose
+entire payload is `{kind:'timer_started', step_index}` — the server derives the id, the
+duration and the absolute `ends_at_utc` itself.
+
+I authored the gate after the builder returned; it re-reads **every** expected duration
+from `data/recipes/*.json` off disk, so no domain module supplies an expectation and a bug
+inside `cooking.ts` could not make it pass.
+
+VERIFICATION EVIDENCE — `.swarm/runs/cycle-024-verify-T-058.txt` (15/15):
+
+```
+PASS T2  timer_duration_seconds on the wire matches the authored recipe value on all 16 walked steps
+  discriminating steps (timer != unattended, or timer != total-active): 3
+    11111111 step#2: timer=2100s unattended=1980s total-active=1980s
+PASS T3  discriminating step: wire=2100s equals authored 2100s and is NOT total-active (1980s)
+PASS T4  POST {kind:'timer_started', step_index:2} -> 200, 1 timer(s) — client supplied no duration and no instant
+PASS T6  ends_at_utc=2026-08-19T10:32:32.336Z is an absolute instant ≈ server-now + 2100s
+PASS T8  no-timer step -> 400, out-of-range step -> 400 — refused as 4xx, never a 500 and never a fabricated timer
+PASS T9  after process kill + reopen of the same db: ends_at_utc identical, remaining 2100s -> 2099s
+PASS T10 the rendered screen offers ONE control labelled "Start 35 minutes timer"
+PASS T10b the control names the authored duration: label "Start 35 minutes timer" contains 35 (from 2100s on disk)
+PASS T11 after one tap: 1 clock node reading "35:00", accessible name "35 minutes remaining", "Timers" heading present
+PASS T12 the start control is withdrawn once the timer runs (no second timer for the same step)
+PASS T13 the tap reached the SERVER: 1 timer at step_index 2 — read back over HTTP, not from screen state
+T-058 GATE: 15 pass / 0 fail
+```
+
+**T3 is the check that matters most** and it exists because the item's notes forbade one
+specific wrong implementation: deriving the duration from total-minus-active. A gate that
+only compared the wire value to the recipe value would pass on a catalog where the two
+coincide — and on 5 of the 8 shipped timer steps they DO coincide. So T3 first proves the
+catalog can tell them apart (3 steps where timer ≠ total−active) and only then pins the
+wire value on exactly those steps.
+
+**Failability, proven rather than assumed** — `.swarm/runs/cycle-024-mutants-T-058.txt`:
+
+```
+=== M1: delete timer_duration_seconds from encodeStepView (the pre-fix world) ===
+  KILLED BY: [T2,T3,T10b]     - T10b: label "Start NaN minutes timer"
+=== M2: derive the duration as total-minus-active instead of reading the authored value ===
+  KILLED BY: [T2,T3,T10b]     - T10b: label "Start 33 minutes timer" (authored 35)
+routes.ts sha256 before: 908ff754bd55a3e0ef09af550a95394baae53bf7c6dde784108634ed526c2386
+routes.ts sha256 after restore: 908ff754…c2386   RESTORED IDENTICALLY: true
+```
+
+The first mutation run found a hole in **my own gate**, not in the product: M1 and M2 were
+killed only by T2 and T3, while T10–T13 passed under both. That proved the client half of
+the gate was not exercising the new field at all — the clock T11 reads comes from the
+server's timer, which consults the recipe directly, so `cook.js` could have rendered
+"Start NaN minutes timer" and the gate would have shrugged. I added **T10b**, which pins
+the control's own label to the duration recomputed from disk, and re-ran both mutants;
+both are now killed on three independent axes. That is also how T-070 was found.
+
+### T-065 — the data landed, the product did not. Gate FAILED 3/3 on the half a user sees.
+
+VERIFICATION EVIDENCE — `.swarm/runs/cycle-024-verify-T-065.txt` (8 pass / 3 fail):
+
+```
+=== D — data half (sentence 1) ===
+PASS D2  ingredients with zero package options: 0
+PASS D3  malformed options: 0 (104 distinct option ids)
+PASS D5  48 distinct ingredient ids required across shipped recipes; unresolved/optionless: 0
+PASS D6  is_estimate split — 32 estimated / 72 exact of 104
+=== L — live half (sentence 2): GET /api/plans/:planId/grocery ===
+PASS L1  grocery 200, 7 sections, 22 measured lines (+3 to-taste)
+FAIL L2  lines with a non-null package_label: 0/22
+FAIL L3  lines with is_estimate true: 0/22
+FAIL L4  lines with non-zero expected_surplus: 0/22
+    honey        label=null est=false surplus={"n":"0","d":"1"}
+    olive oil    label=null est=false surplus={"n":"0","d":"1"}
+```
+
+The acceptance is two sentences and I gated both. Sentence 1 — the data — is **done and
+proven**: 104 real supermarket package options across all 97 ingredients, none malformed,
+no duplicate ids, every one of the 48 ingredient ids any shipped recipe can require
+resolves, and `is_estimate` used in both directions. Sentence 2 says "**A grocery list**
+for a real plan then contains at least one line with a non-null `package_label`", and the
+grocery list is byte-for-byte unchanged: 22 measured lines, 0 labelled, 0 estimated, 0 with
+surplus.
+
+The builder found the cause itself and reported it honestly rather than claiming the item:
+`server/src/routes.ts:1125` passes a hardcoded `[]` to `selectPackages`, and
+`domain/src/catalog.ts` never parses a `package_options` field at all — I confirmed both
+myself (`grep package domain/src/catalog.ts` returns nothing). The authored data is inert.
+Its own return said so plainly, and it proved its acceptance at the domain layer by
+hand-assembling scale → aggregate → subtractInventory → selectPackages. That is a real
+result but it is a **different claim** from the one the acceptance makes, and the gate
+scores the acceptance. **T-065 → todo, attempts 1**, blocked on the new T-069.
+
+**This one is my error, and it is recorded as D-33.** I composed the wave from the item's
+stored `files_hint` and from its own note that "the engine is done — this is data authoring
+plus a validation gate". The engine *was* done; the seam between the catalog loader and the
+route was not, and I did not check before scoping. `routes.ts` was in the concurrent
+builder's scope anyway, so the wiring could not have landed this cycle in any case — but
+had I checked, T-065 would not have been dispatched as if it could complete. The lesson is
+narrow and stated as such: derive a build item's file scope from the observable its
+acceptance names, not from the stored hint.
+
+### harness faults, both mine, both corrected rather than argued around
+
+Neither gate ran clean first time, and in both cases the product was right and my check was
+wrong. Every revision is preserved unmodified beside its successor with its own output.
+
+- **T-065 rev1** read the new plan's id as `plan.plan.id`; the wire key is
+  `plan.plan.plan_id`, so the grocery URL became `/api/plans/undefined/grocery` and L1's
+  404 proved nothing. rev2 fixed the key and then found the list shape was
+  `body.list.sections[].lines[]` with surplus nested at
+  `line.provenance.expected_surplus` as a rational `{n,d}` — rev3 walks the real structure.
+  Both corrections were diagnosed by dumping the live response, not guessed.
+- **T-058 rev1** failed T11 on `/\b35:[0-5]\d\b/`. The screen renders
+  `…fork-tender.35:00Cancel timer`, so the TRAILING `\b` sits between "0" and "C" — both
+  word characters, no boundary. **This is the same fault cycle 23 hit at R17 and I
+  repeated it.** rev2 replaces the regex with a strictly stronger structural check: the
+  clock must live in the `cook-timer__clock` node, the row must carry an accessible name
+  stating the remaining minutes, and the "Timers" heading must be present. A product that
+  rendered the clock into the wrong node passed rev1 and fails rev2.
+
+Recording it twice in two cycles is the point: the shim concatenates adjacent text nodes
+with no separator, so **word-boundary anchors are unusable against shim text** — assert
+structurally or on the accessible name. That belongs in the playbook at wrap-up.
+
+### post-merge checks
+
+`collision-scan` → `applicable: false` ("no classic scripts found") — the client is ES
+modules throughout, so the gate does not apply here; recorded, not counted as a pass.
+The qa-verify **look pass was NOT run** and is reported as not-run, not as passed: Workflow
+is review-gated in this headless session. What I did run against the one changed
+user-visible file is the T-058 gate's live drive of the real `cook.js` screen plus a full
+dump of its rendered text (`cycle-024-diag-cook.txt`), and a read of the diff for craft:
+the new control reuses `stack stack--tight`, `card__eyebrow`, `btn btn--secondary`, invents
+no token, no colour and no CSS, and is a real `<button type="button">` so focus and
+keyboard reachability come free. That is narrower than a look pass over the screen's copy
+and states, and T-061 still owns that surface.
+
+### bookkeeping
+
+**wave autotune**: 0 reverted merges, 1 failed verify. That is neither the clean branch
+(needs zero failed verifies) nor the shrink branch (needs a revert or ≥ 2 failed verifies),
+so "any other outcome" applies — `wave_streak` 1 → **0**, `k_current` stays **5**. The gear
+cap of 2 is what actually binds anyway. **burn attribution**: window_tokens delta
+411,729 → 27,509,034 is positive (no reset this cycle), credited to cycle 23's target →
+`window_tokens_attributed` **27,509,034**. `cycles_since_recycle` 1 → **2**.
+`consecutive_no_value` stays **0** (one verified item).
+
+**known_issues**: **KI-12 → RESOLVED** (the first known_issue closed since KI-9 at cycle
+19). Still open: KI-1, KI-2, KI-3, KI-4, KI-6 — all five SWARM-side and barred from repair
+by hard rule 5 — and **KI-11**, the only open target-side one (no client JavaScript has
+ever been typechecked). KI-11 earned another mention this cycle: the `!== null` guard that
+T-070 records would have been caught statically by the JSDoc `number|null` on `StepView` if
+`tsconfig.json` did not exclude `web/**`.
+
+**backlog**: 70 items — 28 done, 33 todo, 8 dropped, 1 blocked. Three changes beyond the
+two gated items. **T-069** filed p1 (wire package options through `catalog.ts` + `routes.ts`
+— the one thing between the authored catalog and three differentiator clauses).
+**T-070** filed p3 (the `NaN` label hardening plus the "Start 35 minutes timer" →
+"Start 35-minute timer" copy nit, both in the same three lines). **T-044 dropped as a
+duplicate** — it and T-065 are the same defect filed from two ends eleven cycles apart;
+its data half was delivered this cycle and its live half is now T-069, so nothing it asked
+for is lost.
+
+result: **ONE item verified — T-058 — and one known_issue closed.** Twenty-eight verified
+of 70 filed. The night's most valuable single artifact may still be the T-065 half-landing:
+104 package options are now authored and proven correct, and the exact two-line seam that
+keeps them from reaching a user is identified, measured and filed.
+
+next: **T-069** at cycle 25 — it is a small, precisely-scoped fix that converts work already
+done and already verified into the first user-visible rendering of the product's named
+differentiator, and it unblocks T-065 behind it. Cycle 25 is also a `cycle % 5 == 0` full
+SPEC re-read plus backlog hygiene.

@@ -74,6 +74,7 @@ import {
   attentionWarnings as domainAttentionWarnings,
   nextSafeStop as domainNextSafeStop,
   reconstructSession,
+  timerForStep,
 } from '../../domain/src/cooking.ts';
 import type { AttentionWarning, CookingSessionView, NextSafeStop } from '../../domain/src/cooking.ts';
 import { derivePrepPlan } from '../../domain/src/prep.ts';
@@ -1268,6 +1269,12 @@ function encodeStepView(step: RecipeStep): Record<string, unknown> {
     time_label: time.combined_label,
     requires_continuous_attention: step.requires_continuous_attention,
     safe_to_pause_after: step.safe_to_pause_after,
+    // T-058 (KI-12 fix): the ONLY honest source for "does this step have a
+    // timer, and for how long" — `RecipeStep.timer_duration_seconds`
+    // authored on the recipe itself. null = no timer on this step. Never
+    // derive a duration from total_seconds − active_seconds client-side or
+    // server-side; that is wrong for several shipped recipes.
+    timer_duration_seconds: step.timer_duration_seconds,
   };
 }
 
@@ -1350,6 +1357,10 @@ function encodeSessionView(view: CookingSessionView): Record<string, unknown> {
     step: view.current_step === null ? null : encodeStepView(view.current_step),
     timers: view.timers.map((t) => ({
       timer_id: t.timer.id,
+      // T-058: exposed so the client can tell "this step's timer is already
+      // running" apart from "no timer started yet" without guessing —
+      // needed to hide the one-tap start control once it has been used.
+      step_index: t.timer.step_index,
       label: t.timer.label,
       ends_at_utc: t.timer.ends_at_utc,
       remaining_seconds: t.remaining_seconds,
@@ -1482,6 +1493,44 @@ function validateEventPayload(v: unknown): CookingEventPayload | null {
   }
 }
 
+/**
+ * T-058 (KI-12 fix): the client's ONLY honest way to start a timer is to say
+ * which step it is on — `{ kind: 'timer_started', step_index }`. Everything
+ * else about the persisted `CookingTimer` (id, absolute `started_at_utc` /
+ * `ends_at_utc`, `duration_seconds`) is derived HERE, server-side, from the
+ * step's authoritative `timer_duration_seconds` and the server's own clock
+ * (`now`, already computed by the caller) — never from anything the client
+ * sends. This is what keeps a client from ever inventing a duration or an
+ * end instant (non-negotiable) while still producing a `CookingTimer` that
+ * satisfies the frozen `CookingEventPayload` shape (`domain/src/recipe.ts`)
+ * unchanged. `timerForStep` (`domain/src/cooking.ts`) is the same pure
+ * builder the domain layer already uses to turn a step + instant into a
+ * `CookingTimer`; a step with `timer_duration_seconds: null` is rejected
+ * here as a 400 `no_timer_on_step` before `timerForStep` is even called, so
+ * a wrong or fabricated timer is never constructed. (`timerForStep` itself
+ * can also throw a `CookingError`, e.g. `malformed_duration` for corrupt
+ * catalog data; the caller wraps this whole call so that becomes a 400
+ * too, never an unhandled 500.)
+ *
+ * Any other event kind is unaffected and still goes through
+ * `validateEventPayload` as before.
+ */
+function resolveEventPayload(v: unknown, recipe: Recipe, now: string): CookingEventPayload | null {
+  if (isPlainObject(v) && v['kind'] === 'timer_started') {
+    const stepIndex = v['step_index'];
+    if (typeof stepIndex !== 'number' || !Number.isInteger(stepIndex) || stepIndex < 0 || stepIndex >= recipe.steps.length) {
+      return null;
+    }
+    const step = recipe.steps[stepIndex] as RecipeStep;
+    if (step.timer_duration_seconds === null) {
+      throw new HttpError(400, 'no_timer_on_step', 'This step has no timer to start.');
+    }
+    const timer = timerForStep(step, randomUUID(), now);
+    return { kind: 'timer_started', timer };
+  }
+  return validateEventPayload(v);
+}
+
 function handlePostSessionEvent(deps: Deps, ctx: JsonRouteContext): RouteResult {
   const household = requireHousehold(deps.db, ctx.householdId as string);
   const sessionId = ctx.params['id'] as string;
@@ -1493,14 +1542,20 @@ function handlePostSessionEvent(deps: Deps, ctx: JsonRouteContext): RouteResult 
   if (recipe === undefined) throw new HttpError(500, 'internal_error', 'Session references an unknown recipe.');
 
   const body = bodyObject(ctx);
-  const payload = validateEventPayload(body['payload']);
+  const now = new Date().toISOString();
+  let payload: CookingEventPayload | null;
+  try {
+    payload = resolveEventPayload(body['payload'], recipe, now);
+  } catch (err) {
+    if (err instanceof CookingError) throw new HttpError(400, err.code, err.message);
+    throw err;
+  }
   if (payload === null) throw new HttpError(400, 'invalid_event_payload', 'payload is not a recognised cooking event.');
   if (payload.kind === 'session_started') {
     throw new HttpError(400, 'invalid_event_kind', 'session_started cannot be posted after session creation.');
   }
 
   const lastSeq = (events[events.length - 1] as CookingEvent).seq;
-  const now = new Date().toISOString();
   const candidateEvent: CookingEvent = {
     id: randomUUID(),
     household_id: household.id,

@@ -1,0 +1,16 @@
+listening on http://127.0.0.1:45135
+start control: "Start 35 minutes timer"
+
+--- FULL screen text after the tap (729 chars) ---
+CookingStep 3 of 4If you close this or get pulled away, reopening it lands you right back here.Roast for 35 minutes, flipping once halfway, until the chicken reaches 165F/74C and the potatoes are fork-tender.35 min total, 2 min hands-on2 minutes hands-on, 33 minutes unattended.Safe to stop right now, during step 3. No time limit on the pause.TimersRoast for 35 minutes, flipping once halfway, until the chicken reaches 165F/74C and the potatoes are fork-tender.35:00Cancel timerIf you get pulled awayThe chicken and potatoes are still roasting on their own — check doneness with a thermometer when you're back; if it's run well past 35 minutes, just confirm the chicken is at least 165F before serving.Pause cookingStop cooking
+
+--- regex probes ---
+  /\b35:[0-5]\d\b/  -> false    (the T11 assertion)
+  /35:[0-5]\d/       -> true
+  /\d{1,2}:[0-5]\d/  -> [ '35:00' ]
+  contains "Timers"  -> true
+  contains "Cancel timer" -> true
+
+--- clock nodes found structurally: 1 ---
+  class=cook-timer__clock num text="35:00"
+  row aria-label="Roast for 35 minutes, flipping once halfway, until the chicken reaches 165F/74C and the potatoes are fork-tender.: 35 minutes remaining"

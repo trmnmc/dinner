@@ -11,13 +11,38 @@
  * purchase_requirement, exactly; generic fallbacks are flagged as ESTIMATES;
  * cross-dimension package yields convert only through curated values and are
  * otherwise excluded with the exact refusal.
+ *
+ * T-065: the catalog itself (`data/ingredients.json`) must carry curated
+ * `package_options` data for the engine above to have anything to select
+ * from. `IngredientRegistryEntry` (catalog.ts) does not parse this field —
+ * it is authored data consumed directly off disk here, mirroring the exact
+ * idiom `tests/aggregate.test.ts` and `tests/routes.test.ts` use to read
+ * `data/ingredients.json` / `data/recipes/*.json` live rather than via a
+ * hardcoded fixture. Two things are proved from here to the end of the
+ * file: (1) a standalone catalog-validation gate — every one of the 97
+ * curated ingredients carries at least one well-formed `package_options`
+ * entry, and every ingredient any shipped recipe can require resolves to
+ * one — the shape `catalog.ts`'s ingredient-id / allergen-class cross-check
+ * follows, so a future data edit that drops options cannot silently
+ * regress; and (2) an end-to-end domain-level proof, run without the HTTP
+ * server, that a real 3-meal plan's grocery list actually renders a
+ * non-null `package_label`, an `is_estimate` line, and a non-zero
+ * `expected_surplus` line — the three grocery-screen clauses this data was
+ * missing.
  */
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { selectPackages } from '../domain/src/packaging.ts';
 import type { PackageOption, PackageSelection } from '../domain/src/packaging.ts';
-import type { IngredientRegistryEntry } from '../domain/src/catalog.ts';
+import { gateCatalog, parseIngredientRegistry } from '../domain/src/catalog.ts';
+import type { IngredientRegistry, IngredientRegistryEntry } from '../domain/src/catalog.ts';
+import { scaleRecipeRequirements } from '../domain/src/scale.ts';
+import { aggregateRequirements } from '../domain/src/aggregate.ts';
+import { subtractInventory } from '../domain/src/inventoryMath.ts';
 import { FACTOR_TO_CANONICAL } from '../domain/src/units.ts';
 import {
   ONE,
@@ -31,6 +56,7 @@ import {
   fromInt,
   isInteger,
   mul,
+  parseRational,
   rational,
   sign,
   sub,
@@ -427,4 +453,219 @@ test('a huge requirement still terminates and covers — the cap can cost optima
       ],
     );
   }
+});
+
+// ---------------------------------------------------------------------------
+// T-065 — the catalog validation gate: every curated ingredient must carry
+// ≥1 package option, and every ingredient a shipped recipe can require must
+// resolve to one. `IngredientRegistryEntry` (catalog.ts) does not parse
+// `package_options` — it is read directly off `data/ingredients.json` here,
+// the same "read live off disk" idiom `tests/aggregate.test.ts` and
+// `tests/routes.test.ts` use for the registry / recipe fixtures, so this
+// gate fails loudly the moment authored data drifts rather than passing
+// silently against a stale in-memory fixture.
+// ---------------------------------------------------------------------------
+
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const INGREDIENTS_PATH = join(REPO_ROOT, 'data', 'ingredients.json');
+const RECIPES_DIR = join(REPO_ROOT, 'data', 'recipes');
+
+const ALL_UNITS_SET: ReadonlySet<string> = new Set([
+  'g', 'kg', 'oz', 'lb', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'fl_oz', 'count',
+]);
+
+interface RawPackageOption {
+  readonly id: unknown;
+  readonly label_singular: unknown;
+  readonly label_plural: unknown;
+  readonly yield_amount: unknown;
+  readonly yield_unit: unknown;
+  readonly is_estimate: unknown;
+}
+
+interface RawIngredient {
+  readonly id: unknown;
+  readonly package_options: unknown;
+}
+
+function loadRawIngredients(): readonly RawIngredient[] {
+  const doc = JSON.parse(readFileSync(INGREDIENTS_PATH, 'utf8')) as { ingredients?: unknown };
+  assert.ok(Array.isArray(doc.ingredients), 'data/ingredients.json must carry an "ingredients" array');
+  return doc.ingredients as readonly RawIngredient[];
+}
+
+/** Parse one raw JSON `package_options` array into real `PackageOption`s
+ * (packaging.ts's own shape), asserting loudly on anything malformed — this
+ * function IS the validation gate; there is no graceful degradation for
+ * curated package data going missing or corrupt (unlike a recipe, which the
+ * catalog gate excludes gracefully, an author-facing data defect here
+ * should fail the suite, not silently ship an empty catalog again). */
+function parsePackageOptions(ingredientId: string, raw: unknown): readonly PackageOption[] {
+  assert.ok(Array.isArray(raw), `${ingredientId}.package_options must be an array`);
+  assert.ok(raw.length >= 1, `${ingredientId}.package_options must carry at least one option`);
+  const seenIds = new Set<string>();
+  return raw.map((o: unknown, i: number) => {
+    const path = `${ingredientId}.package_options[${String(i)}]`;
+    assert.ok(o !== null && typeof o === 'object', `${path} must be an object`);
+    const opt = o as RawPackageOption;
+
+    assert.equal(typeof opt.id, 'string', `${path}.id must be a string`);
+    const id = opt.id as string;
+    assert.ok(id.trim() !== '', `${path}.id must be non-empty`);
+    assert.ok(!seenIds.has(id), `${path}.id '${id}' duplicates another option on the same ingredient`);
+    seenIds.add(id);
+
+    assert.equal(typeof opt.label_singular, 'string', `${path}.label_singular must be a string`);
+    assert.ok((opt.label_singular as string).trim() !== '', `${path}.label_singular must be non-empty`);
+    assert.equal(typeof opt.label_plural, 'string', `${path}.label_plural must be a string`);
+    assert.ok((opt.label_plural as string).trim() !== '', `${path}.label_plural must be non-empty`);
+
+    assert.equal(typeof opt.yield_amount, 'string', `${path}.yield_amount must be a string parseable by qty.ts`);
+    let yieldAmount: Rational | null = null;
+    try {
+      yieldAmount = parseRational(opt.yield_amount as string);
+    } catch (err) {
+      if (!(err instanceof QtyError)) throw err;
+    }
+    assert.ok(yieldAmount !== null, `${path}.yield_amount ${JSON.stringify(opt.yield_amount)} is not a parseable exact rational`);
+    assert.equal(sign(yieldAmount as Rational), 1, `${path}.yield_amount must be positive (got ${JSON.stringify(opt.yield_amount)})`);
+
+    assert.equal(typeof opt.yield_unit, 'string', `${path}.yield_unit must be a string`);
+    assert.ok(ALL_UNITS_SET.has(opt.yield_unit as string), `${path}.yield_unit ${JSON.stringify(opt.yield_unit)} is not a valid Unit`);
+
+    assert.equal(typeof opt.is_estimate, 'boolean', `${path}.is_estimate must be a boolean`);
+
+    return {
+      id,
+      label_singular: opt.label_singular as string,
+      label_plural: opt.label_plural as string,
+      yield_amount: yieldAmount as Rational,
+      yield_unit: opt.yield_unit as Unit,
+      is_estimate: opt.is_estimate as boolean,
+    };
+  });
+}
+
+/** id → parsed, validated package options — built once per test from the
+ * live file, never a hardcoded snapshot. */
+function loadPackageOptionsByIngredient(): ReadonlyMap<string, readonly PackageOption[]> {
+  const raw = loadRawIngredients();
+  const out = new Map<string, readonly PackageOption[]>();
+  for (const ing of raw) {
+    assert.equal(typeof ing.id, 'string', 'every ingredient entry must have a string id');
+    const id = ing.id as string;
+    out.set(id, parsePackageOptions(id, ing.package_options));
+  }
+  return out;
+}
+
+test('T-065 catalog gate: every curated ingredient carries at least one well-formed package option', () => {
+  const byIngredient = loadPackageOptionsByIngredient();
+  assert.equal(byIngredient.size, 97, 'expected the full 97-ingredient catalog');
+  for (const [id, options] of byIngredient) {
+    assert.ok(options.length >= 1, `ingredient '${id}' has zero package options — unrenderable on the grocery screen`);
+  }
+});
+
+test("T-065 catalog gate: every ingredient any shipped recipe can require resolves to a package option — mirrors catalog.ts's ingredient-id cross-check", () => {
+  const byIngredient = loadPackageOptionsByIngredient();
+  const recipeFiles = readdirSync(RECIPES_DIR).filter((f) => f.endsWith('.json')).sort();
+  assert.ok(recipeFiles.length > 0, 'expected at least one shipped recipe to check against');
+
+  const missing: string[] = [];
+  for (const file of recipeFiles) {
+    const raw = JSON.parse(readFileSync(join(RECIPES_DIR, file), 'utf8')) as {
+      ingredients?: readonly { ingredient_id?: unknown }[];
+    };
+    for (const line of raw.ingredients ?? []) {
+      const ingredientId = line.ingredient_id;
+      if (typeof ingredientId !== 'string') continue; // malformed-recipe shape is catalog.ts's concern, not this gate's
+      const options = byIngredient.get(ingredientId);
+      if (options === undefined || options.length === 0) {
+        missing.push(`${file}: ingredient_id '${ingredientId}' has no package options`);
+      }
+    }
+  }
+  assert.deepEqual(missing, [], 'every recipe-required ingredient must resolve to ≥1 package option');
+});
+
+test('T-065 catalog gate: generic fallbacks are flagged is_estimate, and the data is not all-one-or-the-other', () => {
+  const byIngredient = loadPackageOptionsByIngredient();
+  let estimateCount = 0;
+  let exactCount = 0;
+  for (const options of byIngredient.values()) {
+    for (const o of options) {
+      if (o.is_estimate) estimateCount += 1;
+      else exactCount += 1;
+    }
+  }
+  // The data genuinely mixes precise retail packaging (cans, boxed pasta, a
+  // dozen eggs) with honest generic-fallback estimates (produce sold by the
+  // bunch, butcher-counter meat, spice jars) — never all-exact (false
+  // precision) and never all-estimate (curated precision going unused).
+  assert.ok(estimateCount >= 10, `expected a meaningful number of estimate options, got ${String(estimateCount)}`);
+  assert.ok(exactCount >= 10, `expected a meaningful number of exact options, got ${String(exactCount)}`);
+});
+
+// ---------------------------------------------------------------------------
+// T-065 — end-to-end proof: a real 3-meal plan's grocery list, run through
+// the exact same domain pipeline `server/src/routes.ts` drives (scale →
+// aggregate → subtract inventory → selectPackages) but without the HTTP
+// server, actually renders a non-null package label, an is_estimate line,
+// and a non-zero expected_surplus line — the three grocery-screen clauses
+// this authored data exists to unblock.
+// ---------------------------------------------------------------------------
+
+test('T-065: a real 3-meal plan grocery list renders ≥1 package label, ≥1 estimate, and ≥1 non-zero surplus', () => {
+  const registry: IngredientRegistry = parseIngredientRegistry(
+    JSON.parse(readFileSync(INGREDIENTS_PATH, 'utf8')),
+  );
+  const packageOptionsByIngredient = loadPackageOptionsByIngredient();
+
+  // r01 (Greek sheet-pan chicken), r02 (beef picadillo), r04 (Moroccan
+  // chickpea braise) — a real three-dinner plan drawn straight from the
+  // shipped catalog, exactly the scenario the acceptance criteria names.
+  const rawRecipes = ['r01.json', 'r02.json', 'r04.json'].map(
+    (f) => JSON.parse(readFileSync(join(RECIPES_DIR, f), 'utf8')) as unknown,
+  );
+  const gated = gateCatalog(rawRecipes, registry);
+  assert.deepEqual(
+    gated.reports.filter((r) => !r.eligible),
+    [],
+    'the three fixture recipes must be catalog-eligible',
+  );
+  assert.equal(gated.eligible.length, 3);
+
+  const scaled = gated.eligible.flatMap((recipe, i) =>
+    scaleRecipeRequirements(recipe, `meal-${String(i)}`, recipe.servings_default),
+  );
+  const aggregated = aggregateRequirements(scaled, registry);
+  // Empty pantry: the whole aggregated requirement must be bought — exactly
+  // the "real plan, nothing on hand yet" grocery run.
+  const subtraction = subtractInventory(aggregated, [], registry);
+
+  const selections: PackageSelection[] = [];
+  for (const line of subtraction.lines) {
+    if (line.kind === 'to_taste') continue;
+    const options = packageOptionsByIngredient.get(line.ingredient_id) ?? [];
+    const entry = registry.get(line.ingredient_id);
+    assert.ok(entry !== undefined, `ingredient '${line.ingredient_id}' must resolve in the registry`);
+    selections.push(selectPackages(line.purchase_requirement, line.dimension, options, entry));
+  }
+  assert.ok(selections.length > 0, 'the fixture plan must produce at least one purchasable grocery line');
+
+  const withLabel = selections.filter(
+    (s): s is Extract<PackageSelection, { kind: 'packages' }> => s.kind === 'packages',
+  );
+  assert.ok(withLabel.length >= 1, 'expected at least one grocery line with a non-null package_label');
+  assert.ok(
+    withLabel.some((s) => typeof s.package_description === 'string' && s.package_description.length > 0),
+    'the non-null package label must actually carry rendered copy',
+  );
+
+  const estimated = withLabel.filter((s) => s.is_estimate);
+  assert.ok(estimated.length >= 1, 'expected at least one grocery line flagged is_estimate');
+
+  const withSurplus = withLabel.filter((s) => sign(s.expected_surplus) === 1);
+  assert.ok(withSurplus.length >= 1, 'expected at least one grocery line with non-zero expected_surplus');
 });

@@ -1,0 +1,24 @@
+=== D — data half (sentence 1) ===
+PASS D1  registry parses, 97 ingredients
+PASS D2  ingredients with zero package options: 0
+PASS D3  malformed options: 0 (104 distinct option ids)
+PASS D4  duplicate option ids: 0
+PASS D5  48 distinct ingredient ids required across shipped recipes; unresolved/optionless: 0
+PASS D6  is_estimate split — 32 estimated / 72 exact of 104
+
+=== L — live half (sentence 2): GET /api/plans/:planId/grocery ===
+listening on http://127.0.0.1:42085
+FAIL L0  real plan created: plan_id=undefined meals=3
+FAIL L1  grocery 404, 0 lines
+FAIL L2  lines with a non-null package_label: 0/0
+FAIL L3  lines with is_estimate true: 0/0
+FAIL L4  lines with non-zero expected_surplus: 0/0
+  --- first 6 lines as the grocery screen receives them ---
+
+T-065 GATE: 6 pass / 5 fail
+failures:
+  - L0: real plan created: plan_id=undefined meals=3
+  - L1: grocery 404, 0 lines
+  - L2: lines with a non-null package_label: 0/0
+  - L3: lines with is_estimate true: 0/0
+  - L4: lines with non-zero expected_surplus: 0/0

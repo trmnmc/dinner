@@ -1,0 +1,33 @@
+=== ground truth read off disk by this gate ===
+  Greek Sheet-Pan Chicken Thighs with Potatoes   2/4 steps carry a timer  [#2=2100s #3=300s]
+  One-Pot Beef and Black Bean Picadillo Skille   1/6 steps carry a timer  [#4=720s]
+  Thai Basil Shrimp Stir-Fry                     1/6 steps carry a timer  [#0=900s]
+  Moroccan-Spiced Chickpea and Sweet Potato Br   2/7 steps carry a timer  [#1=1080s #5=2100s]
+  Cold Sesame Tofu and Cucumber Salad            1/5 steps carry a timer  [#0=600s]
+  Japanese-Style Soy-Butter Egg Fried Rice       1/7 steps carry a timer  [#0=1500s]
+PASS T0  8 timer-bearing steps across 6 recipes, at least one per recipe
+listening on http://127.0.0.1:41815
+PASS T1  plan created with 3 meals — the user's real entry point
+PASS T2  timer_duration_seconds on the wire matches the authored recipe value on all 16 walked steps
+  discriminating steps (timer != unattended, or timer != total-active): 3
+    11111111 step#2: timer=2100s unattended=1980s total-active=1980s
+    22222222 step#4: timer=720s unattended=600s total-active=600s
+    44444444 step#5: timer=2100s unattended=1920s total-active=1920s
+PASS T3  discriminating step: wire=2100s equals authored 2100s and is NOT total-active (1980s)
+PASS T4  POST {kind:'timer_started', step_index:2} -> 200, 1 timer(s) — client supplied no duration and no instant
+PASS T5  remaining_seconds=2100 vs authored 2100s (fresh timer, ≤5s of request latency allowed)
+PASS T6  ends_at_utc=2026-08-19T10:31:14.998Z is an absolute instant ≈ server-now + 2100s (window 2026-08-19T10:31:14.996Z..2026-08-19T10:31:15.002Z)
+PASS T7  timer carries step_index=2, so the client can tell "already running" from "not started"
+PASS T8  no-timer step -> 400 (-), out-of-range step -> 400 (-) — refused as 4xx, never a 500 and never a fabricated timer
+listening on http://127.0.0.1:46185
+PASS T9  after process kill + reopen of the same db: ends_at_utc identical (2026-08-19T10:31:14.998Z), remaining 2100s -> 2099s (decreased by real elapsed time, not a restored countdown)
+PASS T10  the rendered screen offers ONE control labelled "Start 35 minutes timer"
+FAIL T11  no 35:MM clock after the tap; screen reads: CookingStep 3 of 4If you close this or get pulled away, reopening it lands you right back here.Roast for 35 minutes, flipping once halfway, until the chicken reaches 165F/74C and the potatoes are fork-tender.35 min total
+PASS T12  the start control is withdrawn once the timer runs (no second timer for the same step)
+PASS T13  the tap reached the SERVER: 1 timer at step_index 2 — read back over HTTP, not from screen state
+  screen before tap (excerpt): CookingStep 3 of 4If you close this or get pulled away, reopening it lands you right back here.Roast for 35 minutes, flipping once halfway, until the 
+  screen after  tap (excerpt): CookingStep 3 of 4If you close this or get pulled away, reopening it lands you right back here.Roast for 35 minutes, flipping once halfway, until the 
+
+T-058 GATE: 13 pass / 1 fail
+failures:
+  - T11: no 35:MM clock after the tap; screen reads: CookingStep 3 of 4If you close this or get pulled away, reopening it lands you right back here.Roast for 35 minutes, flipping once halfway, until the chicken reaches 165F/74C and the potatoes are fork-tender.35 min total

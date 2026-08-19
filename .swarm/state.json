@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 23,
+  "cycle": 24,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -255,6 +255,13 @@
       "cycle": 23,
       "decision": "Package-size selection, estimate labelling and leftover/surplus optimisation are IMPLEMENTED IN THE ENGINE AND UNREACHABLE IN THE PRODUCT, because data/ingredients.json ships zero package options for all 97 ingredients. Filed as T-065 at priority 1.",
       "why": "D-4 named package-size selection and leftover optimization as two of the three differentiators the prior-art scout found unoccupied across all five competitor products checked. packaging.ts implements both and is unit-tested; routes.ts encodes package_label, is_estimate and expected_surplus onto every grocery line. But the catalog has no package data, so a live 22-line grocery list measured this cycle had 0 estimated lines, 0 lines with surplus and null package labels throughout. The moat is written and switched off. This was invisible to every prior cycle because the unit tests supply their own package fixtures — only a gate driving the REAL catalog through the REAL server could see it, which is exactly why the conductor authors gates against live data rather than fixtures."
+    },
+    {
+      "id": "D-33",
+      "topic": "wave-scoping",
+      "decision": "A build item whose acceptance names a USER-VISIBLE observable must have its file scope derived from that observable at pick time, not copied from the stored files_hint.",
+      "why": "T-065 was dispatched this cycle with files_hint [data/ingredients.json, tests/packaging.test.ts], taken verbatim from the backlog and from the item's own claim that \"the engine is done\". Its acceptance, though, ends \"...A grocery list for a real plan then contains at least one line with a non-null package_label\" — an observable that lives behind domain/src/catalog.ts and server/src/routes.ts, neither of which was in scope, and routes.ts was in the concurrent builder's scope besides. The data authoring was excellent and verified 6/6; the item still failed its gate 3/3 on the half that matters to a user. Cost: one item's worth of wave capacity at gear 2, where the cap is 2. The stored files_hint is a planning-time guess; the acceptance is the contract.",
+      "cycle": 24
     }
   ],
   "known_issues": [
@@ -338,17 +345,18 @@
     {
       "id": "KI-12",
       "severity": "high",
-      "status": "open",
-      "desc": "Kitchen timers are unreachable in the running product. No code path anywhere in web/ or server business logic produces a timer_started event; only the validator that would accept one exists. Cause: encodeStepView never exposes a step timer duration, so the client has nothing honest to start a timer from. Rendering/ticking/expiry all verified correct at cycle 15 by injecting the event directly (C12-C14) — the way IN is what is missing. Filed as T-058.",
-      "cycle": 15
+      "status": "resolved",
+      "desc": "Kitchen timers are unreachable in the running product. No code path anywhere in web/ or server business logic produces a timer_started event; only the validator that would accept one exists. Cause: encodeStepView never exposes a step timer duration, so the client has nothing honest to start a timer from. Rendering/ticking/expiry all verified correct at cycle 15 by injecting the event directly (C12-C14) — the way IN is what is missing. Filed as T-058. RESOLVED at cycle 24 by T-058, CONDUCTOR-VERIFIED by a fresh 15-check gate authored after the builder returned (.swarm/runs/cycle-024-gate-T-058.mjs rev2, output cycle-024-verify-T-058.txt, 15/15). encodeStepView now emits the recipe's authoritative timer_duration_seconds (verified against data/recipes/*.json re-read by the gate itself on all 16 walked steps), the client posts nothing but {kind:'timer_started', step_index}, and the server derives id, duration and absolute ends_at_utc. Proven end to end through the real HTTP API AND the real rendered screen — one tap on \"Start 35 minutes timer\" produces a live 35:00 clock with the accessible name \"35 minutes remaining\", the control withdraws itself, and a second HTTP GET confirms the timer exists server-side at step_index 2. The anti-derivation clause is separately proven: 3 shipped steps have timer != total-active, and the wire value tracks the authored one on those. Kill-safety re-checked here too (T9): the server process was closed and reopened on the same sqlite file, ends_at_utc identical, remaining decreased by real elapsed time. Failability proven rather than assumed: mutant M1 (field deleted) and M2 (derived as total-minus-active) were each killed by three independent checks, and routes.ts was sha256-restored identically.",
+      "cycle": 15,
+      "resolved_cycle": 24
     }
   ],
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 1,
-    "window_tokens_attributed": 411729
+    "wave_streak": 0,
+    "window_tokens_attributed": 27509034
   },
   "qa": {
     "last_look_cycle": 23,

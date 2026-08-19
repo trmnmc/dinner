@@ -23,19 +23,21 @@
  * the moment the screen redraws (Invariant 1 / DoD 7's kill-safety
  * contract, extended to the client).
  *
- * GAP (report only, not fixed here — outside this file's scope): the
- * frozen HTTP contract's `encodeStepView` (server/src/routes.ts) never
- * exposes a step's `timer_duration_seconds` or any "this step has a timer"
- * flag — only `domain/src/recipe.ts`'s `RecipeStep` carries that, and
- * nothing in the client-reachable contract surfaces it. Starting a NEW
- * timer therefore requires a duration this screen cannot honestly obtain
- * (deriving one from `total_seconds − active_seconds` would sometimes be
- * WRONG — verified against the shipped recipe data, several steps' timer
- * duration does not equal their unattended duration — and a wrong kitchen
- * timer is worse than none). So this screen renders, ticks, acknowledges
- * and cancels whatever timers already exist on the session, but does not
- * offer a "start timer" action. Fixing this is a contract change to
- * `encodeStepView` (server/src/routes.ts, out of this item's file scope).
+ * T-058 (KI-12 fix): `encodeStepView` now exposes `step.timer_duration_seconds`
+ * (`number|null`; null = no timer on this step — never derived from
+ * `total_seconds − active_seconds`, which is wrong for several shipped
+ * recipes). When it is non-null and no timer is already running for this
+ * step, this screen renders ONE tap — "Start N minute timer" — that posts
+ * `{ kind: 'timer_started', step_index }`. That is the entire client
+ * contribution: `step_index` is the only thing the client supplies. The
+ * server (`server/src/routes.ts`'s `resolveEventPayload`) derives the
+ * timer's id, absolute `started_at_utc`/`ends_at_utc` and
+ * `duration_seconds` itself, from the recipe's authoritative
+ * `timer_duration_seconds` and its own clock — this file never computes or
+ * sends a duration or an end instant. `session.timers[].step_index` (also
+ * new on the wire) is what lets this screen tell "already running" apart
+ * from "not started yet" so the control disappears once used rather than
+ * risking a second timer for the same step.
  *
  * Resume-into-session recovery (Invariant 6): the session id is persisted
  * to `localStorage['tgd.cooking_session_id']` on every successful load,
@@ -82,11 +84,13 @@ const COOKING_SESSION_ID_KEY = 'tgd.cooking_session_id';
  * @property {string} time_label
  * @property {boolean} requires_continuous_attention
  * @property {boolean} safe_to_pause_after
+ * @property {number|null} timer_duration_seconds
  */
 
 /**
  * @typedef {Object} TimerView
  * @property {string} timer_id
+ * @property {number} step_index
  * @property {string} label
  * @property {string} ends_at_utc
  * @property {number} remaining_seconds
@@ -364,6 +368,33 @@ export function renderCook(container, params) {
     ]);
   }
 
+  /**
+   * The one-tap "start this step's timer" control (T-058 / KI-12). Only
+   * ever rendered when `step.timer_duration_seconds` is non-null AND no
+   * timer is already running for this step index — reusing
+   * `session.timers[].step_index` rather than any local "did I just start
+   * one" flag, since the server's session view is this screen's only source
+   * of truth (file header). The tap sends nothing but `step_index`; the
+   * server derives the real duration and absolute end instant.
+   * @param {StepView} step
+   * @returns {HTMLElement}
+   */
+  function buildStartTimerControl(step) {
+    const seconds = /** @type {number} */ (step.timer_duration_seconds);
+    return h('div', { class: 'stack stack--tight' }, [
+      h('span', { class: 'card__eyebrow' }, ['Timer for this step']),
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'btn btn--secondary',
+          onClick: () => sendEvent({ kind: 'timer_started', step_index: step.index }),
+        },
+        [`Start ${durationWords(seconds)} timer`],
+      ),
+    ]);
+  }
+
   function buildSecondaryControls() {
     /** @type {(Node|null)[]} */
     const controls = [];
@@ -538,6 +569,10 @@ export function renderCook(container, params) {
             `${durationWords(step.active_seconds)} hands-on, ${durationWords(unattended)} unattended.`,
           ]),
         );
+      }
+      const timerAlreadyRunning = session.timers.some((t) => t.step_index === step.index);
+      if (step.timer_duration_seconds !== null && !timerAlreadyRunning) {
+        body.push(buildStartTimerControl(step));
       }
     } else {
       body.push(h('p', { class: 'cook-step__text' }, ['Every step is done.']));
