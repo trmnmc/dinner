@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 8,
+  "cycle": 9,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -70,14 +70,14 @@
     {
       "id": "D-8",
       "topic": "crashed-cycle-salvage",
-      "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work — authored the gates from scratch, ran them, and closed the wave.",
-      "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind — detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
+      "decision": "Cycle 4 died between its merges and its verification gate: both builder branches were merged to master (860d034, ade40ef) but state.json, backlog.json, the journal and the runfile were never written, and no gate ran. Cycle 5 completed cycle 4 rather than starting new work \u2014 authored the gates from scratch, ran them, and closed the wave.",
+      "why": "Merged-but-ungated code is the single most dangerous state this pipeline can be in: master carries work that LOOKS verified because it is committed, and hard rule 4 (green main) had never actually been checked. Dispatching a new wave on top would have compounded unverified work. The salvage rule in cycle.md step 2 covers dirty trees; this was the rarer case of a CLEAN tree whose bookkeeping was a cycle behind \u2014 detectable only because the commit messages said cycle 4 while state.json said cycle 3.",
       "cycle": 5
     },
     {
       "id": "D-9",
       "topic": "scope-cut",
-      "decision": "T-002's domain/src/ingredients.ts is CUT from scope. catalog.ts (landed by T-008) already owns the curated ingredient registry — aliases, allergen classes, densities, per-item weights — sourced from data/ingredients.json. normalize.ts consumes IngredientRegistry as a parameter instead of owning a second table.",
+      "decision": "T-002's domain/src/ingredients.ts is CUT from scope. catalog.ts (landed by T-008) already owns the curated ingredient registry \u2014 aliases, allergen classes, densities, per-item weights \u2014 sourced from data/ingredients.json. normalize.ts consumes IngredientRegistry as a parameter instead of owning a second table.",
       "why": "A second curated table would be a second source of truth, which is precisely the data-drift failure Invariant 5 exists to prevent. Ruled at cycle 6 dispatch time and recorded in the in-flight marker; formalised here because the cycle that made the ruling died before it could write a journal block.",
       "cycle": 6
     },
@@ -85,14 +85,14 @@
       "id": "D-10",
       "topic": "crashed-cycle-salvage",
       "decision": "Cycle 6 was killed mid-wave by the pacer's 600s background-task ceiling (\"Background tasks still running after 600s; terminating\", runs/pacer.log 22:55Z). This session RESUMED cycle 6 rather than opening cycle 7: merged wave-006-T-002 (complete and committed by its builder), salvage-committed the T-006 builder's uncommitted worktree files, merged those too, then authored and ran both verification gates.",
-      "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed — it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests — filed as T-029 rather than papered over.",
+      "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed \u2014 it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests \u2014 filed as T-029 rather than papered over.",
       "cycle": 6
     },
     {
       "id": "D-11",
       "topic": "harness-workaround",
-      "decision": "Cycle 7 dispatched its two builders as DIRECT, FOREGROUND Agent calls editing the main working tree under strictly disjoint file scopes — no build-wave workflow, no worktrees, no builder branches. Both builders were forbidden to run any git command; the conductor committed.",
-      "why": "KI-4 killed cycles 4 and 6 mid-wave. This cycle established the mechanism: bin/swarm-pacer.sh spawns `claude -p` synchronously with NO timeout of its own (verified by reading lines 232-260), so the 600s guillotine is purely the harness background-task wait ceiling (CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at turn end. Foreground agents are part of the turn, not background tasks, so the ceiling never applies. The wave ran 424s and 356s — both would have been at risk, and the T-029 builder in particular was still working at the 356s mark. This is a prompt-side workaround costing nothing; the durable fix is still in the pacer and still belongs in the morning report.",
+      "decision": "Cycle 7 dispatched its two builders as DIRECT, FOREGROUND Agent calls editing the main working tree under strictly disjoint file scopes \u2014 no build-wave workflow, no worktrees, no builder branches. Both builders were forbidden to run any git command; the conductor committed.",
+      "why": "KI-4 killed cycles 4 and 6 mid-wave. This cycle established the mechanism: bin/swarm-pacer.sh spawns `claude -p` synchronously with NO timeout of its own (verified by reading lines 232-260), so the 600s guillotine is purely the harness background-task wait ceiling (CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at turn end. Foreground agents are part of the turn, not background tasks, so the ceiling never applies. The wave ran 424s and 356s \u2014 both would have been at risk, and the T-029 builder in particular was still working at the 356s mark. This is a prompt-side workaround costing nothing; the durable fix is still in the pacer and still belongs in the morning report.",
       "cycle": 7
     },
     {
@@ -101,6 +101,20 @@
       "decision": "A backlog item whose deliverable is a TEST FILE is gated by MUTATION TESTING, not by a green suite. T-029 was verified by injecting 13 deliberate defects into score.ts one at a time and requiring the committed suite to go red for each.",
       "why": "A file of assert.ok(true) passes npm test. For T-029 specifically the whole point was that score.ts had zero committed coverage, so accepting `suite green` as evidence would have re-created the exact hole the item existed to close. The method paid for itself immediately: 11 of 13 mutants died, but two survived and revealed a precise, non-obvious gap (penalties are read back from the engine rather than pinned as literals, so penalty-amount drift mutates test and engine in lockstep). That gap is invisible to every other form of review.",
       "cycle": 7
+    },
+    {
+      "id": "D-13",
+      "topic": "routing",
+      "decision": "T-005 was flagged route_class 'core' at cycle-9 pick time, which routes it to fable and exempts it from the gear-2 demotion under the fable guard. T-034, its successor, inherits the flag.",
+      "why": "The flag was absent at plan time, inconsistently with every sibling module: T-002, T-003, T-004 and T-006 all carry it. preferences.ts is an authoritative-path module - it persists Rational signals and its output decides, through filters.ts, what a household can ever be shown - so it meets the same correctness-core standard those siblings meet. Recorded rather than applied silently because the flag also has a pacing consequence (it buys fable in a gear that would otherwise demote to sonnet), and a routing choice that spends more budget should be auditable. Test applied before flagging: would I flag it in gear 5 too? Yes.",
+      "cycle": 9
+    },
+    {
+      "id": "D-14",
+      "topic": "verification-method",
+      "decision": "The cycle-9 T-005 gate deliberately probed BEYOND the defect the item failed on: as well as re-running the cycle-8 probe verbatim, it built a second, realistic 12-recipe catalog with broad flavour tags. The item passed the first probe and failed the second.",
+      "why": "The cycle-8 fix direction named three axes as 'distinctive' - protein, cuisine, flavour - and the first two are, but the FlavourTag vocabulary contains 'savoury', 'mild' and 'fresh'. A gate that only re-ran the original probe would have marked this item done and shipped the identical product-breaking failure on a different axis, invisibly, because the original probe's catalog carried no flavour tags at all. The lesson generalises past this item: when a fix works by RECLASSIFYING inputs, the gate must test the reclassification against realistic data, not just re-run the case that failed - otherwise the gate only proves the specific counterexample was handled. This is also the second time in two cycles that composing modules (preferences x filters) found what neither module's own suite could, reinforcing the cycle-8 finding.",
+      "cycle": 9
     }
   ],
   "known_issues": [
@@ -113,7 +127,7 @@
     {
       "id": "KI-2",
       "severity": "medium",
-      "desc": "RE-OPENED at cycle 5 (was mislabelled RESOLVED-BY-DRIFT at cycle 3). The weekly governor zero-envelope blind spot in bin/swarm-weekly-from-allocator.sh: heat is computed as 100*swarm_used/(swarm_used+allow_overall), so a zero denominator DISENGAGES the governor. At cycle 3 swarm_used_pct had drifted 0 -> 4 and I recorded the bug as resolved. At cycle 5 it fell back to 0 with allow_overall_pct 0 and posture \"trickle\", so the feeder would disengage the governor again — precisely when restraint matters most. The ceiling held at 2 this cycle ONLY because a second, independent signal was hot (raw account 52.0% weekly at 24.65% week-elapsed => heat 2.11). Drift is not a fix. Correct behaviour: u+a <= 0 must mean MAXIMUM heat, not \"unconfigured\". Hard rule 5 forbids the fix mid-run; morning report.",
+      "desc": "RE-OPENED at cycle 5 (was mislabelled RESOLVED-BY-DRIFT at cycle 3). The weekly governor zero-envelope blind spot in bin/swarm-weekly-from-allocator.sh: heat is computed as 100*swarm_used/(swarm_used+allow_overall), so a zero denominator DISENGAGES the governor. At cycle 3 swarm_used_pct had drifted 0 -> 4 and I recorded the bug as resolved. At cycle 5 it fell back to 0 with allow_overall_pct 0 and posture \"trickle\", so the feeder would disengage the governor again \u2014 precisely when restraint matters most. The ceiling held at 2 this cycle ONLY because a second, independent signal was hot (raw account 52.0% weekly at 24.65% week-elapsed => heat 2.11). Drift is not a fix. Correct behaviour: u+a <= 0 must mean MAXIMUM heat, not \"unconfigured\". Hard rule 5 forbids the fix mid-run; morning report.",
       "cycle": 5
     },
     {
@@ -125,14 +139,14 @@
     {
       "id": "KI-4",
       "severity": "high",
-      "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" — runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
+      "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" \u2014 runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
       "cycle": 6
     },
     {
       "id": "KI-5",
       "severity": "high",
-      "desc": "TARGET-SIDE, and the first genuine product defect this run has found: calibration never_recommend over-excludes via filters.ts. applyCalibrationReaction(never_recommend) (preferences.ts, T-005) writes value -1 / confidence 1 to EVERY attribute-value pair of the reacted card - all six single axes plus every flavour and texture tag - and filters.ts (T-006, verified done at cycle 6) treats any signal at value <= -4/5 with confidence >= 1/2 as an ABSOLUTE hard exclusion. Measured by the cycle-8 gate: one never_recommend tap on a chicken/thai card left 2 of 6 survivors in a catalog sharing NO protein and NO cuisine with it (exclusions fired on richness=rich, effort=high, method=stir_fry, spice=hot). On a real 30-recipe catalog this plausibly empties the plan and breaks DoD 2 from the first onboarding flow. NOTE THE CLASS: neither module is wrong in isolation, and both passed their own gates - this is an interaction defect that only an integration probe finds, which is exactly why the conductor gate now calls applyHardFilters with real preference signals rather than testing preferences.ts alone. Fix scoped in T-005 notes (attempt 1, targeted change, not a rebuild); T-006/filters.ts may also deserve a look at whether an attribute-level signal should EVER be an absolute filter.",
-      "cycle": 8
+      "desc": "TARGET-SIDE, PARTIALLY FIXED at cycle 9, still OPEN. Original defect (cycle 8): applyCalibrationReaction(never_recommend) wrote an absolute-exclusion-strength lock (value -1, confidence 1) to EVERY attribute axis, so one tap on a chicken/thai card left 2 of 6 survivors in a catalog sharing no protein and no cuisine with it. FIXED AND VERIFIED at cycle 9: the generic axes (spice, richness, method, effort, texture) now take an ordinary strong durable negative at confidence 2/5, below filters.ts's 1/2 gate; that same probe now returns 6/6. STILL BROKEN: the lock still covers flavour tags, and FlavourTag includes generic members. Measured on a 12-recipe catalog carrying 'savoury' on 8 of 12, one tap on a savoury card leaves 3 of 12 survivors - 8 excluded on strong_dislike:flavour=savoury alone. DoD 2 remains at risk from the first onboarding flow. The remedy is measured, not hypothesised (SWARM/runs/cycle-009-remedy-probe.mjs: locking protein+cuisine only gives 10/12 while keeping both locks binding) and is filed as T-034, priority 1. T-005 itself is BLOCKED at attempts 2. Severity stays high until T-034 lands.",
+      "cycle": 9
     }
   ],
   "counters": {
@@ -140,7 +154,7 @@
     "consecutive_failures": 0,
     "k_current": 5,
     "wave_streak": 0,
-    "window_tokens_attributed": 39042004
+    "window_tokens_attributed": 51463045
   },
   "qa": {
     "last_look_cycle": null,
@@ -148,9 +162,9 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 8,
-    "work": "build-wave k=2 (foreground agents): T-005 preference model + calibration, T-013 prep derivation + copy/time module",
-    "outcome": "T-013 verified done (gate 94/94, mutation 8/9); T-005 FAILED the gate on a product-breaking integration defect (never_recommend over-exclusion) -> todo attempts 1, KI-5 filed; 265/265 suite green; 2 mutation coverage gaps filed as T-032/T-033",
-    "commit": "e5385a2"
+    "n": 9,
+    "work": "build-wave k=2 (foreground agents): T-004 inventory subtraction + package selection, T-005 never_recommend re-fix",
+    "outcome": "T-004 verified done (gate 22/22 incl. an independent brute-force oracle over 240 probes, mutation 8/9); T-005 FAILED again -> BLOCKED at attempts 2, over-exclusion moved to the flavour axis (3/12 survivors measured); remedy measured and filed as T-034; 297/297 suite green",
+    "commit": ""
   }
 }

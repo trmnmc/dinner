@@ -1,0 +1,30 @@
+== A. PACKAGING: coverage + optimality against an INDEPENDENT oracle ==
+      probed 240 (requirement, option-set) pairs across 4 package grids
+  PASS  coverage is NEVER violated — no selection ever underbuys
+  PASS  expected_surplus is exactly total_yield − requirement on every probe
+  PASS  the chosen combination matches an INDEPENDENT brute-force (waste, count) oracle everywhere
+  PASS  tie-break is (waste THEN count): two 5g packs (waste 0, count 2) beats one 12g (waste 2, count 1)
+  PASS  selection is byte-identical under option REORDERING (determinism)
+  PASS  a selection using a generic fallback is FLAGGED is_estimate
+  PASS  a selection using only curated options is NOT flagged an estimate
+  PASS  a fractional requirement yields an EXACT Rational surplus (1 − 1/3 = 2/3)
+  PASS  a zero requirement buys nothing (kind none_needed, zero surplus)
+  PASS  with no package data the line goes LOOSE: buy exactly, zero surplus, null description
+
+== B. INVENTORY: the formula, as an identity on every line ==
+  PASS  purchase = max(0, required − usable) and deducted = min(required, usable) on all 1,681 (req, have) pairs
+  PASS  purchase_requirement is NEVER negative
+  PASS  an `inferred` entry is NEVER subtracted at ANY magnitude; confirmed/assumed_staple always are
+  PASS  an inferred entry that would reduce the purchase becomes ONE confirmation question
+  PASS  the question shows the honest both-ways arithmetic (buy 4 unanswered, 1 if confirmed)
+  PASS  no question is asked when confirmed stock already covers the line (few, high-value questions)
+  PASS  an inferred entry for an ingredient NOT in the plan is ignored entirely — never a question
+  PASS  a to_taste line passes through subtraction unchanged and gains NO numeric field
+  PASS  one inventory entry is deducted from AT MOST one line (never double-counted across dimensions)
+  PASS  subtraction is identical under inventory REORDERING (determinism)
+  PASS  line-level traceability (contributions) survives subtraction intact
+
+== C. END-TO-END: aggregate -> subtract -> package, exact throughout ==
+  PASS  100g needed − 30g on hand = 70g to buy -> three 25g packs (75g), surplus exactly 5g
+
+== RESULT: 22 passed, 0 failed ==

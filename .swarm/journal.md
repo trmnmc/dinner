@@ -1229,3 +1229,227 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787100054,"next_wakeup_at":1787102113,"pid":2367528,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":3,"ratio":0.922,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":20499247,"window_cost_usd":24.03808,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":26776013,"projected_depletion_at":1787112000,"last_probe_ts":1787098351,"last_real_probe_ts":1787098351,"probe_failures":0,"probe_note":"Cycle 8 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh DENIED — KI-1, 5th consecutive cycle). Raw: runs/cc-probe-c8.json. Block 23:00-04:00Z, limit 130,591,250 (max prior completed block), used 20,499,247, remaining 110,092,003 over 13,649s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 29,038,880 tok/h; actual 26,776,013 tok/h (ccusage 446,267 tok/min) => rho 0.922 => gear_target 3 (cruise). WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 56.0% at week_elapsed 25.72% => heat 2.18 > 1.3 (opus 53/25.72 = 2.06). Heat rose from 2.12 at cycle 7 — this window is fine, the WEEK keeps heating, and the week wins: gear_target 3 clamped to ceiling 2 + promote_blocked. prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. KI-2 UNCHANGED and still open: allocator posture now `halted`, swarm_used_pct 4 with allow_overall_pct 0, so the feeder u/(u+a) denominator is 4, non-zero, and it would engage the governor again only by luck of drift (4th time this run). My arithmetic computes heat from the raw account weekly_used/week_elapsed and never uses that formula, so this clamp is sound regardless. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).","weekly":{"ok":true,"weekly_used_pct":56,"opus_used_pct":53,"week_elapsed_pct":25.72,"weekly_heat":2.18,"opus_heat":2.06,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":9,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 9 | 2026-08-19T00:48:04+0000 | dinner | BUILD
+
+### clock + burn probe
+
+`date +%s` = 1787100484. stop_at 1787140800 (12:00Z) — 11h12m of runway, no admission
+pressure. Tree clean at orient, 265/265 green, nothing to salvage. Control channel:
+`swarm-notify.sh poll` returned silently, `pending[]` empty, `inject[]` absent — no
+commands, no injections this cycle.
+
+`bin/swarm-budget.sh` DENIED for the 6th consecutive cycle (KI-1). Tonight the deny
+surfaced in a new shape — the harness refused the compound
+`cd /opt/swarm && RUNFILE=... ./bin/swarm-budget.sh` form on a "simple_expansion" /
+multiple-operations grounds rather than on the script itself. Same workaround as cycles
+4-8: real probe via allowlisted `npx ccusage@latest blocks --json --token-limit max`
+(raw: `SWARM/runs/cc-probe-c9.json`).
+
+Block 23:00-04:00Z. Limit 130,591,250 (max prior completed block), used 32,920,288,
+remaining 97,670,962 over 11,351s to T_target (block end 04:00Z, earlier than stop_at)
+=> target 30,976,606 tok/h. Actual 24,211,726 tok/h (ccusage 403,529 tok/min).
+**ρ = 0.782 => gear_target 4.**
+
+**Weekly governor ENGAGED, and this is the cycle where it actually bites.** Raw account
+weekly_used 60.0% at week_elapsed 26.07% => heat 2.30 (opus 58/26.07 = 2.22). Heat has
+risen every cycle this run: 2.11 → 2.12 → 2.18 → **2.30**. The window is now genuinely
+cool — ρ 0.782 alone would buy gear 4 — and the WEEK is the sole binding constraint.
+That is precisely the case the governor exists for, so: gear_target 4 clamped to ceiling
+2, promote blocked. prev gear 2, hysteresis no-op => **applied gear 2**, wave cap 2,
+demote true.
+
+KI-2 unchanged and still open: allocator posture `halted`, `swarm_used_pct` 8 with
+`allow_overall_pct` 0, so the feeder's `u/(u+a)` denominator is 8 — non-zero again by
+drift, the 5th time this run. My arithmetic reads `weekly_used`/`week_elapsed` off the
+raw account and never touches that formula, so the clamp is sound regardless. Allocator
+dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).
+
+### wave dispatch
+
+Effective k = min(k_current 5, gear cap 2) = **2**. Both items dispatched as DIRECT
+FOREGROUND Agent calls into the main tree (D-11, the KI-4 workaround) — third consecutive
+cycle on this mechanism, third consecutive cycle it survived. Foreground agents are part
+of the turn, so the pacer's 600s background-task ceiling never applies. In-flight marker
+written and committed BEFORE dispatch (`ef6249a`), per D-8/D-10.
+
+| item | model | why that model |
+|---|---|---|
+| T-004 | fable | pre-existing `route_class: "core"`; fable guard exempts it from the gear-2 demotion |
+| T-005 | fable | newly flagged `route_class: "core"` this cycle — **D-13** records the flag and its pacing consequence |
+
+Scopes strictly disjoint (T-004: inventoryMath/packaging + their tests; T-005:
+preferences + its tests, with filters.ts allowed only if it chose the filters-side fix).
+Neither item carried `packages`, so no conductor install preceded the wave. Craft pack
+ran clean; neither item is UI-flagged, so no `craft.ui` splice applied. Both builders
+were forbidden every git command; the conductor commits.
+
+### VERIFICATION EVIDENCE — mechanical scope check (conductor-run)
+
+Scope claims are never taken on trust. `git status --porcelain` after the wave:
+
+```
+ M domain/src/preferences.ts
+ M tests/preferences.test.ts
+?? domain/src/inventoryMath.ts
+?? domain/src/packaging.ts
+?? tests/inventory.test.ts
+?? tests/packaging.test.ts
+```
+
+Exactly the two declared scopes, no overlap, no manifest touched, `filters.ts` untouched
+(matching T-005's claim that it chose the preferences-side fix). Full suite, conductor-run:
+`ℹ tests 297 / ℹ pass 297 / ℹ fail 0` — 265 before the wave, +2 preferences, +30 new.
+
+I also diffed the existing test file for silently weakened assertions, because T-005's
+builder disclosed rewriting one test. Total lines REMOVED from `tests/preferences.test.ts`:
+two — one test title and one comment. The old "every pair gets the lock" loop was narrowed
+by a `continue` guard and the generic axes were then pinned to exact hand-computed literals
+(-9/10, 2/5). The disclosure was complete and the net change tightens the file rather than
+loosening it.
+
+### VERIFICATION EVIDENCE — T-004 (gate: SWARM/runs/cycle-009-gate-T004.mjs) — 22/22 PASS
+
+Full output: `.swarm/runs/cycle-009-verify-T-004.txt`. The builder claimed it validated
+its search against its own brute-force oracle; that is its claim. This is mine, written
+from the acceptance text and sharing no code with the module.
+
+```
+== A. PACKAGING: coverage + optimality against an INDEPENDENT oracle ==
+      probed 240 (requirement, option-set) pairs across 4 package grids
+  PASS  coverage is NEVER violated — no selection ever underbuys
+  PASS  expected_surplus is exactly total_yield − requirement on every probe
+  PASS  the chosen combination matches an INDEPENDENT brute-force (waste, count) oracle everywhere
+  PASS  tie-break is (waste THEN count): two 5g packs (waste 0, count 2) beats one 12g (waste 2, count 1)
+  PASS  selection is byte-identical under option REORDERING (determinism)
+== B. INVENTORY: the formula, as an identity on every line ==
+  PASS  purchase = max(0, required − usable) and deducted = min(required, usable) on all 1,681 (req, have) pairs
+  PASS  an `inferred` entry is NEVER subtracted at ANY magnitude; confirmed/assumed_staple always are
+  PASS  no question is asked when confirmed stock already covers the line (few, high-value questions)
+  PASS  a to_taste line passes through subtraction unchanged and gains NO numeric field
+  PASS  one inventory entry is deducted from AT MOST one line (never double-counted across dimensions)
+== RESULT: 22 passed, 0 failed ==
+```
+
+The two checks I care about most: the oracle agreed on **every one of 240 probes** (so the
+"minimise waste then count" contract is real, not just untested prose), and the confidence
+gate held at four magnitudes per confidence level — an `inferred` entry of 100,000g never
+subtracted a gram.
+
+### VERIFICATION EVIDENCE — T-005 (gate: SWARM/runs/cycle-009-gate-T005.mjs) — 14/16, **FAILED**
+
+Full output: `.swarm/runs/cycle-009-verify-T-005.txt`. Section A re-runs the cycle-8 probe
+verbatim; section B is new.
+
+```
+== A. THE CYCLE-8 PROBE, VERBATIM — the defect that failed this item ==
+      ONE never_recommend tap -> 6/6 survive (cycle 8 measured 2/6)
+  PASS  CYCLE-8 REGRESSION: a single never_recommend no longer wipes a catalog sharing no protein/cuisine
+== B. THE HARDER PROBE — realistic catalog, BROAD flavour tags ==
+      catalog carries 'savoury' on 8/12 recipes
+      ONE never_recommend tap on a savoury+spicy chicken/thai card -> 3/12 survive
+        c-01: strong_dislike:flavour=savoury      c-05: strong_dislike:flavour=savoury
+        c-02: strong_dislike:flavour=savoury      c-06: strong_dislike:flavour=savoury
+        c-03: strong_dislike:flavour=savoury      c-07: strong_dislike:flavour=savoury
+        c-09: strong_dislike:flavour=savoury      c-11: strong_dislike:protein=chicken, flavour=savoury
+  FAIL  BROAD-TAG PROBE: a tap on a savoury card does not hard-exclude the catalog's savoury dinners
+  FAIL  BROAD-TAG PROBE: a clear majority of a realistic 12-recipe catalog still survives one tap
+== C. never_recommend is still GENUINELY BINDING (not fixed by defanging) ==
+  PASS  the reacted card itself is excluded / PASS  shared PROTEIN excluded / PASS  shared CUISINE excluded
+  PASS  never_recommend is strictly more negative AND more durable than not_for_me on EVERY pair
+  PASS  CONTROL: a single not_for_me tap hard-excludes nothing at all
+== RESULT: 14 passed, 2 failed ==
+```
+
+**The over-exclusion did not disappear — it moved axis.** The cycle-8 fix direction (mine)
+named protein, cuisine and flavour as the "distinctive" axes. The first two are. But
+`FlavourTag` contains `savoury`, `mild` and `fresh`, and a real weeknight catalog puts
+`savoury` on most dinners — so locking flavour reproduces the identical product-breaking
+failure through a different door. **T-005 → blocked, attempts 2, KI-5 stays open.**
+
+Two things I want on the record. First, the cycle-8 probe's catalog carried **no flavour
+tags at all**, which is why it could not have caught this; a gate that merely re-ran the
+original probe would have marked this done and shipped the same bug invisibly (**D-14**).
+Second, the attribution: the builder followed my scoped direction verbatim, then flagged
+this exact risk unprompted in its return — naming `savoury` specifically, naming the
+one-line remedy, and explaining that it declined to deviate on an unmeasured hypothesis.
+That was the correct call. The failure is in my scoping, not in the build, and the honest
+record says so.
+
+### VERIFICATION EVIDENCE — remedy probe (SWARM/runs/cycle-009-remedy-probe.mjs)
+
+So that T-034 carries a measured fix rather than a plausible one, I exploited the fact
+that `PreferenceAsymmetryConfig` is injectable — no source edit, nothing written to the
+target:
+
+```
+AS SHIPPED (lock = protein, cuisine, flavour):
+  survivors: 3/12  -> c-04, c-08, c-10
+REMEDY (lock = protein, cuisine only — flavour falls through to the generic path):
+  survivors: 10/12 -> c-01..c-10
+  excluded c-11: strong_dislike:protein=chicken
+  excluded c-12: strong_dislike:cuisine=thai
+REMEDY VERDICT: CLEARS the broad-tag probe while staying binding on protein+cuisine
+```
+
+One config line. Filed as **T-034**, priority 1, route_class core.
+
+### VERIFICATION EVIDENCE — mutation gate, T-004 (D-12 method)
+
+Full output: `.swarm/runs/cycle-009-mutant-T-004.txt`. Nine deliberate defects; the
+committed suite must go red for each.
+
+```
+  killed    M1  ceil -> floor on the derived last coordinate (UNDERBUYING)
+  killed    M2  ceil -> floor on the single-option seed (UNDERBUYING)
+  killed    M3  tie-break compares package COUNT before waste
+  killed    M4  strictlyBetter inverted on waste (picks the WORST cover)
+  killed    M5  expected_surplus computed backwards (requirement - yield)
+  killed    M6  estimate flag always false (a guess presented as exact)
+  killed    M7  confidence gate admits 'inferred' (silent subtraction)
+  killed    M8  deducted uncapped: uses raw usable instead of min(required, usable)
+  SURVIVED  M9  purchase_if_confirmed drops its max(0,...) clamp (negative buy)
+== mutants killed: 8 / 9 ==
+restored cleanly: YES (0 files differ)
+post-mutation suite: GREEN
+```
+
+Both underbuy mutants died, which is the claim that mattered most. M9 is a missing test
+pin, not a module defect — filed as **T-035**, same class as T-031/T-032/T-033.
+
+### bookkeeping
+
+Why the failing item's code is COMMITTED rather than reverted: it is strictly better than
+the cycle-8 state — defect A is fixed and verified, only defect B remains — and the suite
+is green at 297/297, so hard rule 4 holds. Reverting would restore a worse defect. The
+item is marked blocked and the exact residual failure is recorded in KI-5 and T-034; nothing is
+being passed off as done.
+
+Wave autotune: no reverted merges, one failed verify (not ≥ 2) — "any other outcome", so
+`k_current` stays 5 and `wave_streak` resets to 0. `consecutive_no_value` stays 0: T-004
+is real verified value.
+
+Burn attribution: window_tokens 20,499,247 → 32,920,288, delta +12,421,041 credited to
+cycle 8's target (dinner). Running total 51,463,045.
+
+result: **T-004 → done. T-005 → BLOCKED (attempts 2).** NINE verified items of 35.
+
+honest note on what this cycle did NOT establish: still nothing renders. No server, no
+screen — the accessibility must-have and the tokens.css contrast ratios remain unverified
+exactly as at cycles 3 and 5-8, and DoD 7's kill-survival stays a domain-layer claim until
+T-020. The deterministic core is now genuinely deep — quantities, units, normalization,
+scaling, aggregation, filtering, scoring, inventory, packaging, prep — and none of it has
+ever been seen by a human eye or a browser.
+
+next: T-034 is the priority-1 pick — it unblocks DoD 2, it is S-effort, and its remedy is
+already measured, so it should pair with a disjoint critical-path item. T-007 (planset +
+frozen-context swap) is the natural partner: it depends only on modules now verified done,
+and its files (`domain/src/planset.ts`, `swap.ts`) are provably disjoint from
+`preferences.ts`. That pairing would leave T-014/T-015 (server + web shell) as the last
+untouched critical path — and those are what finally put something on a screen, which the
+remaining ~11h needs to reach.
+
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787100649,"next_wakeup_at":1787103349,"pid":2390530,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":4,"ratio":0.782,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":32920288,"window_cost_usd":34.68,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":24211726,"projected_depletion_at":1787112000,"last_probe_ts":1787100649,"last_real_probe_ts":1787100649,"probe_failures":0,"probe_note":"Cycle 9 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh DENIED again - KI-1, 6th consecutive cycle; this cycle the deny surfaced as a harness refusal on the compound `cd /opt/swarm && RUNFILE=... ./bin/swarm-budget.sh` form). Raw: runs/cc-probe-c9.json. Block 23:00-04:00Z, limit 130,591,250 (max prior completed block), used 32,920,288, remaining 97,670,962 over 11351s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 30,976,606 tok/h; actual 24,211,726 tok/h (ccusage 403,529 tok/min) => rho 0.782 => gear_target 4. WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 60.0% at week_elapsed 26.07% => heat 2.30 > 1.3 (opus 58/26.07 = 2.22). Heat rose again, 2.18 -> 2.30: the WINDOW is now comfortably cool (rho 0.78 alone would buy gear 4) and the WEEK is the binding constraint - exactly the case the governor exists for. gear_target 4 clamped to ceiling 2 + promote_blocked; prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. KI-2 UNCHANGED and still open: allocator posture `halted`, swarm_used_pct 8 with allow_overall_pct 0, so the feeder's u/(u+a) denominator is 8 - non-zero again by drift, 5th time this run. My arithmetic reads weekly_used/week_elapsed off the raw account and never uses that formula, so this clamp is sound regardless. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).","weekly":{"ok":true,"weekly_used_pct":60.0,"opus_used_pct":58,"week_elapsed_pct":26.07,"weekly_heat":2.3,"opus_heat":2.22,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":10,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

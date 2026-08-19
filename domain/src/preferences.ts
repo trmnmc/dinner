@@ -18,13 +18,24 @@
  * negative and positive event provably produce different deltas (tested).
  *
  * `never_recommend` is special-cased to the extremes (value −1, confidence
- * 1, durability 'durable') rather than run through the raw/multiplier path
- * — it is a deliberate, immediate lock, not merely a strong dislike that
- * happens to cross the hard-exclusion threshold. Because filters.ts's
- * `strong_dislike` hard exclusion already fires on ANY signal with
- * value ≤ −4/5 and confidence ≥ 1/2 (see HARD_FILTER_CONFIG), a
- * `never_recommend` signal is structurally guaranteed to feed that
- * exclusion the moment it is merged in.
+ * 1, durability 'durable') — a deliberate, immediate lock, not merely a
+ * strong dislike that happens to cross the hard-exclusion threshold — but
+ * ONLY on the card's DISTINCTIVE axes (`never_recommend_lock_attributes`:
+ * protein, cuisine, flavour). Because filters.ts's `strong_dislike` hard
+ * exclusion fires on ANY signal with value ≤ −4/5 and confidence ≥ 1/2
+ * (see HARD_FILTER_CONFIG), each locked signal is structurally guaranteed
+ * to feed that exclusion the moment it is merged in. The GENERIC axes
+ * (spice, richness, method, effort, texture) instead receive an ordinary
+ * strong negative through the raw/multiplier path — durable, and strictly
+ * stronger than `not_for_me` — whose single-event confidence sits BELOW the
+ * hard filter's confidence gate. This scoping is the fix for a measured
+ * interaction defect: writing the lock to every axis made each generic
+ * value (richness=rich, effort=high, method=stir_fry, spice=hot, …) an
+ * independent absolute veto, and ONE tap on one card hard-excluded most of
+ * a catalog that shared none of the card's distinctive character. Generic
+ * axes still learn from the tap; corroborating negative evidence can still
+ * push them across the hard-exclusion threshold later, exactly as repeated
+ * `not_again` feedback already can.
  *
  * A `reason` (feedback) or the `too_much_work` calibration reaction narrows
  * an EXTRA boost onto specific attribute(s) — effort, spice, richness — on
@@ -98,10 +109,28 @@ export interface PreferenceAsymmetryConfig {
    * of asymmetry, not a difference smuggled into the raw amounts. */
   readonly not_for_me_raw_value: Rational;
   /** `never_recommend` is a deliberate lock, not a scaled reaction: exact
-   * value it writes (−1). */
+   * value it writes (−1) — to the lock attributes ONLY (see
+   * `never_recommend_lock_attributes`). */
   readonly never_recommend_value: Rational;
-  /** Exact confidence `never_recommend` writes (1, i.e. maximal). */
+  /** Exact confidence `never_recommend` writes (1, i.e. maximal) — to the
+   * lock attributes ONLY. */
   readonly never_recommend_confidence: Rational;
+  /** The DISTINCTIVE axes that receive `never_recommend`'s absolute lock.
+   * Every axis NOT listed here (the generic axes: spice, richness, method,
+   * effort, texture) receives an ordinary strong negative via the
+   * raw/multiplier path instead (`never_recommend_generic_raw_value`), so a
+   * single tap cannot turn each generic attribute value into an independent
+   * absolute hard-filter veto (the measured interaction defect with
+   * filters.ts's `strong_dislike` exclusion — see module doc). */
+  readonly never_recommend_lock_attributes: readonly PreferenceAttribute[];
+  /** Raw (unsigned) magnitude `never_recommend` applies to every NON-lock
+   * (generic) axis through the ordinary raw/multiplier path. At or above
+   * `durable_raw_threshold`, so the generic signals are still durable and
+   * strictly stronger than `not_for_me` — a meaningful strong negative, not
+   * a toothless one. Its single-event confidence is the ordinary
+   * `negative_confidence_gain`, which sits below
+   * HARD_FILTER_CONFIG.strong_dislike_confidence_min by design. */
+  readonly never_recommend_generic_raw_value: Rational;
   /** Raw magnitude of a single `too_much_work` calibration reaction
    * (before its `effort` boost — see module doc). */
   readonly too_much_work_raw_value: Rational;
@@ -138,6 +167,8 @@ export const PREFERENCE_ASYMMETRY_CONFIG: PreferenceAsymmetryConfig = {
   not_for_me_raw_value: rational(2, 5),
   never_recommend_value: rational(-1),
   never_recommend_confidence: rational(1),
+  never_recommend_lock_attributes: ['protein', 'cuisine', 'flavour'],
+  never_recommend_generic_raw_value: rational(3, 5),
   too_much_work_raw_value: rational(3, 5),
 
   make_again_raw_value: rational(3, 5),
@@ -288,7 +319,10 @@ export interface ApplyCalibrationReactionInput {
  * `PreferenceSignalUpdate`s it implies across every attribute-value pair on
  * the card's `AttributeVector`. `too_much_work` additionally boosts
  * `effort` (see module doc); `never_recommend` writes the extreme lock
- * value/confidence directly, bypassing the raw/multiplier path.
+ * value/confidence directly — but only to the distinctive
+ * `never_recommend_lock_attributes` — while the generic axes receive an
+ * ordinary strong durable negative via the raw/multiplier path (see the
+ * module doc for the interaction defect this scoping fixes).
  */
 export function applyCalibrationReaction(
   input: ApplyCalibrationReactionInput,
@@ -305,12 +339,29 @@ export function applyCalibrationReaction(
       return buildUpdates(pairs, input.member_id, ev, [], -1, config, 'calibration');
     }
     case 'never_recommend': {
-      const ev: RawEvent = {
-        value: config.never_recommend_value,
-        confidence: config.never_recommend_confidence,
+      // The absolute lock — reserved for the card's DISTINCTIVE axes.
+      const lockEv: RawEvent = {
+        value: clampValue(config.never_recommend_value),
+        confidence: clampConfidence(config.never_recommend_confidence),
         durability: 'durable',
       };
-      return buildUpdates(pairs, input.member_id, ev, [], -1, config, 'calibration');
+      // The generic axes get an ordinary strong negative: durable and
+      // stronger than not_for_me, but with the ordinary single-event
+      // confidence, so ONE tap cannot make every generic attribute value
+      // an independent absolute hard-filter veto (see module doc).
+      const genericEv = computeEvent(-1, config.never_recommend_generic_raw_value, config);
+      return pairs.map((p) => {
+        const ev = config.never_recommend_lock_attributes.includes(p.attribute) ? lockEv : genericEv;
+        return {
+          member_id: input.member_id,
+          attribute: p.attribute,
+          attribute_value: p.attribute_value,
+          value: ev.value,
+          confidence: ev.confidence,
+          durability: ev.durability,
+          source: 'calibration' as const,
+        };
+      });
     }
     case 'too_much_work': {
       const ev = computeEvent(-1, config.too_much_work_raw_value, config);

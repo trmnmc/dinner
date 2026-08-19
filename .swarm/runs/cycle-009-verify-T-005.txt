@@ -1,0 +1,52 @@
+== A. THE CYCLE-8 PROBE, VERBATIM — the defect that failed this item ==
+      ONE never_recommend tap -> 6/6 survive (cycle 8 measured 2/6)
+        r-01: (survived)
+        r-02: (survived)
+        r-03: (survived)
+        r-04: (survived)
+        r-05: (survived)
+        r-06: (survived)
+  PASS  CYCLE-8 REGRESSION: a single never_recommend no longer wipes a catalog sharing no protein/cuisine
+
+== B. THE HARDER PROBE — realistic catalog, BROAD flavour tags ==
+      catalog carries 'savoury' on 8/12 recipes: c-01, c-02, c-03, c-05, c-06, c-07, c-09, c-11
+      ONE never_recommend tap on a savoury+spicy chicken/thai card -> 3/12 survive
+        c-01: strong_dislike:flavour=savoury
+        c-02: strong_dislike:flavour=savoury
+        c-03: strong_dislike:flavour=savoury
+        c-04: (survived)
+        c-05: strong_dislike:flavour=savoury
+        c-06: strong_dislike:flavour=savoury
+        c-07: strong_dislike:flavour=savoury
+        c-08: (survived)
+        c-09: strong_dislike:flavour=savoury
+        c-10: (survived)
+        c-11: strong_dislike:protein=chicken, strong_dislike:flavour=savoury
+        c-12: strong_dislike:cuisine=thai
+  FAIL  BROAD-TAG PROBE: a tap on a savoury card does not hard-exclude the catalog's savoury dinners — 8 savoury recipes excluded: c-01, c-02, c-03, c-05, c-06, c-07, c-09, c-11
+  FAIL  BROAD-TAG PROBE: a clear majority of a realistic 12-recipe catalog still survives one tap — only 3/12 survived
+
+== C. never_recommend is still GENUINELY BINDING (not fixed by defanging) ==
+  PASS  the reacted card itself is excluded by its own never_recommend
+  PASS  a recipe sharing the card's PROTEIN is excluded (c-11, chicken)
+  PASS  a recipe sharing the card's CUISINE is excluded (c-12, thai)
+  PASS  never_recommend is strictly more negative AND more durable than not_for_me on EVERY pair
+  PASS  CONTROL: a single not_for_me tap hard-excludes nothing at all
+
+== D. no collateral damage to the 44/45 the module already passed ==
+  PASS  looks_good and not_for_me are driven from the SAME raw magnitude (2/5)
+  PASS  yet |negative value| = 3/2 x positive value exactly (asymmetry preserved)
+  PASS  negative confidence gain still exceeds positive exactly (2/5 vs 1/5)
+  PASS  30 negative merges never drive value below -1
+  PASS  30 positive merges never drive value above +1
+  PASS  confidence never exceeds 1 under 30 merges
+  PASS  calibration card selection still runs after the preferences change
+
+== E. corroboration still escalates (the fix is learning, not amnesia) ==
+      method=braise after TWO taps: value -9/10, confidence 16/25
+  PASS  two never_recommend taps sharing a generic axis DO escalate it to a hard exclusion
+
+== RESULT: 14 passed, 2 failed ==
+FAILURES:
+  - BROAD-TAG PROBE: a tap on a savoury card does not hard-exclude the catalog's savoury dinners — 8 savoury recipes excluded: c-01, c-02, c-03, c-05, c-06, c-07, c-09, c-11
+  - BROAD-TAG PROBE: a clear majority of a realistic 12-recipe catalog still survives one tap — only 3/12 survived

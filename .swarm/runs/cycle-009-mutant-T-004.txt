@@ -1,0 +1,17 @@
+== mutation gate: T-004 (packaging.ts + inventoryMath.ts) ==
+
+  killed    M1  ceil -> floor on the derived last coordinate (UNDERBUYING)
+  killed    M2  ceil -> floor on the single-option seed (UNDERBUYING)
+  killed    M3  tie-break compares package COUNT before waste
+  killed    M4  strictlyBetter inverted on waste (picks the WORST cover)
+  killed    M5  expected_surplus computed backwards (requirement - yield)
+  killed    M6  estimate flag always false (a guess presented as exact)
+  killed    M7  confidence gate admits 'inferred' (silent subtraction)
+  killed    M8  deducted uncapped: uses raw usable instead of min(required, usable)
+  SURVIVED  M9  purchase_if_confirmed drops its max(0,...) clamp (negative buy)   <-- COVERAGE HOLE
+
+== mutants killed: 8 / 9 ==
+SURVIVORS (coverage holes):
+  - M9  purchase_if_confirmed drops its max(0,...) clamp (negative buy)
+restored cleanly: YES (0 files differ)
+post-mutation suite: GREEN

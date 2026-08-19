@@ -1,0 +1,20 @@
+lock set as shipped this cycle: ["protein","cuisine","flavour"]
+
+AS SHIPPED (lock = protein, cuisine, flavour):
+  survivors: 3/12  -> c-04, c-08, c-10
+  excluded c-01: strong_dislike:flavour=savoury
+  excluded c-02: strong_dislike:flavour=savoury
+  excluded c-03: strong_dislike:flavour=savoury
+  excluded c-05: strong_dislike:flavour=savoury
+  excluded c-06: strong_dislike:flavour=savoury
+  excluded c-07: strong_dislike:flavour=savoury
+  excluded c-09: strong_dislike:flavour=savoury
+  excluded c-11: strong_dislike:protein=chicken, strong_dislike:flavour=savoury
+  excluded c-12: strong_dislike:cuisine=thai
+
+REMEDY (lock = protein, cuisine only — flavour falls through to the generic path):
+  survivors: 10/12  -> c-01, c-02, c-03, c-04, c-05, c-06, c-07, c-08, c-09, c-10
+  excluded c-11: strong_dislike:protein=chicken
+  excluded c-12: strong_dislike:cuisine=thai
+
+REMEDY VERDICT: CLEARS the broad-tag probe while staying binding on protein+cuisine
