@@ -187,6 +187,6 @@
     "n": 11,
     "work": "build-wave T-007 (planset+swap, fable) + T-009 (recipe batch 1, sonnet) \u2014 foreground agents",
     "outcome": "2 VERIFIED done (T-007 58/58 conductor gate, T-009 37/37); 339/339 suite green, typecheck clean; T-014 (HTTP server) now fully unblocked; T-038/T-039 filed from builder-raised gaps",
-    "commit": "PENDING"
+    "commit": "c0839b7"
   }
 }
