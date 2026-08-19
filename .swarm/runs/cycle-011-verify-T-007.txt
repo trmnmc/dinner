@@ -1,0 +1,68 @@
+== A. INVARIANT 4, STRUCTURALLY: swap.ts cannot re-run planset ==
+  FAIL  A1: the string "planset" does not appear ANYWHERE in swap.ts  — 8 import lines, none reference planset
+  PASS  A2: swap.ts never names buildPlanSet or evaluateSet
+  PASS  A3: no dynamic import / require could smuggle it in at runtime
+  PASS  A4: planset.ts does not import swap.ts either (no cycle)
+
+== B. CONFIG INTEGRITY — weights are exact and sum to one ==
+  PASS  B1: every PLANSET_CONFIG weight is an exact bigint Rational
+  PASS  B2: PLANSET_CONFIG weights sum to EXACTLY 1  — Σ = 1
+  PASS  B3: every SWAP_CONFIG rank weight is an exact bigint Rational
+  PASS  B4: SWAP_CONFIG rank weights sum to EXACTLY 1  — Σ = 1
+  PASS  B5: the six set-level terms the acceptance names all exist  — individual_fit,ingredient_overlap,protein_diversity,cuisine_diversity,weekly_active_time,total_cost
+  PASS  B6: max_alternatives is 3 (SPEC: at most three)
+  PASS  B7: set term 'ingredient_overlap' exists AND carries non-zero weight  — w = 0.2
+  PASS  B7: set term 'protein_diversity' exists AND carries non-zero weight  — w = 0.12
+  PASS  B7: set term 'cuisine_diversity' exists AND carries non-zero weight  — w = 0.08
+  PASS  B7: set term 'weekly_active_time' exists AND carries non-zero weight  — w = 0.12
+  PASS  B7: set term 'total_cost' exists AND carries non-zero weight  — w = 0.08
+
+== C. THE SET PASS — does it actually optimise the SET? ==
+  PASS  C1: a full three-meal plan on the real+variant catalog  — kind=full
+  PASS  C2: the greedy SET score >= the naive top-3-individually score  — set 0.7712 vs naive 0.5186
+  PASS  C3: the set pass actually CHOSE DIFFERENTLY from naive top-3 on real data (otherwise it is untested)  — differs
+  PASS  C4: Σ marginal contributions == the set total, EXACTLY (no float slop)  — 0.7712 vs 0.7712
+  PASS  C4b: contributions telescope per TERM as well as in total
+  PASS  C5: slot 0 is the best individual score (the declared seed rule)
+  PASS  C6: byte-identical output on a second identical call
+  PASS  C6b: a SHUFFLED candidate array yields the identical chosen set, in the identical order
+  PASS  C7: 0 survivor(s) -> kind 'short', 0 meal(s), missing 3 — no throw, no fabricated meal  — missing=3
+  PASS  C7: 1 survivor(s) -> kind 'short', 1 meal(s), missing 2 — no throw, no fabricated meal  — missing=2
+  PASS  C7: 2 survivor(s) -> kind 'short', 2 meal(s), missing 1 — no throw, no fabricated meal  — missing=1
+  PASS  C8: misaligned scores throw a typed PlanSetError rather than mispairing silently  — misaligned_scores
+  PASS  C8b: same-length but WRONG-ORDER scores are also caught (id cross-check, not just a length check)  — caught
+  PASS  C9: no float appears in any score/weight field of the plan (Invariant 1)  — all Rational
+  PASS  C10: every chosen meal carries 1..3 reason facts  — 3,3,3
+  PASS  C10b: every fact renders through reasons.ts into non-empty copy (single copy module honoured)  — 9 strings, e.g. "Shares 8 ingredients with Weeknight Spaghetti Aglio e Olio."
+
+== D. INVARIANT 4, BEHAVIOURALLY: the frozen two never move ==
+  PASS  D1: across all 27 slot×reason swaps the two untouched meals are deep-equal before and after  — 27/27 unchanged
+  PASS  D2: ...and are returned as the SAME OBJECT REFERENCES (Object.is), not copies  — 27/27 identical references
+  PASS  D3: never more than three alternatives, in any slot, for any reason  — cap held 27/27
+  PASS  D4: the outgoing meal is never returned as an alternative to itself  — none
+  PASS  D5: no alternative is a meal already in the plan  — none
+
+== E. THE NINE REASONS — each promise re-derived from RAW fields ==
+  PASS  E1: EVERY returned alternative keeps its reason's promise, re-derived from raw Recipe fields  — no broken promises across all 27 swaps
+  FAIL  E2: every reason actually produced alternatives on this catalog (none vacuously "passed")  — cheaper
+  PASS  E3: the chosen reason materially reorders the alternatives (>= 4 distinct top picks across the nine reasons)  — 5 distinct top picks
+  PASS  E4: containsPasta identifies the deliberate spaghetti dish
+  PASS  E4b: containsPasta does NOT false-positive on any of the six real recipes
+  PASS  E4c: the pasta dish never survives a no_pasta swap  — excluded in all slots
+  PASS  E5: use_what_i_have returns alternatives once a real inventory exists  — 3 alts
+  PASS  E5b: every use_what_i_have alternative owns a strictly higher fraction of required ingredients (hand-computed)  — outgoing owns 38%, alternatives 100%/100%/100%
+  FAIL  E5c: the dish the pantry was stocked FOR ranks first  — top = one-pot-beef-black-bean-picadillo-skillet-v5
+  PASS  E5d: an all-`inferred` pantry yields NO use_what_i_have alternatives — inferred is never trusted  — no_candidate_satisfies_reason
+  PASS  E6: an empty pool returns a typed no_alternatives with honest counts  — no_candidates_in_pool, pool 0
+  PASS  E6b: even with nothing to offer, the two frozen meals come back
+  PASS  E7: swap output is byte-identical under a shuffled candidate array (stable tie-breaks)  — 9/9 reasons deterministic
+  FAIL  E8: a candidate overlapping only the OUTGOING meal scores exactly like a disjoint one — ranking uses the frozen pair  — 1 vs 0
+  PASS  E9: no float in any swap rank/weight field (Invariant 1)  — all Rational
+  PASS  E9b: every alternative carries 1..3 facts that render into non-empty copy  — 47 alternatives checked
+
+== RESULT: 48 passed, 4 failed ==
+FAILED CHECKS:
+  - A1: the string "planset" does not appear ANYWHERE in swap.ts
+  - E2: every reason actually produced alternatives on this catalog (none vacuously "passed")
+  - E5c: the dish the pantry was stocked FOR ranks first
+  - E8: a candidate overlapping only the OUTGOING meal scores exactly like a disjoint one — ranking uses the frozen pair

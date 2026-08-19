@@ -1,0 +1,201 @@
+{
+  "id": "55555555-5555-4555-8555-555555555555",
+  "slug": "cold-sesame-tofu-cucumber-salad",
+  "name": "Cold Sesame Tofu and Cucumber Salad",
+  "description": "No stove required: pressed tofu, crisp cucumber and carrot tossed in a sesame-soy dressing. The one you make when the kitchen is the last place you want to stand.",
+  "servings_default": 4,
+  "attributes": {
+    "protein": "tofu",
+    "cuisine": "chinese",
+    "flavour": ["savoury", "umami", "tangy", "fresh"],
+    "texture": ["crunchy", "tender"],
+    "spice": "mild",
+    "richness": "light",
+    "method": "no_cook",
+    "effort": "low"
+  },
+  "dietary_tags": ["vegan", "vegetarian", "dairy_free", "nut_free", "egg_free", "shellfish_free"],
+  "allergens": ["soy", "sesame", "gluten", "wheat"],
+  "equipment": ["mixing bowl", "small bowl", "knife", "cutting board"],
+  "cost_band": "low",
+  "dish_count": 2,
+  "total_time_seconds": 1560,
+  "active_time_seconds": 960,
+  "ingredients": [
+    {
+      "id": "tofu",
+      "ingredient_id": "firm_tofu",
+      "display_name": "firm tofu",
+      "quantity": { "kind": "exact", "amount": "400", "unit": "g" },
+      "preparation": "pressed and cubed",
+      "optional": false
+    },
+    {
+      "id": "cucumber",
+      "ingredient_id": "english_cucumber",
+      "display_name": "english cucumber",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "sliced",
+      "optional": false
+    },
+    {
+      "id": "carrot",
+      "ingredient_id": "carrot",
+      "display_name": "carrots",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": "julienned",
+      "optional": false
+    },
+    {
+      "id": "scallion",
+      "ingredient_id": "scallion",
+      "display_name": "scallions",
+      "quantity": { "kind": "exact", "amount": "3", "unit": "count" },
+      "preparation": "sliced",
+      "optional": false
+    },
+    {
+      "id": "garlic",
+      "ingredient_id": "garlic",
+      "display_name": "garlic clove",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "sesame_oil",
+      "ingredient_id": "toasted_sesame_oil",
+      "display_name": "toasted sesame oil",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "rice_vinegar",
+      "ingredient_id": "rice_vinegar",
+      "display_name": "rice vinegar",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "soy_sauce",
+      "ingredient_id": "soy_sauce",
+      "display_name": "soy sauce",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "honey",
+      "ingredient_id": "honey",
+      "display_name": "honey",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "sesame_seeds",
+      "ingredient_id": "sesame_seeds",
+      "display_name": "sesame seeds",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": null,
+      "optional": true
+    },
+    {
+      "id": "pepper_flakes",
+      "ingredient_id": "red_pepper_flakes",
+      "display_name": "red pepper flakes",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "index": 0,
+      "instruction": "Press the tofu between paper towels under a light weight for 10 minutes to remove excess water, then cube it.",
+      "equipment": ["cutting board"],
+      "active_duration_seconds": 120,
+      "unattended_duration_seconds": 600,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "Pressed tofu can sit refrigerated for hours without harm — cube it whenever you're ready to continue." },
+      "timer_duration_seconds": 600
+    },
+    {
+      "id": "s2",
+      "index": 1,
+      "instruction": "Slice the cucumber, julienne the carrots, and slice the scallions.",
+      "equipment": ["knife", "cutting board"],
+      "active_duration_seconds": 480,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s3",
+      "index": 2,
+      "instruction": "Whisk the sesame oil, rice vinegar, soy sauce, honey and minced garlic together in a small bowl to make the dressing.",
+      "equipment": ["small bowl"],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s4",
+      "index": 3,
+      "instruction": "Combine the tofu, cucumber, carrot and scallions in a large bowl. Pour the dressing over and toss gently to coat.",
+      "equipment": ["mixing bowl"],
+      "active_duration_seconds": 120,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s5",
+      "index": 4,
+      "instruction": "Sprinkle with sesame seeds and red pepper flakes to taste. Serve chilled or at room temperature.",
+      "equipment": [],
+      "active_duration_seconds": 60,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    }
+  ]
+}

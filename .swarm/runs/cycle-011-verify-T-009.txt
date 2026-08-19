@@ -1,0 +1,55 @@
+== A. FILES PARSE AND GATE CLEAN (independent re-run) ==
+  PASS  all six recipe files exist and parse  — 6/6
+  PASS  data/recipes contains exactly the six in-scope files  — r01.json,r02.json,r03.json,r04.json,r05.json,r06.json
+  PASS  gateCatalog: all six eligible  — 6/6 eligible
+  PASS  gateCatalog: ZERO issues across all six (not merely eligible)
+
+== B. THE FROZEN CONTRACT (D-7) — right names present, wrong names ABSENT ==
+  PASS  no step carries a SPEC.md-era field name  — none found
+  PASS  every step: maximum_pause / recovery_instruction unions + timer_duration_seconds well-formed  — 35/35 steps
+
+== C. ALL NINE INTERRUPTION FIELDS, EVERY STEP, EVERY RECIPE ==
+  PASS  all 11 required interruption keys present+typed on all 35 steps  — none missing
+  PASS  the batch has real depth (>= 24 steps total)  — 35 steps across 6 recipes
+
+== D. METADATA COHERENCE — was it AUTHORED or mechanically filled? ==
+  PASS  D1: no continuous-attention step is also pause-safe-during or unlimited-pause  — none
+  PASS  D2: unattended time is really modelled (>= 6 steps with unattended > 0)  — 11/35 steps
+  PASS  D3: no step is 0 active AND 0 unattended  — 0 dead steps
+  PASS  D4: no timer outruns its own step duration  — 0 offenders
+  PASS  D5: every recovery instruction is unique — none copy-pasted  — 22 distinct / 22 instructions
+  PASS  D5b: every recovery instruction is substantive (>= 25 chars)  — shortest 86 chars
+        (informational) recovery: 22 instructions, 13 explicit none_available
+  PASS  D7: declared active/total time equals the step sums (re-derived)  — all six consistent
+  PASS  D8: active <= total on every recipe
+  PASS  D8b: at least 4 of 6 have genuine unattended slack
+
+== E. ATTRIBUTE SPREAD — measured, not claimed ==
+  PASS  E1: six DISTINCT proteins  — chicken,beef,shellfish,legume,tofu,egg
+  PASS  E2: six DISTINCT cuisines  — greek,mexican,thai,north_african,chinese,japanese
+  PASS  E3: six DISTINCT cooking methods  — sheet_pan,one_pot,stir_fry,braise,no_cook,stovetop
+  PASS  E4: effort spans all three levels  — low,medium,high
+  PASS  E5: spice spans >= 3 levels  — none,medium,hot,mild
+  PASS  E6: richness spans >= 3 levels  — medium,rich,light
+  PASS  E7: cost bands spread  — low,medium,high
+  PASS  E8: >= 5 distinct DISTINCTIVE (non-generic) flavour tags across the batch  — bright,garlicky,herby,smoky,earthy,spicy,umami,sweet,tangy
+  PASS  E9: at least one genuinely fast dish (active <= 20 min)  — fastest 16 min active
+  PASS  E9b: real active-time range across the batch  — 16–27 min active
+  PASS  E10: six distinct recipe ids
+  PASS  E10b: six distinct slugs
+  PASS  E10c: ingredient line ids unique WITHIN each recipe (grocery provenance keys on them)  — all unique
+
+== F. ALLERGEN / DIETARY TRUTH — re-derived through the registry ==
+  PASS  F1: no dietary tag is contradicted by a registry-resolved allergen class  — all six truthful
+  PASS  F2: every registry-carried allergen is DECLARED on the recipe  — all declared
+  PASS  F3: every ingredient_id resolves in the curated registry  — 79 lines all resolve
+        (informational) registry size: 97 ingredients
+
+== G. QUANTITY ARITHMETIC — the builder's flagged judgement call ==
+        (informational) 69 string-authored quantities, 0 mixed fractions
+  PASS  G1: every string-authored quantity parses to the hand-computed EXACT value  — 69 quantities verified
+  PASS  G2: every quantity is an exact bigint Rational (Invariant 1) — no float leaked in  — 69 amounts
+  PASS  G3: to_taste lines carry no numeric amount (never folded into arithmetic)  — 10 to_taste lines
+  PASS  G4: every recipe declares a sane servings_default  — 4,4,4,4,4,4
+
+== RESULT: 37 passed, 0 failed ==

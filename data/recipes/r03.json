@@ -1,0 +1,242 @@
+{
+  "id": "33333333-3333-4333-8333-333333333333",
+  "slug": "thai-basil-shrimp-stir-fry",
+  "name": "Thai Basil Shrimp Stir-Fry",
+  "description": "High-heat, fast, and loud with flavour: shrimp stir-fried with garlic, chile and basil in a fish-sauce glaze over jasmine rice.",
+  "servings_default": 4,
+  "attributes": {
+    "protein": "shellfish",
+    "cuisine": "thai",
+    "flavour": ["spicy", "fresh", "herby", "umami"],
+    "texture": ["tender", "saucy"],
+    "spice": "hot",
+    "richness": "light",
+    "method": "stir_fry",
+    "effort": "low"
+  },
+  "dietary_tags": ["dairy_free", "nut_free", "egg_free"],
+  "allergens": ["shellfish", "fish", "soy", "gluten", "wheat"],
+  "equipment": ["wok or large skillet", "saucepan for rice"],
+  "cost_band": "high",
+  "dish_count": 3,
+  "total_time_seconds": 2040,
+  "active_time_seconds": 1140,
+  "ingredients": [
+    {
+      "id": "shrimp",
+      "ingredient_id": "shrimp_peeled",
+      "display_name": "peeled and deveined shrimp",
+      "quantity": { "kind": "exact", "amount": "700", "unit": "g" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "rice",
+      "ingredient_id": "jasmine_rice",
+      "display_name": "jasmine rice",
+      "quantity": { "kind": "exact", "amount": "300", "unit": "g" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "garlic",
+      "ingredient_id": "garlic",
+      "display_name": "garlic cloves",
+      "quantity": { "kind": "exact", "amount": "4", "unit": "count" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "ginger",
+      "ingredient_id": "fresh_ginger",
+      "display_name": "fresh ginger",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "jalapeno",
+      "ingredient_id": "jalapeno",
+      "display_name": "jalapeño",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": "sliced",
+      "optional": false
+    },
+    {
+      "id": "bell_pepper",
+      "ingredient_id": "red_bell_pepper",
+      "display_name": "red bell pepper",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "sliced",
+      "optional": false
+    },
+    {
+      "id": "scallion",
+      "ingredient_id": "scallion",
+      "display_name": "scallions",
+      "quantity": { "kind": "exact", "amount": "3", "unit": "count" },
+      "preparation": "sliced",
+      "optional": false
+    },
+    {
+      "id": "basil",
+      "ingredient_id": "fresh_basil",
+      "display_name": "fresh basil",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "cup" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "fish_sauce",
+      "ingredient_id": "fish_sauce",
+      "display_name": "fish sauce",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "soy_sauce",
+      "ingredient_id": "soy_sauce",
+      "display_name": "soy sauce",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "brown_sugar",
+      "ingredient_id": "light_brown_sugar",
+      "display_name": "light brown sugar",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "oil",
+      "ingredient_id": "vegetable_oil",
+      "display_name": "vegetable oil",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "lime",
+      "ingredient_id": "lime",
+      "display_name": "lime",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "cut into wedges",
+      "optional": true
+    },
+    {
+      "id": "pepper_flakes",
+      "ingredient_id": "red_pepper_flakes",
+      "display_name": "red pepper flakes",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "index": 0,
+      "instruction": "Rinse the rice and combine with water in a saucepan according to package directions. Bring to a boil, then cover and reduce to a low simmer.",
+      "equipment": ["saucepan for rice"],
+      "active_duration_seconds": 240,
+      "unattended_duration_seconds": 900,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "The rice can sit covered off the heat for a while without harm — fluff it with a fork whenever you're ready." },
+      "timer_duration_seconds": 900
+    },
+    {
+      "id": "s2",
+      "index": 1,
+      "instruction": "While the rice cooks, mince the garlic and ginger, slice the bell pepper, jalapeños and scallions, pick the basil leaves, and whisk the fish sauce, soy sauce and brown sugar together in a small bowl.",
+      "equipment": ["wok or large skillet"],
+      "active_duration_seconds": 480,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s3",
+      "index": 2,
+      "instruction": "Heat the oil in a wok or large skillet over high heat. Add the shrimp and cook, stirring constantly, until just pink, about 2 minutes.",
+      "equipment": ["wok or large skillet"],
+      "active_duration_seconds": 120,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 20 },
+      "natural_stopping_point": false,
+      "interruption_risk": "high",
+      "recovery_instruction": { "kind": "instruction", "text": "If you had to step away, pull the pan off the heat the moment you return — shrimp that are opaque and firm are done; if still translucent, put it back on the heat only briefly." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s4",
+      "index": 3,
+      "instruction": "Add the garlic, ginger, jalapeño and bell pepper; stir-fry until fragrant and the shrimp are fully cooked, about 2 minutes.",
+      "equipment": ["wok or large skillet"],
+      "active_duration_seconds": 120,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 30 },
+      "natural_stopping_point": false,
+      "interruption_risk": "high",
+      "recovery_instruction": { "kind": "instruction", "text": "Pull the pan off the heat if you step away — garlic can scorch in seconds. Scoop out any blackened bits before continuing; they'll taste bitter otherwise." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s5",
+      "index": 4,
+      "instruction": "Add the sauce and scallions, toss until glossy and everything is coated, about 1 minute. Remove from heat and stir in the basil leaves.",
+      "equipment": ["wok or large skillet"],
+      "active_duration_seconds": 60,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 30 },
+      "natural_stopping_point": true,
+      "interruption_risk": "medium",
+      "recovery_instruction": { "kind": "instruction", "text": "If the sauce reduced too far while you were away, splash in a teaspoon of water to loosen it before serving." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s6",
+      "index": 5,
+      "instruction": "Serve the shrimp over rice with lime wedges and red pepper flakes to taste.",
+      "equipment": [],
+      "active_duration_seconds": 120,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    }
+  ]
+}

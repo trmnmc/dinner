@@ -1,0 +1,275 @@
+{
+  "id": "44444444-4444-4444-8444-444444444444",
+  "slug": "moroccan-chickpea-sweet-potato-braise",
+  "name": "Moroccan-Spiced Chickpea and Sweet Potato Braise",
+  "description": "A long, low simmer of chickpeas and sweet potato in warm cumin, cinnamon and smoked paprika — the weekend-feeling dinner in the lineup.",
+  "servings_default": 4,
+  "attributes": {
+    "protein": "legume",
+    "cuisine": "north_african",
+    "flavour": ["earthy", "sweet", "savoury", "umami"],
+    "texture": ["tender", "brothy"],
+    "spice": "medium",
+    "richness": "medium",
+    "method": "braise",
+    "effort": "high"
+  },
+  "dietary_tags": ["vegan", "vegetarian", "gluten_free", "dairy_free", "nut_free", "egg_free", "soy_free", "shellfish_free"],
+  "allergens": [],
+  "equipment": ["dutch oven", "saucepan"],
+  "cost_band": "low",
+  "dish_count": 2,
+  "total_time_seconds": 4680,
+  "active_time_seconds": 1620,
+  "ingredients": [
+    {
+      "id": "chickpeas",
+      "ingredient_id": "chickpeas_canned",
+      "display_name": "canned chickpeas",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": "drained and rinsed",
+      "optional": false
+    },
+    {
+      "id": "sweet_potato",
+      "ingredient_id": "sweet_potato",
+      "display_name": "sweet potatoes",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": "peeled and cubed",
+      "optional": false
+    },
+    {
+      "id": "onion",
+      "ingredient_id": "yellow_onion",
+      "display_name": "yellow onion",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "diced",
+      "optional": false
+    },
+    {
+      "id": "garlic",
+      "ingredient_id": "garlic",
+      "display_name": "garlic cloves",
+      "quantity": { "kind": "exact", "amount": "3", "unit": "count" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "ginger",
+      "ingredient_id": "fresh_ginger",
+      "display_name": "fresh ginger",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "cumin",
+      "ingredient_id": "ground_cumin",
+      "display_name": "ground cumin",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "cinnamon",
+      "ingredient_id": "ground_cinnamon",
+      "display_name": "ground cinnamon",
+      "quantity": { "kind": "exact", "amount": "1/2", "unit": "tsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "smoked_paprika",
+      "ingredient_id": "smoked_paprika",
+      "display_name": "smoked paprika",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "bay_leaves",
+      "ingredient_id": "bay_leaves",
+      "display_name": "bay leaves",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "tomatoes",
+      "ingredient_id": "crushed_tomatoes_canned",
+      "display_name": "canned crushed tomatoes",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "oil",
+      "ingredient_id": "olive_oil",
+      "display_name": "olive oil",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "salt",
+      "ingredient_id": "kosher_salt",
+      "display_name": "kosher salt",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "pepper",
+      "ingredient_id": "black_pepper",
+      "display_name": "black pepper",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "rice",
+      "ingredient_id": "long_grain_white_rice",
+      "display_name": "long-grain white rice",
+      "quantity": { "kind": "exact", "amount": "300", "unit": "g" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "lemon",
+      "ingredient_id": "lemon",
+      "display_name": "lemon",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "cut into wedges",
+      "optional": true
+    },
+    {
+      "id": "cilantro",
+      "ingredient_id": "cilantro",
+      "display_name": "cilantro",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": "chopped",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "index": 0,
+      "instruction": "Peel and cube the sweet potatoes, dice the onion, and mince the garlic and ginger.",
+      "equipment": ["cutting board"],
+      "active_duration_seconds": 600,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s2",
+      "index": 1,
+      "instruction": "Rinse the rice and combine with water in a saucepan according to package directions. Bring to a boil, then cover and reduce to a low simmer for 18 minutes.",
+      "equipment": ["saucepan"],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 1080,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "The rice holds fine covered off the heat — fluff it with a fork whenever you're ready." },
+      "timer_duration_seconds": 1080
+    },
+    {
+      "id": "s3",
+      "index": 2,
+      "instruction": "Heat the olive oil in a dutch oven over medium heat. Cook the onion, stirring occasionally, until soft, about 5 minutes.",
+      "equipment": ["dutch oven"],
+      "active_duration_seconds": 240,
+      "unattended_duration_seconds": 60,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 300 },
+      "natural_stopping_point": false,
+      "interruption_risk": "medium",
+      "recovery_instruction": { "kind": "instruction", "text": "If the onion browned further than planned, that's fine for this stew — just lower the heat before adding the spices." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s4",
+      "index": 3,
+      "instruction": "Add the garlic, ginger, cumin, cinnamon and smoked paprika; cook, stirring constantly, until fragrant, about 1 minute.",
+      "equipment": ["dutch oven"],
+      "active_duration_seconds": 60,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 20 },
+      "natural_stopping_point": false,
+      "interruption_risk": "high",
+      "recovery_instruction": { "kind": "instruction", "text": "If the spices caught and smell scorched rather than toasty, scrape them out and bloom a fresh spoonful of oil and spices — burnt spices will make the whole stew bitter." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s5",
+      "index": 4,
+      "instruction": "Stir in the crushed tomatoes, chickpeas, sweet potatoes, bay leaves, 2 cups water, salt and pepper. Bring to a boil.",
+      "equipment": ["dutch oven"],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": false,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s6",
+      "index": 5,
+      "instruction": "Reduce heat, cover, and simmer 35 minutes, stirring occasionally, until the sweet potatoes are fork-tender.",
+      "equipment": ["dutch oven"],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 1920,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 1800 },
+      "natural_stopping_point": true,
+      "interruption_risk": "medium",
+      "recovery_instruction": { "kind": "instruction", "text": "If it's simmered longer than planned, check there's still liquid in the pot — stir in a splash of water if it looks dry, then keep simmering until the sweet potatoes are fork-tender." },
+      "timer_duration_seconds": 2100
+    },
+    {
+      "id": "s7",
+      "index": 6,
+      "instruction": "Remove the bay leaves, taste and adjust seasoning, and serve over rice with lemon wedges and cilantro.",
+      "equipment": [],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    }
+  ]
+}

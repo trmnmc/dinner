@@ -1,0 +1,251 @@
+{
+  "id": "66666666-6666-4666-8666-666666666666",
+  "slug": "japanese-soy-butter-egg-fried-rice",
+  "name": "Japanese-Style Soy-Butter Egg Fried Rice",
+  "description": "Yakimeshi-style fried rice finished with butter and soy sauce, topped with a fried egg per bowl — a good way to use rice from earlier in the week.",
+  "servings_default": 4,
+  "attributes": {
+    "protein": "egg",
+    "cuisine": "japanese",
+    "flavour": ["savoury", "umami", "mild"],
+    "texture": ["fluffy", "crispy"],
+    "spice": "none",
+    "richness": "medium",
+    "method": "stovetop",
+    "effort": "medium"
+  },
+  "dietary_tags": ["vegetarian", "nut_free", "shellfish_free"],
+  "allergens": ["egg", "dairy", "soy", "gluten", "wheat", "sesame"],
+  "equipment": ["saucepan", "large skillet or wok", "small bowl", "nonstick pan"],
+  "cost_band": "low",
+  "dish_count": 4,
+  "total_time_seconds": 3000,
+  "active_time_seconds": 1500,
+  "ingredients": [
+    {
+      "id": "rice",
+      "ingredient_id": "long_grain_white_rice",
+      "display_name": "long-grain white rice",
+      "quantity": { "kind": "exact", "amount": "300", "unit": "g" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "eggs",
+      "ingredient_id": "large_egg",
+      "display_name": "large eggs",
+      "quantity": { "kind": "exact", "amount": "6", "unit": "count" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "butter",
+      "ingredient_id": "unsalted_butter",
+      "display_name": "unsalted butter",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "peas",
+      "ingredient_id": "frozen_peas",
+      "display_name": "frozen peas",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "cup" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "carrot",
+      "ingredient_id": "carrot",
+      "display_name": "carrot",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "diced small",
+      "optional": false
+    },
+    {
+      "id": "scallion",
+      "ingredient_id": "scallion",
+      "display_name": "scallions",
+      "quantity": { "kind": "exact", "amount": "4", "unit": "count" },
+      "preparation": "sliced",
+      "optional": false
+    },
+    {
+      "id": "garlic",
+      "ingredient_id": "garlic",
+      "display_name": "garlic cloves",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "soy_sauce",
+      "ingredient_id": "soy_sauce",
+      "display_name": "soy sauce",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "sesame_oil",
+      "ingredient_id": "toasted_sesame_oil",
+      "display_name": "toasted sesame oil",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "oil",
+      "ingredient_id": "vegetable_oil",
+      "display_name": "vegetable oil",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "salt",
+      "ingredient_id": "kosher_salt",
+      "display_name": "kosher salt",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "pepper",
+      "ingredient_id": "black_pepper",
+      "display_name": "black pepper",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "sesame_seeds",
+      "ingredient_id": "sesame_seeds",
+      "display_name": "sesame seeds",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tsp" },
+      "preparation": null,
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "index": 0,
+      "instruction": "Rinse the rice and cook according to package directions, about 15 minutes covered. Spread on a sheet pan or plate to cool and dry slightly for 10 minutes (day-old cold rice works even better, if you have it).",
+      "equipment": ["saucepan"],
+      "active_duration_seconds": 300,
+      "unattended_duration_seconds": 1500,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "The rice can sit and cool for as long as you need — even overnight in the fridge, which actually makes better fried rice." },
+      "timer_duration_seconds": 1500
+    },
+    {
+      "id": "s2",
+      "index": 1,
+      "instruction": "Dice the carrot, slice the scallions, mince the garlic, and whisk 2 of the eggs in a small bowl for scrambling into the rice.",
+      "equipment": ["small bowl"],
+      "active_duration_seconds": 360,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s3",
+      "index": 2,
+      "instruction": "Heat half the vegetable oil in a large skillet or wok over medium-high heat. Add the carrot and cook 2 minutes, then add the peas and half the scallions and cook 1 minute more.",
+      "equipment": ["large skillet or wok"],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 300 },
+      "natural_stopping_point": false,
+      "interruption_risk": "medium",
+      "recovery_instruction": { "kind": "instruction", "text": "If the vegetables browned more than planned, that's fine — just lower the heat before adding the eggs." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s4",
+      "index": 3,
+      "instruction": "Push the vegetables to one side of the pan, pour in the whisked eggs, and scramble until just set, about 1 minute, then mix through.",
+      "equipment": ["large skillet or wok"],
+      "active_duration_seconds": 60,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 20 },
+      "natural_stopping_point": false,
+      "interruption_risk": "high",
+      "recovery_instruction": { "kind": "instruction", "text": "If you had to step away, pull the pan off the heat — if the eggs have set into curds, just stir them through and continue; they don't need to be perfectly soft." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s5",
+      "index": 4,
+      "instruction": "Add the cooled rice, breaking up clumps, and stir-fry over high heat for 3 minutes. Add the soy sauce, butter, garlic and sesame oil, tossing until glossy and evenly coated.",
+      "equipment": ["large skillet or wok"],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 60 },
+      "natural_stopping_point": false,
+      "interruption_risk": "high",
+      "recovery_instruction": { "kind": "instruction", "text": "If the rice caught on the bottom of the pan while you were away, scrape up what's good and stir it through — a few crispy bits are actually desirable in fried rice." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s6",
+      "index": 5,
+      "instruction": "In a separate nonstick pan, fry the remaining 4 eggs sunny-side up in the remaining oil; season with salt and pepper.",
+      "equipment": ["nonstick pan"],
+      "active_duration_seconds": 240,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 30 },
+      "natural_stopping_point": false,
+      "interruption_risk": "high",
+      "recovery_instruction": { "kind": "instruction", "text": "If the whites went further than planned while you were away, flip that egg and finish it over-easy rather than starting over — begin the next one if you have eggs left." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s7",
+      "index": 6,
+      "instruction": "Divide the rice among bowls, top each with a fried egg, the remaining scallions, and sesame seeds. Serve immediately.",
+      "equipment": [],
+      "active_duration_seconds": 180,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    }
+  ]
+}

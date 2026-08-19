@@ -1595,3 +1595,198 @@ runfile-mirror:
 ```json
 {"version": 1, "run_label": "dinner-2026-08-18", "targets": [{"path": "/opt/targets/dinner", "status": "active", "weight": 1}], "rotation_cursor": 0, "rotation_schedule": [0], "stop_at": "2026-08-19T12:00:00+00:00", "usage_reset_at": "2026-08-18T23:00:00+00:00", "model_policy": "value-routing", "auth_mode": "subscription", "heartbeat": {"ts": 1787104794, "next_wakeup_at": 1787107494, "pid": 2399315, "limp": false, "degraded_tiers": []}, "pacing": {"mode": "thermostat", "dial": 1}, "budget": {"source": "probe", "gear": 2, "gear_target": 5, "ratio": 0.499, "mode": "thermostat", "k_cap": 2, "promote": false, "demote": true, "window_tokens": 50916143, "window_cost_usd": 62.97, "api_cap_usd": null, "api_spend_usd": 0, "tokens_per_hour": 19879890, "projected_depletion_at": 1787112000, "last_probe_ts": 1787104794, "last_real_probe_ts": 1787104794, "probe_failures": 0, "probe_note": "Cycle 10 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max`. bin/swarm-budget.sh DENIED again (KI-1, 7th consecutive cycle; the compound `cd && RUNFILE=... ./bin/...` form is refused by the harness). Raw: runs/cc-probe-c10.json. Block 23:00-04:00Z, limit 130,591,250, used 50,916,143, remaining 79,675,107 over 7,206s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 39,804,220 tok/h; actual 19,879,890 tok/h (ccusage 331,332 tok/min) => rho 0.499 => gear_target 5. The WINDOW is now genuinely cool. WEEKLY GOVERNOR still binding on the RAW ACCOUNT (runs/allocator.json): weekly_used 69.0% at week_elapsed 26.78% => heat 2.58 > 1.3; opus 75/26.78 = 2.80. Heat climbed again, 2.30 -> 2.58, and opus_used jumped 58% -> 75% in one cycle. gear_target 5 clamped to ceiling 2 + promote_blocked; prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. THE DECISIVE FACT THIS CYCLE IS NEITHER OF THESE: the account 5h SESSION cap killed cycle 10 mid-wave and 3 pacer spawns after it (KI-6). Neither rho (cool) nor the weekly heat (hot) models that third limit, so the gear arithmetic below is correct and was still not protective. KI-2 UNCHANGED: allocator posture trickle, swarm_used_pct 0 with allow_overall_pct 0, so the feeder u/(u+a) denominator is 0/0 and would DISENGAGE the governor; my arithmetic reads weekly_used/week_elapsed off the raw account and never uses that formula, so this clamp is sound regardless. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).", "weekly": {"ok": true, "weekly_used_pct": 69.0, "opus_used_pct": 75, "week_elapsed_pct": 26.78, "weekly_heat": 2.58, "opus_heat": 2.8, "ceiling": 2, "promote_blocked": true}}, "watchdog": {"mode": "normal", "plist_loaded": true, "lockfile": "/opt/swarm/runs/watchdog.lock", "relaunch_attempts": 0}, "caffeinate_pid": 0, "wrap_up_complete": false, "cycles_since_recycle": 12, "playbook": {"mode": "auto", "applied": [], "vetoed": [], "note": "swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."}, "artifact": {"url": "", "file": "/opt/swarm/runs/dashboard.html", "publish_failures": 0}}
 ```
+
+## cycle 11 | 2026-08-19T02:47:34Z | dinner | BUILD
+
+work: build-wave [T-007 planset+swap (fable, route_class core), T-009 recipe batch 1 (sonnet)]
+why: T-014 — the HTTP server, the item that finally makes ANY of this reachable — was blocked by
+exactly two todo items, T-007 and T-009. Landing both here unblocks it next cycle. Cycle 10 closed
+by naming the run's biggest exposure as "nothing renders"; this pair is the shortest path out of it,
+which is why it beat the web shell (T-015) for the second seat even though T-015 is the item that
+literally draws pixels. T-015 unblocks nothing; the server unblocks the four e2e proofs and every
+screen at once.
+
+dispatch: DIRECT FOREGROUND Agent calls into the main working tree, disjoint scopes, builders
+forbidden every git command (D-11 / KI-4 workaround — no build-wave.js, no worktrees, no branches).
+In-flight marker committed BEFORE dispatch (c75f99b), deleted at close.
+models: T-007 fable (route_class core; the fable guard exempts it from the gear-2 demotion — D-13's
+precedent), T-009 sonnet (kind feature; build never demotes below sonnet). Effective wave size
+min(k_current 5, gear cap 2) = 2.
+craft pack: `node bin/swarm-craft.mjs` ran clean, `degraded: []`. Neither item is UI-flagged (domain
+TypeScript and recipe JSON), so `craft.ui` was not spliced into either prompt — it will matter for
+T-015/T-016 next.
+
+budget: gear 2 (ρ 0.452, gear_target 5 clamped to weekly ceiling 2, promote blocked, demote on).
+Window genuinely cool — 55.6M of 130.6M used with actual burn 19.7M tok/h against a 43.6M target.
+The clamp is the WEEKLY governor, not the window: weekly_used 69.0% at week_elapsed 26.93% ⇒ heat
+2.56, opus 2.79. Both flat versus cycle 10 (2.58 / 75%) — the account did not get hotter this cycle.
+KI-6 quiet: the 01:59Z spawn ran ten minutes to completion and this 02:14Z spawn started clean, so
+the 5h session cap that killed cycle 10 and three pacer spawns has lifted. bin/swarm-budget.sh
+DENIED for the 8th consecutive cycle (KI-1) — probe run directly via the allowlisted npx form, raw
+at runs/cc-probe-c11.json.
+
+control channel: `pending: []`, `applied: []`, no injections. Nothing to apply.
+
+scope discipline, verified mechanically not claimed: `git status --porcelain` after both builders
+returned showed ZERO modified tracked files — only new untracked paths. Neither builder touched a
+manifest, a frozen module, `data/ingredients.json`, or the other's scope. That is the check that
+makes two concurrent agents in one working tree safe, and it is worth more than either builder's
+assurance that they behaved.
+
+### VERIFICATION EVIDENCE — T-007 (gate: SWARM/runs/cycle-011-gate-T007-rev2.mjs) — 58/58, **PASSED**
+
+Full output: `.swarm/runs/cycle-011-verify-T-007-rev2.txt` (rev1 and its 4 failures kept alongside at
+`cycle-011-verify-T-007.txt` — see D-16). Authored at verification time; the builder never saw it and
+it shares nothing with the 40 tests the builder wrote. Run against the SIX REAL RECIPES T-009 landed
+this same cycle plus derived variants — D-14's rule, gate against realistic data, not the author's
+own fixture. Every reason-direction check is re-derived from raw Recipe fields, never from swap.ts's
+own eligibility helpers, which are the thing under test.
+
+```
+== A. INVARIANT 4, STRUCTURALLY ==
+  PASS  "planset" appears NOWHERE in swap.ts outside comments (8 imports, 0 reference it)
+  PASS  never names buildPlanSet/evaluateSet / PASS no dynamic import could smuggle it in
+== C. THE SET PASS ==
+  PASS  greedy SET score 0.7712 >= naive top-3-individually 0.5186
+  PASS  the set pass CHOSE DIFFERENTLY from naive top-3 on real data (so it is actually exercised)
+  PASS  Sigma marginal contributions == set total EXACTLY, and telescopes per TERM (no float slop)
+  PASS  byte-identical on re-run; a SHUFFLED candidate array yields the identical set, same order
+  PASS  0/1/2 survivors -> kind 'short', missing 3/2/1 — no throw, no fabricated meal
+  PASS  wrong-ORDER scores caught by id cross-check, not just a length check
+== D. INVARIANT 4, BEHAVIOURALLY (27 slot x reason swaps) ==
+  PASS  27/27 the two untouched meals deep-equal before and after
+  PASS  27/27 returned as the SAME OBJECT REFERENCES (Object.is), not copies
+  PASS  cap of three alternatives held 27/27 / PASS outgoing meal never offered back to itself
+== E. THE NINE REASONS, re-derived from raw fields ==
+  PASS  zero broken promises across all 27 swaps
+  PASS  faster:6 less_hands_on:8 fewer_dishes:6 more_familiar:6 more_adventurous:3 no_pasta:9
+        different_protein:9 — cheaper excused: 0 strictly-cheaper candidates EXIST (all 3 plan
+        meals are already 'low' band); exercised separately against a high-band meal -> 3 alts,
+        all strictly cheaper
+  PASS  5 distinct top picks across the nine reasons — the reason materially reorders, not just filters
+  PASS  the pasta dish never survives a no_pasta swap; zero false positives on the six real recipes
+  PASS  an all-`inferred` pantry yields NO use_what_i_have alternatives — inferred is never trusted
+  PASS  echo-outgoing-only overlap 0 == disjoint 0, while frozen-echo 1 > disjoint 0
+  PASS  no float in any rank/weight field; every alternative carries 1..3 renderable facts
+== RESULT: 58 passed, 0 failed ==
+```
+
+The E8 pair is the one I would point a reviewer at. It is not enough that a swap RETURNS the frozen
+meals untouched — the alternatives must also be RANKED against them and not against the meal being
+replaced. A candidate carrying only the outgoing meal's exclusive ingredients scores overlap 0,
+exactly like a fully disjoint candidate, while a candidate echoing a frozen meal scores 1. That
+proves the term is correctly scoped AND still alive; either check alone could be passed by a bug.
+
+### VERIFICATION EVIDENCE — T-009 (gate: SWARM/runs/cycle-011-gate-T009.mjs) — 37/37, **PASSED**
+
+Full output: `.swarm/runs/cycle-011-verify-T-009.txt`. Deliberately does NOT reuse the builder's own
+throwaway checker, which only asked "does gateCatalog say eligible?" — the one question a data author
+can trivially satisfy.
+
+```
+  PASS  gateCatalog: 6/6 eligible with ZERO issues (independent re-run)
+  PASS  no step carries a SPEC.md-era field name (D-7 held); 35/35 steps' unions well-formed
+  PASS  all 11 required interruption keys present + typed on all 35 steps
+  PASS  D1 no continuous-attention step is also pause-safe-during or unlimited-pause
+  PASS  D5 22/22 recovery instructions unique — none copy-pasted; shortest 86 chars
+        (informational) 22 instructions, 13 explicit none_available
+  PASS  D7 declared active/total time equals the step sums, re-derived
+  PASS  E1-E3 six DISTINCT proteins / cuisines / methods
+        chicken,beef,shellfish,legume,tofu,egg | greek,mexican,thai,north_african,chinese,japanese
+        sheet_pan,one_pot,stir_fry,braise,no_cook,stovetop
+  PASS  E8 9 distinctive (non-generic) flavour tags / E9 fastest 16 min active, range 16-27 min
+  PASS  F1 no dietary tag contradicted by a registry-resolved allergen class
+  PASS  F2 every registry-carried allergen DECLARED / F3 79/79 ingredient lines resolve
+  PASS  G1 69/69 string-authored quantities parse to the hand-computed EXACT value
+  PASS  G2 every quantity an exact bigint Rational — no float leaked in
+== RESULT: 37 passed, 0 failed ==
+```
+
+Section F is the one that mattered most: allergen classes re-derived INDEPENDENTLY through the
+registry rather than trusting `gateCatalog`, so a bug in the gate could not have hidden a lie in the
+data. That is the "DoD 9 fails via data" failure the design panel predicted and the early catalog
+gate exists to catch.
+
+### VERIFICATION EVIDENCE — full test_cmd (`npm test`, conductor-run)
+
+```
+> three-good-dinners@0.1.0 test
+> npm run typecheck && npm run test:unit
+ℹ tests 339   ℹ pass 339   ℹ fail 0   ℹ cancelled 0   ℹ skipped 0
+```
+
+299 -> 339 (+40 from T-007's own suite). Typecheck ran and passed — the suite is reached only through
+`&&`. Hard rule 4 holds.
+
+post-merge checks: `collision-scan.mjs` and the qa-verify look pass were NOT run, and the reason is
+that neither applies rather than that I skipped them — every file this cycle is domain TypeScript,
+node:test files, or recipe JSON. Nothing the browser is served changed; `web/` still contains only
+`css/tokens.css`. The look pass gets its first real job the cycle T-015 lands.
+
+### the gate corrections, stated plainly
+
+The T-007 gate failed 4 of 52 checks on its first run. All four were the GATE's fault, and I proved
+each one before touching it — diagnostics in `runs/.c11-probe.mjs`, ruling recorded as **D-16**, rev1
+and its failing output kept on disk next to rev2 rather than overwritten. Briefly: A1 tripped on
+swap.ts's own doc comment saying it does not import planset; E2 demanded alternatives from `cheaper`
+when a hand-derived count proved zero strictly-cheaper candidates exist (all three planned meals are
+already the cheapest band); E5c required a specific dish to rank first when five variants tie at 100%
+owned; and E8 cloned an outgoing meal that shared all eight of its required ingredients with the
+frozen pair, so overlap 1 was the correct answer to a confounded question. The rebuilt E8 is a
+strictly stronger test than the one it replaced, and it only exists because the first one went red.
+
+### builder-raised gaps, filed rather than absorbed
+
+Both builders raised their own doubts unprompted, which is what they were asked to do and is worth
+recording as having worked:
+
+- **T-038** (priority 2): swap.ts returns a typed code when it can offer nothing
+  (`no_candidates_in_pool` / `all_candidates_already_in_plan` / `no_candidate_satisfies_reason`), but
+  `reasons.ts` — the single copy module — has no fact for "nothing to offer", so there is no rendered
+  copy. The plan screen needs it or a legitimate empty answer will read as a bug.
+- **T-039** (priority 4, deliberately low): `familiarityOf` is duplicated in swap.ts because score.ts's
+  novelty anchor logic is not exported and score.ts is frozen. Two copies of one definition is real
+  drift debt — but both are currently correct and tested, so it must not outrank a screen the user
+  can see.
+- `no_pasta` is a name-fragment heuristic with no pasta class in the registry. Recorded as a binding
+  constraint on T-010/T-011: keep pasta ingredient ids and dish names recognisable, or the app will
+  silently show pasta to someone who asked for none.
+
+One small correction to a builder claim, non-blocking: T-009's notes said quantities were authored as
+mixed fractions like `"1 1/2"`. The gate found 69 string-authored quantities and ZERO mixed fractions
+— they are plain decimal/integer strings. All 69 were verified to parse to the hand-computed exact
+value regardless, so the data is right and only the description was off.
+
+### bookkeeping
+
+Wave autotune: zero reverted merges, zero failed verifies, both items delivered — a CLEAN wave.
+`wave_streak` 0 -> 1; `k_current` stays 5 (it rises at a streak of 2). Effective wave size is
+gear-capped at 2 regardless, so this is bookkeeping rather than capacity.
+
+Burn attribution: window_tokens 50,916,143 -> 55,596,640, delta +4,680,497 credited to cycle 10's
+target (dinner). Running total 74,139,397.
+
+`consecutive_no_value` stays 0 — two verified items is real value.
+
+result: **T-007 -> done. T-009 -> done. TWELVE verified items of 39.** T-014's dependency list is now
+fully satisfied.
+
+honest note on what this cycle did NOT establish: the same one as cycles 9 and 10, and it is now the
+only thing standing between this run and a good morning. **Nothing still renders.** Thirteen verified
+domain modules, six proven recipes, 339 green tests, and not one pixel has been seen by a browser.
+The accessibility must-have and the tokens.css contrast ratios have been unverified since cycle 3,
+and DoD 7's kill-survival remains a domain-layer claim until T-020 can run against a real server. The
+difference tonight is that the blocker is gone: T-014 was waiting on exactly these two items and is
+now free.
+
+next: **T-014 (HTTP server + routes + entrypoint) takes the next cycle, and it is not negotiable
+against anything else in the backlog** — it is effort L, it unblocks T-015 through T-023 in one move,
+and it is the only item that converts a proven engine into something a person can open. Pair it with
+T-015 (web shell, deps already satisfied, disjoint scope: server/ + tests/routes vs web/) if the wave
+cap still allows two. ~9h remain to stop_at 12:00Z, which is enough — but only if the server lands
+next, not the cycle after.
+
+runfile-mirror:
+```json
+{"version": 1, "run_label": "dinner-2026-08-18", "targets": [{"path": "/opt/targets/dinner", "status": "active", "weight": 1}], "rotation_cursor": 0, "rotation_schedule": [0], "stop_at": "2026-08-19T12:00:00+00:00", "usage_reset_at": "2026-08-18T23:00:00+00:00", "model_policy": "value-routing", "auth_mode": "subscription", "heartbeat": {"ts": 1787107098, "next_wakeup_at": 1787109798, "pid": 2399315, "limp": false, "degraded_tiers": []}, "pacing": {"mode": "thermostat", "dial": 1}, "budget": {"source": "probe", "gear": 2, "gear_target": 5, "ratio": 0.499, "mode": "thermostat", "k_cap": 2, "promote": false, "demote": true, "window_tokens": 50916143, "window_cost_usd": 62.97, "api_cap_usd": null, "api_spend_usd": 0, "tokens_per_hour": 19879890, "projected_depletion_at": 1787112000, "last_probe_ts": 1787104794, "last_real_probe_ts": 1787104794, "probe_failures": 0, "probe_note": "Cycle 10 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max`. bin/swarm-budget.sh DENIED again (KI-1, 7th consecutive cycle; the compound `cd && RUNFILE=... ./bin/...` form is refused by the harness). Raw: runs/cc-probe-c10.json. Block 23:00-04:00Z, limit 130,591,250, used 50,916,143, remaining 79,675,107 over 7,206s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 39,804,220 tok/h; actual 19,879,890 tok/h (ccusage 331,332 tok/min) => rho 0.499 => gear_target 5. The WINDOW is now genuinely cool. WEEKLY GOVERNOR still binding on the RAW ACCOUNT (runs/allocator.json): weekly_used 69.0% at week_elapsed 26.78% => heat 2.58 > 1.3; opus 75/26.78 = 2.80. Heat climbed again, 2.30 -> 2.58, and opus_used jumped 58% -> 75% in one cycle. gear_target 5 clamped to ceiling 2 + promote_blocked; prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. THE DECISIVE FACT THIS CYCLE IS NEITHER OF THESE: the account 5h SESSION cap killed cycle 10 mid-wave and 3 pacer spawns after it (KI-6). Neither rho (cool) nor the weekly heat (hot) models that third limit, so the gear arithmetic below is correct and was still not protective. KI-2 UNCHANGED: allocator posture trickle, swarm_used_pct 0 with allow_overall_pct 0, so the feeder u/(u+a) denominator is 0/0 and would DISENGAGE the governor; my arithmetic reads weekly_used/week_elapsed off the raw account and never uses that formula, so this clamp is sound regardless. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).", "weekly": {"ok": true, "weekly_used_pct": 69.0, "opus_used_pct": 75, "week_elapsed_pct": 26.78, "weekly_heat": 2.58, "opus_heat": 2.8, "ceiling": 2, "promote_blocked": true}}, "watchdog": {"mode": "normal", "plist_loaded": true, "lockfile": "/opt/swarm/runs/watchdog.lock", "relaunch_attempts": 0}, "caffeinate_pid": 0, "wrap_up_complete": false, "cycles_since_recycle": 12, "playbook": {"mode": "auto", "applied": [], "vetoed": [], "note": "swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."}, "artifact": {"file": "/opt/swarm/runs/dashboard.html", "publish_failures": 0}}
+```

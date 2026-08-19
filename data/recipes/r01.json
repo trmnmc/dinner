@@ -1,0 +1,176 @@
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "slug": "greek-sheet-pan-chicken-thighs-with-potatoes",
+  "name": "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta",
+  "description": "Bone-in flavour without the fuss: chicken thighs and potato wedges roast on one pan in a lemon-oregano marinade, finished with crumbled feta.",
+  "servings_default": 4,
+  "attributes": {
+    "protein": "chicken",
+    "cuisine": "greek",
+    "flavour": ["bright", "garlicky", "herby"],
+    "texture": ["crispy", "tender"],
+    "spice": "none",
+    "richness": "medium",
+    "method": "sheet_pan",
+    "effort": "low"
+  },
+  "dietary_tags": ["gluten_free", "nut_free", "egg_free", "soy_free", "shellfish_free"],
+  "allergens": ["dairy"],
+  "equipment": ["sheet pan", "oven", "mixing bowl"],
+  "cost_band": "low",
+  "dish_count": 2,
+  "total_time_seconds": 3360,
+  "active_time_seconds": 1080,
+  "ingredients": [
+    {
+      "id": "chicken",
+      "ingredient_id": "chicken_thigh_boneless",
+      "display_name": "boneless skinless chicken thighs",
+      "quantity": { "kind": "exact", "amount": "900", "unit": "g" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "potatoes",
+      "ingredient_id": "russet_potato",
+      "display_name": "russet potatoes",
+      "quantity": { "kind": "exact", "amount": "4", "unit": "count" },
+      "preparation": "cut into wedges",
+      "optional": false
+    },
+    {
+      "id": "lemon",
+      "ingredient_id": "lemon",
+      "display_name": "lemons",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "count" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "garlic",
+      "ingredient_id": "garlic",
+      "display_name": "garlic cloves",
+      "quantity": { "kind": "exact", "amount": "4", "unit": "count" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "oil",
+      "ingredient_id": "olive_oil",
+      "display_name": "olive oil",
+      "quantity": { "kind": "exact", "amount": "3", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "oregano",
+      "ingredient_id": "dried_oregano",
+      "display_name": "dried oregano",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "salt",
+      "ingredient_id": "kosher_salt",
+      "display_name": "kosher salt",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "pepper",
+      "ingredient_id": "black_pepper",
+      "display_name": "black pepper",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "feta",
+      "ingredient_id": "feta",
+      "display_name": "feta",
+      "quantity": { "kind": "exact", "amount": "75", "unit": "g" },
+      "preparation": "crumbled",
+      "optional": true
+    },
+    {
+      "id": "parsley",
+      "ingredient_id": "flat_leaf_parsley",
+      "display_name": "flat-leaf parsley",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": "chopped",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "index": 0,
+      "instruction": "Heat the oven to 425F/220C. In a large bowl, whisk the oil, juice of 1 lemon, garlic, oregano, salt and pepper. Cut the second lemon into wedges. Toss the chicken thighs and potato wedges in the marinade.",
+      "equipment": ["mixing bowl", "oven"],
+      "active_duration_seconds": 600,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "The marinated chicken and potatoes hold fine at room temperature for the time this takes — just pick up where you left off." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s2",
+      "index": 1,
+      "instruction": "Arrange the chicken and potatoes in a single layer on a sheet pan.",
+      "equipment": ["sheet pan"],
+      "active_duration_seconds": 300,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 1800 },
+      "natural_stopping_point": false,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "If you stepped away before the pan went in, everything is still raw and safe — finish arranging it in a single layer and put it in the oven." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s3",
+      "index": 2,
+      "instruction": "Roast for 35 minutes, flipping once halfway, until the chicken reaches 165F/74C and the potatoes are fork-tender.",
+      "equipment": ["oven", "sheet pan"],
+      "active_duration_seconds": 120,
+      "unattended_duration_seconds": 1980,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": false,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "The chicken and potatoes are still roasting on their own — check doneness with a thermometer when you're back; if it's run well past 35 minutes, just confirm the chicken is at least 165F before serving." },
+      "timer_duration_seconds": 2100
+    },
+    {
+      "id": "s4",
+      "index": 3,
+      "instruction": "Rest the chicken 5 minutes, then top with crumbled feta and parsley and serve with the lemon wedges.",
+      "equipment": [],
+      "active_duration_seconds": 60,
+      "unattended_duration_seconds": 300,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "instruction", "text": "The chicken can rest longer than 5 minutes without issue — top with feta and parsley whenever you're ready to serve." },
+      "timer_duration_seconds": 300
+    }
+  ]
+}

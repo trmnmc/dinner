@@ -1,0 +1,250 @@
+{
+  "id": "22222222-2222-4222-8222-222222222222",
+  "slug": "one-pot-beef-black-bean-picadillo-skillet",
+  "name": "One-Pot Beef and Black Bean Picadillo Skillet",
+  "description": "A saucy, smoky-sweet ground beef skillet with black beans and warm spices, spooned into warm corn tortillas.",
+  "servings_default": 4,
+  "attributes": {
+    "protein": "beef",
+    "cuisine": "mexican",
+    "flavour": ["savoury", "smoky", "earthy"],
+    "texture": ["saucy", "tender"],
+    "spice": "medium",
+    "richness": "rich",
+    "method": "one_pot",
+    "effort": "medium"
+  },
+  "dietary_tags": ["gluten_free", "dairy_free", "nut_free", "egg_free", "soy_free", "shellfish_free"],
+  "allergens": [],
+  "equipment": ["large skillet or dutch oven", "cutting board"],
+  "cost_band": "medium",
+  "dish_count": 1,
+  "total_time_seconds": 2160,
+  "active_time_seconds": 1410,
+  "ingredients": [
+    {
+      "id": "beef",
+      "ingredient_id": "ground_beef",
+      "display_name": "ground beef",
+      "quantity": { "kind": "exact", "amount": "700", "unit": "g" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "onion",
+      "ingredient_id": "yellow_onion",
+      "display_name": "yellow onion",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "diced",
+      "optional": false
+    },
+    {
+      "id": "garlic",
+      "ingredient_id": "garlic",
+      "display_name": "garlic cloves",
+      "quantity": { "kind": "exact", "amount": "3", "unit": "count" },
+      "preparation": "minced",
+      "optional": false
+    },
+    {
+      "id": "bell_pepper",
+      "ingredient_id": "red_bell_pepper",
+      "display_name": "red bell pepper",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "diced",
+      "optional": false
+    },
+    {
+      "id": "black_beans",
+      "ingredient_id": "black_beans_canned",
+      "display_name": "canned black beans",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "drained and rinsed",
+      "optional": false
+    },
+    {
+      "id": "tomatoes",
+      "ingredient_id": "crushed_tomatoes_canned",
+      "display_name": "canned crushed tomatoes",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "tomato_paste",
+      "ingredient_id": "tomato_paste",
+      "display_name": "tomato paste",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "chili_powder",
+      "ingredient_id": "chili_powder",
+      "display_name": "chili powder",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "cumin",
+      "ingredient_id": "ground_cumin",
+      "display_name": "ground cumin",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "salt",
+      "ingredient_id": "kosher_salt",
+      "display_name": "kosher salt",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "pepper",
+      "ingredient_id": "black_pepper",
+      "display_name": "black pepper",
+      "quantity": { "kind": "to_taste" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "oil",
+      "ingredient_id": "vegetable_oil",
+      "display_name": "vegetable oil",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "tbsp" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "tortillas",
+      "ingredient_id": "corn_tortillas",
+      "display_name": "corn tortillas",
+      "quantity": { "kind": "exact", "amount": "8", "unit": "count" },
+      "preparation": null,
+      "optional": false
+    },
+    {
+      "id": "lime",
+      "ingredient_id": "lime",
+      "display_name": "lime",
+      "quantity": { "kind": "exact", "amount": "1", "unit": "count" },
+      "preparation": "cut into wedges",
+      "optional": true
+    },
+    {
+      "id": "cilantro",
+      "ingredient_id": "cilantro",
+      "display_name": "cilantro",
+      "quantity": { "kind": "exact", "amount": "2", "unit": "tbsp" },
+      "preparation": "chopped",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "index": 0,
+      "instruction": "Dice the onion and bell pepper, and mince the garlic.",
+      "equipment": ["cutting board"],
+      "active_duration_seconds": 300,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s2",
+      "index": 1,
+      "instruction": "Heat the oil in a large skillet over medium-high heat. Add the onion and bell pepper and cook, stirring occasionally, until softened, about 5 minutes.",
+      "equipment": ["large skillet or dutch oven"],
+      "active_duration_seconds": 270,
+      "unattended_duration_seconds": 30,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 180 },
+      "natural_stopping_point": false,
+      "interruption_risk": "medium",
+      "recovery_instruction": { "kind": "instruction", "text": "If the vegetables browned more than planned, that's fine — stir and continue, just lower the heat before the next step." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s3",
+      "index": 2,
+      "instruction": "Add the ground beef, breaking it apart with a spoon, and cook until browned, about 8 minutes. Drain excess fat.",
+      "equipment": ["large skillet or dutch oven"],
+      "active_duration_seconds": 360,
+      "unattended_duration_seconds": 120,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 300 },
+      "natural_stopping_point": false,
+      "interruption_risk": "medium",
+      "recovery_instruction": { "kind": "instruction", "text": "If the beef sat off the heat partway through, that's fine — return it to medium-high heat and keep breaking it apart until no pink remains." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s4",
+      "index": 3,
+      "instruction": "Stir in the garlic, chili powder and cumin; cook, stirring constantly, until fragrant, about 1 minute.",
+      "equipment": ["large skillet or dutch oven"],
+      "active_duration_seconds": 60,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": true,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": false,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 30 },
+      "natural_stopping_point": false,
+      "interruption_risk": "high",
+      "recovery_instruction": { "kind": "instruction", "text": "If the garlic caught and turned dark, scoop it out before it tastes bitter and stir in a fresh spoonful with the spices." },
+      "timer_duration_seconds": null
+    },
+    {
+      "id": "s5",
+      "index": 4,
+      "instruction": "Add the crushed tomatoes, tomato paste, black beans, salt and pepper. Bring to a boil, then reduce heat and simmer uncovered 12 minutes, stirring occasionally, until thickened.",
+      "equipment": ["large skillet or dutch oven"],
+      "active_duration_seconds": 120,
+      "unattended_duration_seconds": 600,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "bounded", "seconds": 600 },
+      "natural_stopping_point": true,
+      "interruption_risk": "medium",
+      "recovery_instruction": { "kind": "instruction", "text": "If it's simmered longer than planned and looks dry, stir in a splash of water and continue simmering." },
+      "timer_duration_seconds": 720
+    },
+    {
+      "id": "s6",
+      "index": 5,
+      "instruction": "Warm the tortillas, squeeze lime over the skillet, and top with cilantro. Serve.",
+      "equipment": [],
+      "active_duration_seconds": 300,
+      "unattended_duration_seconds": 0,
+      "requires_continuous_attention": false,
+      "safe_to_pause_before": true,
+      "safe_to_pause_during": true,
+      "safe_to_pause_after": true,
+      "maximum_pause": { "kind": "unlimited" },
+      "natural_stopping_point": true,
+      "interruption_risk": "low",
+      "recovery_instruction": { "kind": "none_available" },
+      "timer_duration_seconds": null
+    }
+  ]
+}
