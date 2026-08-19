@@ -3896,7 +3896,7 @@ the largest unverified surface in this run).
 
 runtime footer — cycle 23
 
-commit: (see below)
+commit: ca23db0 "cycle 23: T-017 + T-038 + T-057 verified [3 verified, suite 394/394, gates 15/15 + 17/17 + 20/21]" (pushed to origin/master, 64703ad..ca23db0)
 next wakeup: 1787131878 (2026-08-19T09:31:18Z, +90s — base delay after a verified-value cycle; no pacing multiplier, gears never touch the wakeup). Clamp satisfied: 1787131878 + 900 = 1787132778 << stop_at 1787140800.
 runfile-mirror:
 ```json
