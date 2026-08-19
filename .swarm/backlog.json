@@ -74,7 +74,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-001",
         "T-002"
@@ -97,7 +97,8 @@
       "route_class": "core",
       "model": "fable",
       "attempts": 0,
-      "notes": "Invariant 1 binds: Rational only, no floats. Scale factor = target_servings / servings_default applied to min and max independently. Differing preparation states preserved on the line, never silently merged. Traceability is a data structure produced here, not a UI afterthought — DoD 5's test asserts these links exist for every line."
+      "notes": "Invariant 1 binds: Rational only, no floats. Scale factor = target_servings / servings_default applied to min and max independently. Differing preparation states preserved on the line, never silently merged. Traceability is a data structure produced here, not a UI afterthought — DoD 5's test asserts these links exist for every line.",
+      "verified_cycle": 7
     },
     {
       "id": "T-004",
@@ -938,7 +939,7 @@
       "priority": 1,
       "value": "H",
       "effort": "S",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-006"
       ],
@@ -958,7 +959,8 @@
       "route_class": "core",
       "model": "sonnet",
       "attempts": 0,
-      "notes": "T-006 landed score.ts with ZERO committed test coverage: the builder was killed by the harness before it wrote this file. The conductor gate (SWARM/runs/cycle-006-gate-T006.mjs) verified the behaviour at cycle 6, but that gate is not in the repo and npm test does not run it, so a weight drift would ship silently. This item closes that hole. Do NOT copy the conductor gate; write tests from SPEC."
+      "notes": "T-006 landed score.ts with ZERO committed test coverage: the builder was killed by the harness before it wrote this file. The conductor gate (SWARM/runs/cycle-006-gate-T006.mjs) verified the behaviour at cycle 6, but that gate is not in the repo and npm test does not run it, so a weight drift would ship silently. This item closes that hole. Do NOT copy the conductor gate; write tests from SPEC. CYCLE 7 VERIFIED: conductor mutation gate killed 11/13 mutants; all six weight literals, the sum-to-one, the recomputed total, the Rational structure check and the injected-config check are genuinely drift-catching. Two mutants SURVIVED (recent_repeat penalty amount 0.15->0.05; excessive_active_time threshold 2400->999999) because the total test reads penalties back from the engine rather than pinning the config literals. Those are outside this item written acceptance -> filed as T-031, not papered over.",
+      "verified_cycle": 7
     },
     {
       "id": "T-030",
@@ -988,6 +990,35 @@
       "model": "sonnet",
       "attempts": 0,
       "notes": "Found by the cycle-6 conductor gate (check N5d). parseIngredientRegistry keys uniqueness on name.toLowerCase(); normalize.ts keys its alias index on foldIngredientText (lowercase + COLLAPSED whitespace). An alias pair differing only in internal whitespace therefore passes the parser and then silently collides in the fold index, where last-writer-wins. LATENT, not live: gate check N4 proves the shipped 97-entry registry has no such pair, so no current behaviour is wrong. It is an authoring-time trap, and DoD 4 is exactly about duplicate lines caused by naming differences."
+    },
+    {
+      "id": "T-031",
+      "title": "Pin the six penalty amounts and the score thresholds against silent drift",
+      "kind": "fix",
+      "priority": 2,
+      "value": "H",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-029"
+      ],
+      "files_hint": [
+        "tests/score.test.ts"
+      ],
+      "acceptance": "Mutating any one of the six penalty amounts in SCORE_CONFIG (recent_repeat 0.15, repeated_cuisine 0.06, repeated_format 0.04, excessive_active_time 0.08, dish_count 0.02, likely_waste 0.05), or either of the excessive_active_time_threshold_seconds (2400) and dish_count_penalty_cap (0.10) settings, turns the suite RED. Each is asserted as an exact Rational literal, and at least one fixture actually draws each penalty so a threshold change is observable in a total.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [
+        "Deterministic recommendation engine"
+      ],
+      "dod": [
+        2,
+        11
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Found by the cycle-7 conductor mutation gate (SWARM/runs/cycle-007-gate-T029.mjs), evidence in .swarm/runs/cycle-007-verify-T-029.txt. Root cause is specific and worth understanding before fixing: the total test recomputes weighted components from a SPEC_WEIGHTS literal declared in the test (which is why every weight mutant dies) but subtracts penalties by reading b.penalties[name] back from the engine (line ~360), so a penalty AMOUNT drift mutates test and engine in lockstep and stays invisible. Fix by pinning penalty literals the same way SPEC_WEIGHTS pins the weights. Do NOT weaken or rewrite the existing passing assertions; add to them. repeat_penalty_window_days and dish_count_free_allowance are already covered (both mutants died)."
     }
   ]
 }

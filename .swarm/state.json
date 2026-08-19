@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 6,
+  "cycle": 7,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -87,6 +87,20 @@
       "decision": "Cycle 6 was killed mid-wave by the pacer's 600s background-task ceiling (\"Background tasks still running after 600s; terminating\", runs/pacer.log 22:55Z). This session RESUMED cycle 6 rather than opening cycle 7: merged wave-006-T-002 (complete and committed by its builder), salvage-committed the T-006 builder's uncommitted worktree files, merged those too, then authored and ran both verification gates.",
       "why": "The in-flight marker cycle 6 wrote at dispatch (D-8's lesson from cycle 4) worked exactly as designed — it named the branches, the worktrees and the recovery procedure, so this session lost no time diagnosing. The T-006 builder had written filters.ts, score.ts and filters.test.ts but not score.test.ts; that work was coherent and self-contained (imports only frozen modules), so salvaging beat discarding 1,370 lines and rebuilding. What the salvage CANNOT do is invent the missing regression tests — filed as T-029 rather than papered over.",
       "cycle": 6
+    },
+    {
+      "id": "D-11",
+      "topic": "harness-workaround",
+      "decision": "Cycle 7 dispatched its two builders as DIRECT, FOREGROUND Agent calls editing the main working tree under strictly disjoint file scopes — no build-wave workflow, no worktrees, no builder branches. Both builders were forbidden to run any git command; the conductor committed.",
+      "why": "KI-4 killed cycles 4 and 6 mid-wave. This cycle established the mechanism: bin/swarm-pacer.sh spawns `claude -p` synchronously with NO timeout of its own (verified by reading lines 232-260), so the 600s guillotine is purely the harness background-task wait ceiling (CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at turn end. Foreground agents are part of the turn, not background tasks, so the ceiling never applies. The wave ran 424s and 356s — both would have been at risk, and the T-029 builder in particular was still working at the 356s mark. This is a prompt-side workaround costing nothing; the durable fix is still in the pacer and still belongs in the morning report.",
+      "cycle": 7
+    },
+    {
+      "id": "D-12",
+      "topic": "verification-method",
+      "decision": "A backlog item whose deliverable is a TEST FILE is gated by MUTATION TESTING, not by a green suite. T-029 was verified by injecting 13 deliberate defects into score.ts one at a time and requiring the committed suite to go red for each.",
+      "why": "A file of assert.ok(true) passes npm test. For T-029 specifically the whole point was that score.ts had zero committed coverage, so accepting `suite green` as evidence would have re-created the exact hole the item existed to close. The method paid for itself immediately: 11 of 13 mutants died, but two survived and revealed a precise, non-obvious gap (penalties are read back from the engine rather than pinned as literals, so penalty-amount drift mutates test and engine in lockstep). That gap is invisible to every other form of review.",
+      "cycle": 7
     }
   ],
   "known_issues": [
@@ -118,9 +132,9 @@
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
-    "k_current": 4,
-    "wave_streak": 1,
-    "window_tokens_attributed": 19263667
+    "k_current": 5,
+    "wave_streak": 0,
+    "window_tokens_attributed": 28482688
   },
   "qa": {
     "last_look_cycle": null,
@@ -128,9 +142,9 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 6,
-    "work": "resumed the killed cycle-6 build wave: merged T-002 + T-006, authored and ran both verification gates",
-    "outcome": "both items done and verified: 32/32 units+normalize gate, 18/18 filters+score gate, 152/152 suite green; all 14 mutants detected",
-    "commit": "6f02235"
+    "n": 7,
+    "work": "build-wave k=2 (foreground agents): T-003 scaling+aggregation+traceability, T-029 score.ts regression tests",
+    "outcome": "both verified done: T-003 gate 43/43, T-029 mutation gate killed 11/13; 187/187 suite green; 2 surviving mutants filed as T-031",
+    "commit": "PENDING"
   }
 }

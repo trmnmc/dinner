@@ -849,3 +849,176 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787096449,"next_wakeup_at":1787097349,"pid":2361607,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":1.23,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":720910,"window_cost_usd":0.8827030000000001,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":35326700,"projected_depletion_at":1787108960,"last_probe_ts":1787096449,"last_real_probe_ts":1787096449,"probe_failures":0,"probe_note":"Cycle 6 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh DENIED again \u2014 KI-1 recurs, 3rd consecutive cycle). Raw probe: runs/cc-probe-c6.json; rho arithmetic: runs/.c6-rho.mjs. NEW 5h window 23:00-04:00Z opened 12 min before this cycle. limit=max prior block 130,591,250; used 720,910; remaining 129,870,340 over 16,274s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 28,728,845 tok/h; actual 35,326,700 tok/h (ccusage burnRate 588,778 tok/min) => rho 1.23 => gear_target 2. Caveat recorded, not hidden: a burn rate sampled 12 min into a fresh window is spiky and this rho is the least trustworthy of the run so far \u2014 but it lands in the same gear the governor would force anyway, so nothing rests on it. WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 54.0% at week_elapsed 25.27% => heat 2.14 > 1.3 (opus 50/25.27 = 1.98) => ceiling 2 + promote_blocked. KI-2 status: allocator swarm_used_pct recovered 0 -> 2 with allow_overall_pct still 0, so the feeder's denominator is non-zero this cycle and the governor would engage \u2014 but ONLY by luck of drift, exactly as at cycle 3. The zero-envelope blind spot is unchanged and the bug stays open. gear_target 2, prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).","weekly":{"ok":true,"weekly_used_pct":54,"opus_used_pct":50,"week_elapsed_pct":25.27,"weekly_heat":2.14,"opus_heat":1.98,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":7,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 7 | 2026-08-19T00:05:00+0000 | dinner | BUILD
+
+clock: now 1787097900, stop_at 1787140800 — 11.9h remaining. No admission pressure; a
+2700s build wave fits with 9h to spare.
+
+budget: gear 2 (rho 0.966 => gear_target 3 CRUISE, clamped by the weekly governor to 2).
+9,939,931 of 130,591,250 window tokens used, 27.9M tok/h actual vs 28.9M target to the
+04:00Z block end. Read plainly: this WINDOW is paced almost perfectly, but the WEEK is
+hot — 54.0% used at 25.47% elapsed, heat 2.12 — and the week wins. promote blocked,
+demote true, wave cap 2. bin/swarm-budget.sh DENIED for the 4th consecutive cycle
+(KI-1); probe run directly via the allowlisted npx ccusage. KI-2 unchanged and still
+open — the feeder would have engaged the governor this cycle only by luck of drift
+(swarm_used_pct 2, allow_overall_pct 0), which is not a fix; my own arithmetic never
+uses that formula, so this clamp is sound regardless.
+
+orient: tree clean, no stray branches or worktrees, control.json pending empty, no
+injections. Baseline 152/152 green at 2d50c25.
+
+work: build-wave, effective k = min(k_current 4, gear cap 2, hard max 5) = 2.
+  T-003  scaling + cross-recipe aggregation + traceability   fable/medium  (route_class core)
+  T-029  score.ts regression tests                            fable/low     (route_class core)
+Both are route_class core, so the fable guard exempts them from the gear-2 demotion —
+correctness-core items keep fable in every gear. Effort mapped mechanically S->low,
+M->medium (KI-3's second gap: the backlog speaks S/M/L, the harness wants low/medium/high).
+
+### KI-4: mechanism found, and worked around at zero cost
+
+The 600s guillotine that destroyed cycles 4 and 6 is NOT a pacer timeout. Reading
+bin/swarm-pacer.sh lines 232-260 settles it: the pacer spawns `claude -p` SYNCHRONOUSLY
+with no timeout of its own. The killer is the harness background-task wait ceiling
+(CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS, default 600000) applied at TURN END. Agents
+dispatched in the FOREGROUND are part of the turn, not background tasks, so the ceiling
+never applies to them.
+
+So this cycle dispatched both builders as direct foreground Agent calls against the main
+working tree under strictly disjoint file scopes — no workflow, no worktrees, no branches,
+builders forbidden to run git at all, conductor commits. They ran 424s and 356s. Under the
+old pattern the wave would have been at risk again. Recorded as D-11. This is a prompt-side
+workaround inside a run; the durable fix is still in the pacer and still belongs in the
+morning report, so KI-4 stays OPEN at high severity.
+
+Honest caveat: one builder (T-029) returned prose instead of its JSON contract — it was
+mid-flight, waiting on the other builder's typecheck, when it summarised. Its self-report is
+therefore incomplete. That changed nothing, because a builder self-report is a claim I do
+not spend anything on: both items were gated from scratch below.
+
+### VERIFICATION EVIDENCE — T-003 (gate: SWARM/runs/cycle-007-gate-T003.mjs, 43/43)
+
+Authored at verification time from the acceptance criterion, without reading the builder's
+tests. Full output: .swarm/runs/cycle-007-verify-T-003.txt
+
+```
+N1 — the four garlic alias forms all resolve to ONE canonical id
+  PASS  "garlic cloves" -> garlic — got garlic
+  PASS  "cloves of garlic" -> garlic — got garlic
+  PASS  "fresh garlic" -> garlic — got garlic
+  PASS  "3 cloves garlic, minced" -> garlic — got garlic
+  PASS  all four collapse to exactly one id — ids=garlic
+N2 — four alias forms from FOUR DIFFERENT recipes => exactly ONE aggregated line
+  PASS  exactly one aggregated line — got 1
+  PASS  that line is the garlic line — got garlic
+  PASS  it carries all FOUR contributions — got 4
+  PASS  sum(contributions) == required_quantity — sum=10 total=10
+  PASS  unbridgeable dimensions stay SEPARATE lines — got 2
+  PASS  a curated density bridges into ONE line — got 1
+  PASS  a range is NOT collapsed to a midpoint
+```
+
+The four-alias fixture is the headline criterion and it holds end to end: the registry only
+carries two of the four forms as aliases, so "cloves of garlic" and "fresh garlic" survive
+by normalization, and all four land on one line carrying four contributions naming four
+distinct recipes. The merge rule is proven in both directions — an unbridgeable pair stays
+two lines AND names the missing curated field (fresh_ginger, missing density_g_per_ml),
+while a curated density merges exactly (103 g + 100 ml x 103/100 = 206 g, no drift).
+
+### VERIFICATION EVIDENCE — T-029 (gate: SWARM/runs/cycle-007-gate-T029.mjs)
+
+T-029's deliverable is a TEST FILE, so "the suite is green" is close to worthless as a gate
+— a file of assert.ok(true) passes too. The only honest question is whether the tests would
+CATCH drift, so the gate MUTATES score.ts 13 times and requires the suite to go red for
+each. Full output: .swarm/runs/cycle-007-verify-T-029.txt
+
+```
+  PASS  KILLED: weight preference 0.32 -> 0.33
+  PASS  KILLED: weight context_interruption 0.20 -> 0.21
+  PASS  KILLED: weight inventory_use 0.16 -> 0.15
+  PASS  KILLED: weight cost 0.12 -> 0.13
+  PASS  KILLED: weight novelty 0.10 -> 0.11
+  PASS  KILLED: weight leftover_usefulness 0.10 -> 0.09
+  PASS  KILLED: weights preference<->cost SWAPPED (sum still 1)
+  FAIL  KILLED: penalty recent_repeat 0.15 -> 0.05 — mutant SURVIVED — suite stayed green
+  PASS  KILLED: penalty excessive_active_time zeroed
+  PASS  KILLED: dish_count_free_allowance 3 -> 99 (penalty never fires)
+  FAIL  KILLED: excessive_active_time threshold 2400 -> 999999 — mutant SURVIVED — suite stayed green
+  PASS  KILLED: repeat window 14 -> 0
+  PASS  KILLED: config injection IGNORED (inlines SCORE_CONFIG)
+  PASS  score.ts byte-identical after mutation run
+  PASS  suite green again after restore
+  mutants killed: 11/13; SURVIVED: penalty recent_repeat 0.15 -> 0.05 | excessive_active_time threshold 2400 -> 999999
+```
+
+11 of 13 killed. Two SURVIVED, and the root cause is precise: the total test recomputes
+weighted components from a SPEC_WEIGHTS literal declared in the test (which is why every
+weight mutant dies instantly) but subtracts penalties by reading b.penalties[name] back
+from the engine, so a penalty AMOUNT drift mutates test and engine in lockstep and stays
+invisible. The same mechanism hides the excessive_active_time threshold.
+
+Ruling, stated plainly rather than smoothed over: T-029's written acceptance names the six
+WEIGHTS, the sum-to-one, the recomputed total, the Rational structure check and config
+injection — every one of those is met and independently drift-proven. Penalty AMOUNT
+literals and thresholds are not in that acceptance. So T-029 passes on its own terms and
+the residue is filed as its own item (T-031) with the exact surviving mutants named. I am
+not weakening a gate to open it; I am recording what the gate did and did not cover.
+
+One correction to my own gate: its static check "compares with exact rational equality, not
+a float epsilon" FAILED as a false positive — it pattern-matched the word "epsilon" inside
+comments that say there is none ("Weights sum to exactly one — exact Rational arithmetic,
+no epsilon"). Manually confirmed: the file uses eq/compare throughout and no tolerance
+comparison exists anywhere. My regex was wrong, not the test file.
+
+### full-suite check (conductor-run, not builder-reported)
+
+```
+$ npm test
+tests 187
+pass 187
+fail 0
+```
+
+152 -> 187, zero failing, tsc --noEmit clean. score.ts confirmed byte-identical after the
+mutation run and the suite green again on restore, so the gate left nothing behind.
+
+scope check (mechanical, git status): exactly 4 new files — domain/src/scale.ts,
+domain/src/aggregate.ts, tests/aggregate.test.ts, tests/score.test.ts. No manifest touched,
+no out-of-scope file touched, the two builders' scopes provably disjoint.
+
+collision-scan: not applicable — no classic browser scripts exist yet. Reported as
+not-applicable, never as a pass. No QA or look pass ran: still no server and no screen, so
+there is nothing to look at. Not-run, not passed.
+
+result: T-003 -> done, T-029 -> done. SEVEN verified items of 31.
+  - scale.ts (127) + aggregate.ts (317) + 12 tests. Traceability is a data structure, not a
+    UI afterthought: required_quantity is the exact sum of its own contributions, and the
+    gate recomputes that relationship rather than trusting it. The all-or-nothing bridging
+    judgement is the interesting one — a group unifies to grams only if EVERY member
+    converts, otherwise each dimension keeps its line and carries the explicit refusal.
+  - score.test.ts (631 lines, 22 tests) closes the coverage hole cycle 6 opened.
+
+wave autotune: zero reverts, zero failed verifies => CLEAN. wave_streak 1 -> 2, which trips
+promotion: k_current 4 -> 5, streak reset to 0. Effective wave size next cycle is still
+min(5, gear cap 2) = 2 — the governor, not the autotune, is what bounds this run.
+
+burn attribution: window_tokens 720,910 -> 9,939,931, delta +9,219,021 credited to cycle 6's
+target (dinner). Running total 28,482,688.
+
+honest note on what this cycle did NOT establish: still nothing renders. No server, no
+screen, so the accessibility must-have and tokens.css contrast ratios remain unverified
+exactly as at cycles 3, 5 and 6, and DoD 7's kill-survival claim stays a domain-layer claim
+until T-020. DoD 5 now has real aggregation behind it but no grocery SCREEN, so "every line
+answers why am I buying this" is proven at the data layer only. The critical path to
+anything a human can look at runs through T-014 (server) and T-015 (web shell), and T-014
+still waits on five other items: T-004, T-005, T-007, T-009 and T-013.
+
+next: wave with effective k=2, both on the T-014 critical path — T-005 (preference model +
+variance-selecting calibration, which also unblocks T-015) and T-013 (prep derivation +
+the single copy/time-renderer module that makes DoD 6 a property of one helper). Disjoint:
+preferences.ts/calibration.ts vs prep.ts/reasons.ts. T-030 and T-031 are S-effort fixes
+held for a cycle where the critical path has no unblocked pair.
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-18T23:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787097822,"next_wakeup_at":1787097912,"pid":2363929,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":3,"ratio":0.966,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":9939931,"window_cost_usd":9.055952500000004,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":27903562,"projected_depletion_at":1787112524,"last_probe_ts":1787097822,"last_real_probe_ts":1787097822,"probe_failures":0,"probe_note":"Cycle 7 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max` (bin/swarm-budget.sh still DENIED — KI-1, 4th consecutive cycle). Raw: runs/cc-probe-c7.json; arithmetic: runs/.c7-rho.mjs. Block 23:00-04:00Z, limit 130,591,250 (max prior completed block), used 9,939,931, remaining 120,651,319 over 15,041s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 28,877,385 tok/h; actual 27,903,562 tok/h (ccusage 465,059 tok/min) => rho 0.966 => gear_target 3 (cruise). This rho is far more trustworthy than cycle 6s: it is sampled 50 min into the window rather than 12, so the burn rate has real history behind it. WEEKLY GOVERNOR ENGAGED on the RAW ACCOUNT: weekly_used 54.0% at week_elapsed 25.47% => heat 2.12 > 1.3 (opus 50/25.47 = 1.96) => ceiling 2 + promote_blocked. So the pace is fine for THIS window but the WEEK is hot, and the week wins: gear_target 3 clamped to 2. prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. KI-2 status UNCHANGED and still open: allocator swarm_used_pct 2 with allow_overall_pct 0, so the feeders u/(u+a) denominator is 2, non-zero, and it would engage the governor — again only by luck of drift, exactly as at cycles 3 and 6. My arithmetic does not use that formula (I compute heat from the raw account weekly_used/week_elapsed), so the clamp here is sound regardless; the feeder bug is untouched. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).","weekly":{"ok":true,"weekly_used_pct":54,"opus_used_pct":50,"week_elapsed_pct":25.47,"weekly_heat":2.12,"opus_heat":1.96,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":8,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

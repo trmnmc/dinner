@@ -1,0 +1,38 @@
+
+S1 — static: the file is a real spec-derived test, not a stub
+  PASS  tests/score.test.ts exists and is substantial — 25733 bytes, 632 lines
+  PASS  uses node:test + node:assert/strict
+  PASS  imports the real engine, not a copy
+  PASS  does NOT import a conductor gate or out-of-repo file
+  PASS  asserts the preference weight literal (32/100)
+  PASS  asserts the context_interruption weight literal (20/100)
+  PASS  asserts the inventory_use weight literal (16/100)
+  PASS  asserts the cost weight literal (12/100)
+  PASS  asserts the novelty weight literal (10/100)
+  PASS  asserts the leftover_usefulness weight literal (10/100)
+  FAIL  compares with exact rational equality, not a float epsilon
+  PASS  asserts bigint structure somewhere (Rational, not float)
+
+S2 — baseline: the suite is green BEFORE any mutation
+  PASS  tests/score.test.ts passes against unmutated score.ts
+
+S3 — MUTATION: each deliberate defect must turn the suite RED
+  PASS  KILLED: weight preference 0.32 -> 0.33
+  PASS  KILLED: weight context_interruption 0.20 -> 0.21
+  PASS  KILLED: weight inventory_use 0.16 -> 0.15
+  PASS  KILLED: weight cost 0.12 -> 0.13
+  PASS  KILLED: weight novelty 0.10 -> 0.11
+  PASS  KILLED: weight leftover_usefulness 0.10 -> 0.09
+  PASS  KILLED: weights preference<->cost SWAPPED (sum still 1)
+  FAIL  KILLED: penalty recent_repeat 0.15 -> 0.05 — mutant SURVIVED — suite stayed green
+  PASS  KILLED: penalty excessive_active_time zeroed
+  PASS  KILLED: dish_count_free_allowance 3 -> 99 (penalty never fires)
+  FAIL  KILLED: excessive_active_time threshold 2400 -> 999999 — mutant SURVIVED — suite stayed green
+  PASS  KILLED: repeat window 14 -> 0
+  PASS  KILLED: config injection IGNORED (inlines SCORE_CONFIG)
+  PASS  score.ts byte-identical after mutation run
+  PASS  suite green again after restore
+
+  mutants killed: 11/13; SURVIVED: penalty recent_repeat 0.15 -> 0.05 | excessive_active_time threshold 2400 -> 999999
+
+=== T-029 GATE: 25 passed, 3 failed ===

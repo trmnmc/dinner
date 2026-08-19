@@ -1,0 +1,63 @@
+
+N1 — the four garlic alias forms all resolve to ONE canonical id
+  PASS  "garlic cloves" -> garlic — got garlic
+  PASS  "cloves of garlic" -> garlic — got garlic
+  PASS  "fresh garlic" -> garlic — got garlic
+  PASS  "3 cloves garlic, minced" -> garlic — got garlic
+  PASS  all four collapse to exactly one id — ids=garlic
+
+N2 — four alias forms from FOUR DIFFERENT recipes => exactly ONE aggregated line
+  PASS  exactly one aggregated line — got 1
+  PASS  that line is the garlic line — got garlic
+  PASS  it carries all FOUR contributions — got 4
+  PASS  contributions name all four distinct recipes — got r01,r02,r03,r04
+  PASS  every contribution carries a recipe line id
+  PASS  the "minced" preparation is preserved, not discarded — preps=["minced"]
+
+N3 — total equals the EXACT sum of contributions (recomputed here, independently)
+  PASS  sum(contributions) == required_quantity — sum=10 total=10
+  PASS  and it equals the arithmetic truth 10 — got 10
+
+N4 — merge ONLY on id + dimension match
+  PASS  found an ingredient with no curated bridge for the refusal case — id=fresh_ginger
+  PASS  unbridgeable dimensions stay SEPARATE lines — got 2
+  PASS  every split line states the refusal explicitly — refusals=1,1
+  PASS  the refusal names the missing curated field, never a guess — {"kind":"not_convertible","ingredient_id":"fresh_ginger","from_dimension":"volume","to_dimension":"mass","missing":["density_g_per_ml"]}
+  PASS  a curated density bridges into ONE line — got 1
+  PASS  bridged total is exact (206 g) — got 206
+  PASS  bridged line still carries both contributions — got 2
+  PASS  different ids never merge — got 2
+
+N5 — scaling is exact, independent per bound, and never touches "to taste"
+  PASS  scale factor 3/4 is an exact Rational — got 3/4
+  PASS  range min scales independently (1 -> 3/4) — got 0.75
+  PASS  range max scales independently (3 -> 9/4) — got 2.25
+  PASS  a range is NOT collapsed to a midpoint
+  PASS  "to taste" survives scaling untouched — {"kind":"to_taste"}
+  PASS  1/3 * 3 == exactly 1 (no float drift) — got 1/1
+  PASS  a to-taste-only ingredient yields a non-numeric line — kind=to_taste
+  PASS  and that line carries NO amount (never folded to 0) — got undefined
+
+N6 — every persisted number is a Rational (Invariant 1), no float leakage
+  PASS  every required_quantity and contribution amount is a bigint Rational — checked 2 numeric lines
+  PASS  no line leaks a JS number
+
+N7 — determinism: shuffled input yields a byte-identical result
+  PASS  shuffled input == original output, byte for byte
+  PASS  repeated call is stable
+
+N8 — scaleRecipeRequirements carries provenance for every line
+  PASS  one scaled line per recipe ingredient — got 2
+  PASS  every scaled line names its recipe, plan meal and recipe line
+  PASS  doubling servings doubles the amount exactly (2 -> 4) — got 4
+  PASS  the source recipe was not mutated
+
+N9 — static: no bare float arithmetic on quantities (Invariant 1)
+  PASS  domain/src/scale.ts: no Number()/parseFloat on quantities
+  PASS  domain/src/scale.ts: no Math.* arithmetic
+  PASS  domain/src/scale.ts: no float literals in arithmetic position
+  PASS  domain/src/aggregate.ts: no Number()/parseFloat on quantities
+  PASS  domain/src/aggregate.ts: no Math.* arithmetic
+  PASS  domain/src/aggregate.ts: no float literals in arithmetic position
+
+=== T-003 GATE: 43 passed, 0 failed ===
