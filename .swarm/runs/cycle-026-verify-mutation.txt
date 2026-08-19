@@ -1,0 +1,21 @@
+=== cycle 26 gate: mutation testing T-020 (tests/e2e.cooking.test.ts) ===
+
+PASS  B1  tests/e2e.cooking.test.ts baseline GREEN and nothing skipped/todo — pass 1, fail 0, skipped 0, todo 0
+PASS  B2  tests/e2e.loop.test.ts baseline GREEN and nothing skipped/todo — pass 1, fail 0, skipped 0, todo 0
+PASS  C1  DoD 7 step progress: session progress is lost across the restart — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: session must have made real step progress before the kill 
+PASS  C2  timer identity: the timer is renumbered per process, so it is not the SAME timer after restart — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: timer identity changed across kill/restart + actual - expected
+PASS  C3  INVARIANT 2: ends_at_utc is re-derived per process rather than stored as an absolute instant — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: ends_at_utc must be byte-identical across kill/restart + actual - expected
+PASS  C4  timer arithmetic: remaining time is frozen and never decreases with real elapsed wall clock — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: remaining_seconds must strictly decrease with wall time across the kill (before=999999, after=9999
+
+=== cycle 26 gate: mutation testing T-021 (tests/e2e.loop.test.ts) ===
+
+PASS  L1  DoD 6 sweep: a time-carrying payload states a total with no active companion — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: DoD 2: expected >=2 of 3 meals approvable in-app, got 0 of 3 at TestContext.<anonymous> (file:///o
+PASS  L2  DoD 5 provenance: grocery lines carry no recipe-level contributions at all — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: grocery line chickpeas_canned: every line must answer "why am I buying this?" — no contributions f
+PASS  L3  DoD 5 reconciliation: the line total no longer equals its contributions + surplus - inventory — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: grocery line chickpeas_canned: contributions do not reconcile with the line total — sum(contributi
+PASS  L4  INVARIANT 4: plan_meal_id is unstable across reads, so an untouched meal is not the same persisted row — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: untouched slot 1 must keep its persisted plan_meal row + actual - expected
+PASS  L5  DoD 8 feedback: the two-tap feedback updates no preference signals — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: feedback must update preference signals at TestContext.<anonymous> (file:///opt/targets/dinner/tes
+PASS  L6  DoD 2/6: the rendered time label is hardcoded and no longer agrees with domain reasons.ts — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: DoD 2: expected >=2 of 3 meals approvable in-app, got 0 of 3 at TestContext.<anonymous> (file:///o
+PASS  L7  DoD 6 sweep ISOLATED: a step view (never read by the approvability check) states a total with no active companion — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: DoD 6 violation at GET /api/plans/b53c304c-07a5-4d37-bcf7-144209502969/meals/0/prep.prep.first_non
+PASS  L8  DoD 6 exemption cannot widen: active_time_blocks[] starts carrying a total_seconds it must never have — mutant KILLED; file restored sha256-identical | killed by: AssertionError [ERR_ASSERTION]: GET /api/plans/c09e1cac-f930-4242-850c-9c737555e137/meals/0/prep.prep.active_time_blocks[0]: activ
+
+=== cycle 26 GATE RESULT: 14/14 ===

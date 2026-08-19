@@ -4352,3 +4352,210 @@ domain rule with no implementation, and its `routes.ts` scope is now free), or t
 **taste pass** the run has never run (`last_taste_cycle: null`). T-048 is the larger
 verified-value bet and is what I would pick; a taste verdict arriving at 11:45Z has no
 clock left to act on.
+
+---
+
+## cycle 26 — 2026-08-19T10:41Z → 11:05Z · BUILD · T-020 + T-021 verified (the two p1 end-to-end DoD proofs)
+
+clock: opened 1787136074 (10:41:14Z), gate closed 1787137193 (10:59:53Z). WRAP_UP trigger
+(`stop_at − 900`) = 11:45Z. Hard rule 3 honoured at the top of the cycle this time — the
+cycle-25 footer correction is why I read the clock before choosing, not after.
+
+budget: **REAL probe, `probe_ok: true`** — gear 2, ρ 1.20, k_cap 2, `demote: true`,
+`promote: false`; window_tokens 51,766,264 → 86,225,926 since the 09:00Z reset,
+53.99 M tokens/hour, projected depletion **1787139979 (11:46:19Z)**. Weekly governor still
+engaged (weekly 100% / opus 100% at week_elapsed 31.96% ⇒ heat 3.13, ceiling 2). Effective
+wave size = min(k_current 5, gear cap 2) = **2**.
+
+probe note, KI-1 family: `RUNFILE=… /opt/swarm/bin/swarm-budget.sh 2>&1` was **DENIED** by
+the harness, but the plain-form invocation `/opt/swarm/bin/swarm-budget.sh` succeeded. So
+the allowlist gap is narrower than KI-1 records — it is the env-var-prefixed form that is
+blocked, not the script. Recorded for the morning report; not edited mid-run (hard rule 5).
+
+control: `pending: []`, `applied: []`, no `inject` array. Nothing to apply. Tree was CLEAN
+at orient — cycle 25 closed properly, no salvage needed.
+
+### the pick, and why it went against cycle 25's own recommendation
+
+Cycle 25's footer recommended **T-048** (nothing marks a meal cooked or decrements
+inventory). I picked **T-020 + T-021** instead, and the reason is the clock, not the value
+ranking. The probe puts window depletion at **11:46:19Z — one minute after the wrap
+trigger**, which makes cycle 26 the last cycle that can safely spend anything. That
+changes what "highest value" means:
+
+- T-048 is an M-effort **feature** in `server/src/routes.ts` on a demoted sonnet seat. If it
+  half-lands at 11:30 there is no cycle left to gate it, and hard rule 4 would force a
+  revert — net zero, with the last of the window spent.
+- T-020 and T-021 are both p1, both `route_class: core`, and together they convert the
+  single biggest block of *claimed* behaviour in this run into *machine-checked* behaviour:
+  DoD 7 (kill/reload survival — the differentiator D-4's prior-art scout found unoccupied
+  across all five competitor products) and DoD 1/2/3/5/6/8/11 (the broadened loop sweep).
+- Decisive: their file scopes are **two new test files and nothing else**. A wave that
+  cannot touch `domain/`, `server/` or `web/` cannot break green main in the final hour.
+  That risk asymmetry is what settled it.
+
+T-048 remains p1 and unbuilt, and the morning report must say so plainly.
+
+routing: both items carry `route_class: core` → **fable**, exempt from the gear-2 demotion
+under the fable guard (D-13 precedent). Dispatched as **two DIRECT, FOREGROUND `Agent`
+calls** editing the main tree under strictly disjoint scopes (D-11) — no workflow, no
+worktrees, no builder branches; builders forbidden every git command; conductor commits.
+Wave ran 254 s and 354 s, both well inside KI-4's 600 s background ceiling, which
+foreground agents do not answer to anyway. In-flight marker committed before dispatch
+(2597042). Craft pack **not** passed: neither item touches a UI surface, so `craft.ui`
+had nothing to say to a test author.
+
+### scope compliance — the thing that made this wave safe
+
+`git status --porcelain` after the wave returned:
+
+```
+?? tests/e2e.cooking.test.ts
+?? tests/e2e.loop.test.ts
+```
+
+Two untracked files, nothing else. No builder touched production code, a manifest, or git.
+This is the first wave of the run where the scope constraint can be *demonstrated* rather
+than asserted, and it is why the final-hour risk was genuinely zero.
+
+### VERIFICATION EVIDENCE — full suite (conductor-run, not agent-reported)
+
+```
+ℹ tests 404
+ℹ suites 0
+ℹ pass 404
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+```
+
+Baseline was 402; +2 is exactly the two new tests. Run TWICE — once after the wave, and
+again **after every mutant below was restored** — so green main is confirmed against the
+tree as committed, not against a tree the gate had been editing.
+
+### VERIFICATION EVIDENCE — mutation gate 14/14
+
+Both deliverables are TEST FILES, so per D-12 a green suite is not evidence: a file of
+`assert.ok(true)` passes `npm test`. The gate injects 12 deliberate defects into
+`server/src/routes.ts`, one at a time, runs **only** the target test file, and requires it
+to go **red**; every file is restored and re-hashed sha256 before the next mutant.
+
+```
+PASS  B1  tests/e2e.cooking.test.ts baseline GREEN and nothing skipped/todo — pass 1, fail 0, skipped 0, todo 0
+PASS  B2  tests/e2e.loop.test.ts baseline GREEN and nothing skipped/todo — pass 1, fail 0, skipped 0, todo 0
+PASS  C1  step progress lost across the restart — KILLED | "session must have made real step progress before the kill"
+PASS  C2  timer renumbered per process — KILLED | "timer identity changed across kill/restart"
+PASS  C3  INVARIANT 2: ends_at_utc re-derived per process — KILLED | "ends_at_utc must be byte-identical across kill/restart"
+PASS  C4  remaining_seconds frozen — KILLED | "remaining_seconds must strictly decrease with wall time across the kill"
+PASS  L1  total with no active companion — KILLED
+PASS  L2  grocery provenance stripped — KILLED | "every line must answer \"why am I buying this?\" — no contributions"
+PASS  L3  line total stops reconciling — KILLED | "contributions do not reconcile with the line total"
+PASS  L4  INVARIANT 4: plan_meal_id unstable — KILLED | "untouched slot 1 must keep its persisted plan_meal row"
+PASS  L5  feedback updates no signals — KILLED | "feedback must update preference signals"
+PASS  L6  time label hardcoded away from the domain — KILLED
+PASS  L7  DoD 6 sweep ISOLATED on a step view — KILLED | "DoD 6 violation at …/meals/0/prep.prep.first_non…"
+PASS  L8  active_time_blocks exemption forced to widen — KILLED | "…prep.active_time_blocks[0]: activ…"
+
+=== cycle 26 GATE RESULT: 14/14 ===
+```
+
+Full output: `.swarm/runs/cycle-026-verify-mutation.txt`. Gate:
+`/opt/swarm/runs/cycle-026-gate.mjs`.
+
+**C3 is the one that matters for T-020.** It offsets `ends_at_utc` by `process.pid * 1000`,
+and the pids of the pre-kill and post-kill processes are guaranteed to differ — so it is a
+faithful simulation of "the end instant is re-derived per process" rather than stored as an
+absolute instant. That is Invariant 2 stated as an executable claim, and the test caught it.
+C4 pushes from the other side: freezing `remaining_seconds` at a constant is caught by the
+strict-decrease assertion. Between them, the two ways this feature usually breaks — a
+preserved remaining, and a recomputed end — are both proven fatal.
+
+### gate rev1 (10/12) → rev2 (14/14): both failures were MINE
+
+rev1 scored 10/12 and the two failures were **defects in the gate, not the product**, proven
+by a recorded diagnostic *before* either check was touched (D-21, D-25). rev1 asserted
+node's TAP counter form `# pass 1`; node's default **spec** reporter prints `ℹ pass 1`, so
+every counter parsed as `?` while the underlying runs were green all along. rev1 and its
+failing output are preserved beside rev2 (`cycle-026-gate-rev1.mjs`,
+`cycle-026-verify-mutation-rev1-FAILING.txt`). The check is **not** loosened — an
+unparseable counter still fails, because `?` is not `'0'`.
+
+rev1 also revealed something worth more than the fix: **L1 and L6 were both killed by
+assertion 2 (approvability), not by the DoD-6 sweep.** Approvability reads the plan-meal
+payload and fires first, and `node:assert` aborts at the first failure, so the sweep never
+ran. A killed mutant is still a killed mutant, but neither one isolated the sweep. rev2
+adds **L7** (mutates a step view — a payload approvability never reads) and **L8** (forces
+the `active_time_blocks` exemption from D-17 to widen, pushing from the opposite
+direction). Both killed, and the DoD-6 sweep is now proven to bite on its own rather than
+being carried by an upstream assertion.
+
+### the swap exemption — re-derived, not believed (D-35)
+
+The T-021 builder disclosed, unprompted, that full byte-identity on untouched meals fails on
+exactly one field, and narrowed its assertion to exempt it. A builder narrowing its own
+assertion is exactly the shape hard rule 2 forbids taking on trust, so I did not read the
+justification and accept it — I measured it. `cycle-026-exemption-probe.mjs` re-drives the
+same flow through the real server, imports none of the builder's test code, and prints
+**every** differing leaf path with **no exemptions at all**:
+
+```
+--- untouched slot 1 ---
+  plan_meal_id before=dffa2493-4e0b-4239-b696-7399d0c5d085
+  plan_meal_id after =dffa2493-4e0b-4239-b696-7399d0c5d085   IDENTICAL
+  DIFF reasons.0.text
+       before: "Shares 4 ingredients with Greek Sheet-Pan Chicken Thighs with Potatoes and Feta."
+       after : "Shares 4 ingredients with Japanese-Style Soy-Butter Egg Fried Rice."
+--- untouched slot 2 ---
+  plan_meal_id before=e3150aa1-f6aa-48ec-b0d2-6d1f24866ed2
+  plan_meal_id after =e3150aa1-f6aa-48ec-b0d2-6d1f24866ed2   IDENTICAL
+  DIFF reasons.0.text
+       before: "Shares 1 ingredient with Greek Sheet-Pan Chicken Thighs with Potatoes and Feta."
+       after : "Shares 5 ingredients with Japanese-Style Soy-Butter Egg Fried Rice."
+
+TOTAL differing leaf paths across untouched meals (NO exemptions applied): 2
+```
+
+Two paths, both the same field, `plan_meal_id` identical on both. **That measurement is what
+makes the exemption rulable**: the acceptance clause exists as *Invariant 4's observable
+consequence* — swap never re-runs the planner — and an identical persisted row with a
+re-derived view-layer sentence is provably not a planner re-run. A third differing path — a
+time, a cost band, a reason *code* — would have meant the exemption was covering a real
+breach, and T-021 would have failed. **T-021 passes.**
+
+The behaviour is still wrong, and ruling the exemption legitimate does not make it right.
+Filed as **T-073** (p2) and **KI-13** (medium). Note what the probe caught that the builder's
+own summary did not: on slot 2 the **count** changed too, 1 → 5, not just the cited name. A
+parent who swapped a completely different meal watches an unrelated meal's explanation
+rewrite itself. Root cause is the GAP already documented in `routes.ts` ~311-325 —
+`PlanMeal.reason_codes` persists only the enum, never the `ReasonFact` evidence, so it is
+re-derived against the *current* siblings on every read. Fixing it touches the frozen
+`recipe.ts`/`db.ts` contracts, hence M-effort.
+
+### wave autotune
+
+Clean wave — zero reverts, zero failed verifies. `wave_streak` 1 → 2 ⇒
+`k_current = min(5, 5 + 1) = 5` (already at the hard max), `wave_streak` resets to 0.
+`consecutive_no_value` stays 0.
+
+not run, reported as not-run rather than passed: the qa-verify **look** pass (Workflow is
+review-gated headless) and the **taste** pass (`last_taste_cycle` is still `null` — this run
+never had one, and that is a real gap the report must carry).
+
+result: **TWO items verified — T-020 and T-021 — plus one user-visible defect found and
+filed by the conductor's own probe rather than by a builder.** 33 verified of 73 filed. DoD 7
+and the full product loop are now proven **by execution** instead of by claim, which is the
+single most useful thing the last work cycle of a run can leave behind.
+
+next: **~40 minutes to the 11:45Z WRAP_UP trigger, and the window is projected to deplete at
+11:46:19Z — one minute after it.** My recommendation to cycle 27, stated plainly so a fresh
+session does not have to re-derive it: **prefer WRAP_UP over one more item.** A 2700 s build
+wave will not admit; an S-effort item admits under the final-hour 900 s carve-out and a taste
+pass (900 s) is tempting given `last_taste_cycle: null` — but a guaranteed complete
+`REPORT.md` and `RETRO.md` are worth more than either, and losing them to a depleted window
+at 11:44 would be the worst outcome available. Cycle 27 re-probes and owns the call; this is
+the evidence I would want if I were it.
+
+```runfile-mirror
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787137400,"next_wakeup_at":1787137490,"pid":2469933,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.98,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":86225926,"window_cost_usd":46.36915430000004,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":53986739,"projected_depletion_at":1787139979,"last_probe_ts":1787136180,"last_real_probe_ts":1787136180,"probe_failures":0,"probe_note":"Cycle 26 REAL probe, probe_ok true (the first plain-form invocation succeeded; the env-var-prefixed form RUNFILE=... swarm-budget.sh was DENIED by the harness, KI-1 family — recorded, not worked around). window_tokens 51,766,264 -> 86,225,926 since the 09:00Z reset; rho 1.20 => gear_target 2, applied gear 2 (no hysteresis move). Governor still engaged: weekly 100% / opus 100% at week_elapsed 31.96% => heat 3.13, ceiling 2, promote blocked. Projected depletion 1787139979 (~11:46:19Z) now lands one minute AFTER the 11:45Z wrap trigger and 14 min BEFORE stop_at — the window is expected to survive to the wrap-up decision, but not to 12:00Z. Cycle 26 is therefore planned as the LAST work cycle of the run.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":31.96,"weekly_heat":3.13,"opus_heat":3.13,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":4,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

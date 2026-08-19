@@ -1,0 +1,18 @@
+listening on http://127.0.0.1:41655
+plan has 3 meals
+swapped slot 0
+
+--- untouched slot 1 ---
+  plan_meal_id before=dffa2493-4e0b-4239-b696-7399d0c5d085
+  plan_meal_id after =dffa2493-4e0b-4239-b696-7399d0c5d085   IDENTICAL
+  DIFF reasons.0.text
+       before: "Shares 4 ingredients with Greek Sheet-Pan Chicken Thighs with Potatoes and Feta."
+       after : "Shares 4 ingredients with Japanese-Style Soy-Butter Egg Fried Rice."
+--- untouched slot 2 ---
+  plan_meal_id before=e3150aa1-f6aa-48ec-b0d2-6d1f24866ed2
+  plan_meal_id after =e3150aa1-f6aa-48ec-b0d2-6d1f24866ed2   IDENTICAL
+  DIFF reasons.0.text
+       before: "Shares 1 ingredient with Greek Sheet-Pan Chicken Thighs with Potatoes and Feta."
+       after : "Shares 5 ingredients with Japanese-Style Soy-Butter Egg Fried Rice."
+
+TOTAL differing leaf paths across untouched meals (NO exemptions applied): 2
