@@ -5,8 +5,8 @@
  * Declares every route later screens will claim so those agents slot in
  * rather than reinvent routing: `#/onboarding`, `#/calibrate`, `#/plan`,
  * `#/grocery`, `#/prep/:slot`, `#/cook/:sessionId`, `#/feedback/:planMealId`.
- * Only onboarding and calibrate have implementations this item; the rest
- * resolve to an honest, styled "not built yet" panel.
+ * Only `#/prep/:slot` still resolves to an honest, styled "not built yet"
+ * panel; every other route above has a real implementation.
  *
  * First-run routing (applied only when the hash is empty/root):
  *   no `tgd.household_id` in localStorage          -> #/onboarding
@@ -26,6 +26,7 @@ import { renderCalibrate } from './calibrate.js';
 import { renderPlan } from './plan.js';
 import { renderGrocery } from './grocery.js';
 import { renderCook } from './cook.js';
+import { renderFeedback } from './feedback.js';
 
 /**
  * @typedef {Object} Route
@@ -57,7 +58,7 @@ const ROUTES = [
   { pattern: '/grocery', render: renderGrocery, label: 'Grocery' },
   { pattern: '/prep/:slot', render: notBuiltYet('Prep'), label: 'Prep' },
   { pattern: '/cook/:sessionId', render: renderCook, label: 'Cook' },
-  { pattern: '/feedback/:planMealId', render: notBuiltYet('Feedback'), label: 'Feedback' },
+  { pattern: '/feedback/:planMealId', render: renderFeedback, label: 'Feedback' },
 ];
 
 function computeHomeRoute() {

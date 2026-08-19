@@ -1,6 +1,13 @@
 /**
  * cook.js — cooking mode: one step at a time, built to survive interruption.
  *
+ * T-018 entry point: once `session.status === 'completed'`, the terminal
+ * panel's one dominant action is "How did it go?", which resolves this
+ * session's `plan_meal_id` (see `goToFeedback` below) and navigates to
+ * `#/feedback/:planMealId` (`feedback.js`) — the only way into post-meal
+ * feedback in this product. "Back to plan" survives as a secondary button
+ * so leaving without giving feedback is still one tap away.
+ *
  * Data flow: `GET /api/cooking/sessions/:id` (on mount) and
  * `POST /api/cooking/sessions/:id/events` (every action) both return the
  * full session view (`server/src/routes.ts` `encodeSessionView`, backed by
@@ -57,7 +64,7 @@ import {
   createEmptyState,
   announce,
 } from './ui.js';
-import { getCookingSession, postCookingEvent, ApiError } from './api.js';
+import { getCookingSession, postCookingEvent, getCurrentPlan, ApiError } from './api.js';
 import { navigate } from './router.js';
 
 /** Matches the `tgd.` prefix convention `api.js` uses for
@@ -423,15 +430,63 @@ export function renderCook(container, params) {
   }
 
   /**
-   * @param {{title: string, message: string, iconName: 'check'|'info'}} opts
+   * @param {{title: string, message: string, iconName: 'check'|'info', primary?: {label: string, onClick: () => void}}} opts
    */
-  function drawTerminal({ title, message, iconName }) {
+  function drawTerminal({ title, message, iconName, primary }) {
     unmountPrimary();
     stopTicking();
-    container.replaceChildren(
-      screenShell([createEmptyState({ iconName, title, message })], title),
-    );
-    primaryBar = mountPrimaryAction({ label: 'Back to plan', onClick: () => navigate('/plan') });
+    const body = [createEmptyState({ iconName, title, message })];
+    if (primary) {
+      // A dedicated primary CTA (the feedback entry point below) takes the
+      // one dominant bottom-anchored action; "back to plan" still needs a
+      // way out, so it becomes a plain secondary button instead of a
+      // second primary action competing for attention.
+      body.push(h('button', { type: 'button', class: 'btn btn--secondary', onClick: () => navigate('/plan') }, ['Back to plan']));
+    }
+    container.replaceChildren(screenShell(body, title));
+    primaryBar = mountPrimaryAction(primary || { label: 'Back to plan', onClick: () => navigate('/plan') });
+  }
+
+  /**
+   * Entry point into post-meal feedback (T-018): resolve this completed
+   * session's `plan_meal_id` by matching `recipe_id` against the current
+   * plan's meals — `encodeSessionView` (server/src/routes.ts) never
+   * exposes `plan_meal_id` on a cooking session, so this is the same
+   * lookup `plan.js`'s `checkResumable` already does for the resume
+   * banner, reused here rather than guessed at. If no meal in the current
+   * plan matches (swapped out, plan superseded, or gone), that is an
+   * honest dead end, not a fabricated id — this button stays put and
+   * explains itself instead of navigating to a broken feedback link.
+   * @param {SessionView} completedSession
+   */
+  async function goToFeedback(completedSession) {
+    if (primaryBar) {
+      primaryBar.setDisabled(true);
+      primaryBar.setLabel('Finding your plan…');
+    }
+    try {
+      const { plan } = await getCurrentPlan();
+      if (destroyed) return;
+      const meal = (plan.meals || []).find((m) => m.recipe_id === completedSession.recipe_id);
+      if (!meal || !meal.plan_meal_id) {
+        if (primaryBar) {
+          primaryBar.setDisabled(false);
+          primaryBar.setLabel('How did it go?');
+        }
+        announce("This dinner isn't in your current plan anymore, so feedback can't be recorded for it.", {
+          assertive: true,
+        });
+        return;
+      }
+      navigate(`/feedback/${meal.plan_meal_id}`);
+    } catch (err) {
+      if (destroyed) return;
+      if (primaryBar) {
+        primaryBar.setDisabled(false);
+        primaryBar.setLabel('How did it go?');
+      }
+      announce(err instanceof ApiError ? err.message : "Couldn't check your plan — try again.", { assertive: true });
+    }
   }
 
   function draw() {
@@ -440,7 +495,12 @@ export function renderCook(container, params) {
     if (!session) return;
 
     if (session.status === 'completed') {
-      drawTerminal({ title: 'Cooking complete', message: 'Nice work — this session is done.', iconName: 'check' });
+      drawTerminal({
+        title: 'Cooking complete',
+        message: 'Nice work — this session is done.',
+        iconName: 'check',
+        primary: { label: 'How did it go?', onClick: () => goToFeedback(session) },
+      });
       return;
     }
     if (session.status === 'abandoned') {

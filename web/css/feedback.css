@@ -1,0 +1,49 @@
+/* feedback.css — screen-specific styles for feedback.js (T-018).
+ *
+ * Everything reachable from app.css/tokens.css is reused as-is: .screen,
+ * .screen-header, .card, .card__eyebrow, .state-panel, .btn, .chip-group,
+ * .chip, .reaction-grid, .reaction-btn, .meal-card__body-text, .icon. This
+ * file only adds the confirmation-card layout and a small three-button
+ * variant of the shared reaction grid — every value below traces to a
+ * token in tokens.css, no raw hex, no raw px, no invented spacing
+ * constant.
+ */
+
+/* ---------------------------------------------------------------------- */
+/* Confirmation card — "recorded" / "already recorded" / "thanks — saved" */
+/* all share this shape: icon + eyebrow header, then read-back lines.     */
+/* ---------------------------------------------------------------------- */
+
+.feedback-confirm__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.feedback-confirm__header .icon {
+  color: var(--color-ok);
+  flex: none;
+}
+
+.feedback-confirm__verdict {
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-tight);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Three-way verdict grid — `mountReactionGrid` (ui.js) renders exactly    */
+/* the same `.reaction-grid`/`.reaction-btn` markup calibration's four-    */
+/* choice reaction grid uses; this only balances the layout to three      */
+/* equal columns when there are exactly three buttons (this screen never  */
+/* has four), instead of the default two-column grid wrapping a third     */
+/* button onto its own half-width row. Progressive enhancement — browsers */
+/* without `:has()` still get a fully usable, if slightly less tidy, two- */
+/* column wrap.                                                           */
+/* ---------------------------------------------------------------------- */
+
+.reaction-grid:has(.reaction-btn:nth-child(3):last-child) {
+  grid-template-columns: 1fr 1fr 1fr;
+}
