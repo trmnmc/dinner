@@ -610,7 +610,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-012",
         "T-013",
@@ -637,8 +637,9 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Invariant 2 binds: render timer state from stored absolute UTC end instants vs now — never count down a local variable as truth. Invariant 6 binds: recovery text comes only from per-step metadata; absent metadata is stated, never fabricated. Prep screen shows retrieve/equipment/do-ahead, first non-interruptible step, first safe stopping point, active-time blocks. Build accessibility in from the start (aria-live announcer from ui.js, 44px targets); the wave-3 a11y pass does not touch these files. CYCLE 15: SPLIT — prep screen carved out to T-057 so cooking mode gets a full builder. Scope now includes router.js/index.html wiring (this item owns those files this wave) and a plan.js entry affordance into cooking.",
-      "craft": "ui"
+      "notes": "Invariant 2 binds: render timer state from stored absolute UTC end instants vs now — never count down a local variable as truth. Invariant 6 binds: recovery text comes only from per-step metadata; absent metadata is stated, never fabricated. Prep screen shows retrieve/equipment/do-ahead, first non-interruptible step, first safe stopping point, active-time blocks. Build accessibility in from the start (aria-live announcer from ui.js, 44px targets); the wave-3 a11y pass does not touch these files. CYCLE 15: SPLIT — prep screen carved out to T-057 so cooking mode gets a full builder. Scope now includes router.js/index.html wiring (this item owns those files this wave) and a plan.js entry affordance into cooking. CYCLE 15: DONE — verified by cycle-015-gate-rev2.mjs, 32/32 against a live server and a real DOM. Invariant 2 proven by remounting the screen from scratch 3.2s later and watching the clock fall 3s (5:00 -> 4:57), which a stored-duration countdown cannot do.",
+      "craft": "ui",
+      "verified_cycle": 15
     },
     {
       "id": "T-020",
@@ -1496,7 +1497,7 @@
       "priority": 1,
       "value": "H",
       "effort": "S",
-      "status": "todo",
+      "status": "done",
       "deps": [],
       "files_hint": [
         "web/js/grocery.js"
@@ -1512,7 +1513,8 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "Conductor-found at cycle 14 by reading actual rendered output. api.js formatQuantity(q,{maxFracDigits:n}) already implements correct round-half-away-from-zero display rounding; grocery.js calls it without options and gets the exact mixed-fraction form. Pick the digits per dimension (ml/g whole numbers, count maybe 1dp) and state estimates honestly. Interacts with T-044: package options would make these numbers buyable rather than merely readable."
+      "notes": "Conductor-found at cycle 14 by reading actual rendered output. api.js formatQuantity(q,{maxFracDigits:n}) already implements correct round-half-away-from-zero display rounding; grocery.js calls it without options and gets the exact mixed-fraction form. Pick the digits per dimension (ml/g whole numbers, count maybe 1dp) and state estimates honestly. Interacts with T-044: package options would make these numbers buyable rather than merely readable. CYCLE 15: DONE — the unaltered cycle-014-gate-rev2.mjs now passes 29/29 with R21 green (was 28/29), exactly as the acceptance demanded, AND the stronger, differently-shaped G2-G8 checks in cycle-015-gate-rev2.mjs pass on a third household shape, so the fix is general rather than tuned to R21.",
+      "verified_cycle": 15
     },
     {
       "id": "T-053",
@@ -1635,6 +1637,35 @@
       "attempts": 0,
       "created_cycle": 15,
       "notes": "Split out of T-019 at cycle 15. Blocked in practice by T-043 (handleGetPrep returns UNSCALED quantities, KI-8) and T-040 (active_time_blocks ship no time_label) — a prep screen built before those renders numbers that contradict the grocery list the parent shopped from. Do T-043 first or in the same wave (server/src/routes.ts is a disjoint scope from web/js/prep.js)."
+    },
+    {
+      "id": "T-058",
+      "title": "Kitchen timers are unreachable — nothing in the product can ever start one",
+      "kind": "fix",
+      "priority": 1,
+      "value": "H",
+      "effort": "M",
+      "status": "todo",
+      "deps": [
+        "T-019"
+      ],
+      "files_hint": [
+        "server/src/routes.ts",
+        "web/js/cook.js",
+        "tests/routes.test.ts"
+      ],
+      "acceptance": "Starting from a plan, a user can reach a cooking step that has a timer and start it with one tap, and the running timer then appears on the cooking screen with the correct remaining time. Proven end to end through the HTTP API and the rendered screen — never by injecting a timer_started event directly.",
+      "packages": [],
+      "wave": 3,
+      "must_haves": [
+        "Interruption-aware cooking mode"
+      ],
+      "dod": [
+        7
+      ],
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Conductor-found at cycle 15 by grepping for producers of the timer_started event: there are none anywhere in web/ or in server business logic — only server/src/routes.ts:1418, the validator that would accept one. Root cause is a contract gap the T-019 builder documented in cook.js's header rather than papering over: encodeStepView (routes.ts:1239) never emits the step's timer_duration_seconds nor any has-a-timer flag, so the client cannot honestly offer 'start timer' — deriving a duration from total minus active would be WRONG for several shipped recipes, and a wrong kitchen timer is worse than none. Fix is two-sided: add timer_duration_seconds to encodeStepView, then add the one-tap start action to cook.js. Cycle 15's gate proved rendering, ticking, expiry and acknowledgement all work correctly once a timer exists (C12-C14) — this is purely the missing way IN. Same shape as T-055 (inventory confirmation questions unreachable)."
     }
   ]
 }

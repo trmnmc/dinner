@@ -1,0 +1,43 @@
+listening on http://127.0.0.1:42281
+
+--- c15 ground truth: household_size 3, 3 meals, 7 sections, 22 grocery lines ---
+
+=== T-052 grocery purchase-quantity formatting ===
+PASS G0  grocery screen renders (886 chars)
+PASS G1  no raw rational on the list surface
+PASS G2  22 numeric line amounts, all shoppable
+PASS G3  display rounding never UNDERBUYS
+PASS G4  no nonzero amount displays as "0"
+PASS G5  every shown amount within one unit of exact — not a fabricated constant
+PASS G6  provenance sheet for "honey" carries no raw rationals (157 chars)
+PASS G7  editor prefills a shoppable number ("12")
+PASS G8  no reset control (line is not user-edited) — n/a
+
+=== T-019 cooking mode ===
+PASS C0  cook.js exports renderCook
+PASS C1  cooking screen renders for "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta" (720 chars)
+PASS C2  the step instruction is shown VERBATIM from the API — never re-worded
+PASS C3  title states API position: "Step 1 of 4"
+PASS C4  step time carries BOTH total (10m) and active (10m)
+PASS C5  next safe stopping point rendered from API kind="now" step_index=0
+PASS C6  maximum pause rendered from API (unlimited)
+PASS C7  recovery text verbatim from API: "The marinated chicken and potatoes hold fine at room te…"
+PASS C8  no invented cooking advice alongside a no-guidance fallback (Invariant 6)
+PASS C9  unattended interval (1980s) on step 3 is labelled as such
+PASS C10  attention warning on 22222222 step 1 names the required duration (60s → "1", phase upcoming)
+PASS C11  a continuous-attention step also carries the standing "Needs full attention" badge
+PASS C12  a real timer with absolute ends_at_utc=2026-08-19T05:46:12.951Z is on the session (200)
+NOTE: ignored a Node/undici internal timer bug during the idle wait (harness, not product)
+NOTE: ignored a Node/undici internal timer bug during the idle wait (harness, not product)
+PASS C13  after a full remount 3.2s later the clock fell 3s (5:00 → 4:57) — recomputed from ends_at_utc, never restarted from a stored duration
+PASS C14  an already-expired timer reads as done and offers the acknowledgement
+PASS C15  a cold mount after progress lands on step 2 of 4, not step 1 — a reload resumes in the right place
+PASS C16  and shows THAT step's instruction, not the first step's
+PASS C17  the session id is persisted on load so another screen can offer to resume
+PASS C18  plan screen offers resume: names "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta" at step 2 of 4
+PASS C19  a "Resume cooking" control exists on the plan screen
+PASS C20  an abandoned session shows a terminal screen and clears the stored resume id
+PASS C21  a terminal session offers no step controls
+PASS C22  at most one bottom-anchored primary action mounted at a time (found 0)
+
+pass 32 / 32

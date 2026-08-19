@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 14,
+  "cycle": 15,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -178,6 +178,20 @@
       "decision": "I wrote gate rev1 into the target working tree while the build wave was live. The T-016 builder found and ran it during development. All rev1 PASS results for T-016 are treated as contaminated and were discarded; rev2 was authored after code freeze and is the evidence of record.",
       "why": "Hard rule 2 says builders never see the verify check, because an agent that knows the check can code to the check. Writing the gate into the shared tree mid-wave defeated that. The builder disclosed it unprompted, which is how it was caught. Fix for future cycles: author gates only after the wave returns, or hold them outside the target tree until then. rev1 and its output are preserved on disk as cycle-014-gate-rev1-CONTAMINATED.mjs.",
       "cycle": 14
+    },
+    {
+      "id": "D-24",
+      "topic": "crashed-cycle-salvage",
+      "decision": "Cycle 15 died after dispatching its two foreground builders but before any bookkeeping: the working tree held cook.js (557 lines), cook.css and edits to plan.js/grocery.js/router.js/index.html, none of it committed, and no gate had run. This session RESUMED cycle 15 rather than opening cycle 16 — judged the tree coherent, salvage-committed it as 5622810, then authored and ran the verification gate from scratch.",
+      "why": "The in-flight marker written at dispatch (D-8's lesson) again paid for itself: it named both items, their exact file scopes and the salvage procedure, so no time went to diagnosis. Coherence was judged on evidence, not optimism — the full suite was green on the dirty tree, every new import resolved to a function that already existed (api.js createCookingSession/getCookingSession/postCookingEvent, and the three server routes), and no file was half-written. Opening a fresh cycle would have left two finished screens sitting unverified on disk, which is the merged-but-ungated state D-8 exists to prevent.",
+      "cycle": 15
+    },
+    {
+      "id": "D-25",
+      "topic": "verification-method",
+      "decision": "Cycle 15's gate went through two revisions, and every rev1 failure was a fault in the gate, not the product. rev1 is preserved unmodified beside rev2 with its output. The three faults: it searched for the rendered amount under a lowercase display_name and inside the wrong node; it opened the bottom sheet of a to-taste line, which correctly has neither an amount nor an editor; and its attention-warning probe drove the session through every step, completing it, so the four checks that followed ran against a finished session and failed for that reason alone. A separate diagnostic (cycle-015-diagnostic.txt) proved each before rev2 was written.",
+      "why": "A gate that fails for its own reasons is worse than no gate: it either gets believed, and real work is re-queued for nothing, or it gets waved through, and the next false pass is invisible. Writing the diagnostic first — dump the actual DOM, list which recipes actually have continuous-attention steps, replay the rejected timer payload against a fresh session — turned five ambiguous FAILs into five understood harness bugs in one run. The rule this run keeps re-learning: when a gate fails, find out WHY it failed before touching either side.",
+      "cycle": 15
     }
   ],
   "known_issues": [
@@ -254,13 +268,20 @@
       "status": "open",
       "desc": "No client JavaScript has ever been typechecked. tsconfig include is [domain,server,tests]; tsc --listFiles reports zero files under web/js. Every \"typecheck passes\" claim about a web file this run was true but vacuous. Filed as T-054.",
       "cycle": 14
+    },
+    {
+      "id": "KI-12",
+      "severity": "high",
+      "status": "open",
+      "desc": "Kitchen timers are unreachable in the running product. No code path anywhere in web/ or server business logic produces a timer_started event; only the validator that would accept one exists. Cause: encodeStepView never exposes a step timer duration, so the client has nothing honest to start a timer from. Rendering/ticking/expiry all verified correct at cycle 15 by injecting the event directly (C12-C14) — the way IN is what is missing. Filed as T-058.",
+      "cycle": 15
     }
   ],
   "counters": {
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 0,
+    "wave_streak": 1,
     "window_tokens_attributed": 134227635
   },
   "qa": {
@@ -269,16 +290,15 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 14,
-    "work": "build-wave T-016 (plan screen) + T-017 (grocery ledger)",
-    "outcome": "1 verified, 1 failed gate",
+    "n": 15,
+    "work": "build-wave (resumed from crashed dispatch): T-019 cooking mode + T-052 grocery formatting",
+    "outcome": "2 verified",
     "verified": [
-      "T-016"
+      "T-019",
+      "T-052"
     ],
-    "failed": [
-      "T-017"
-    ],
+    "failed": [],
     "test_cmd": "355/355 pass",
-    "gate": "rev2 28/29"
+    "gate": "cycle-015-gate-rev2 32/32; unaltered cycle-014-gate-rev2 29/29 (R21 green)"
   }
 }

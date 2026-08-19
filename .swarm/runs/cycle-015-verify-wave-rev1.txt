@@ -1,0 +1,34 @@
+listening on http://127.0.0.1:38587
+
+--- c15 ground truth: household_size 3, 3 meals, 7 sections, 22 grocery lines ---
+
+=== T-052 grocery purchase-quantity formatting ===
+PASS G0  grocery screen renders (886 chars)
+PASS G1  no raw rational on the list surface
+FAIL G2  all 22 line amounts are shoppable numbers — honey: no rendered amount found; olive oil: no rendered amount found; rice vinegar: no rendered amount found; soy sauce: no rendered amount found
+PASS G3  display rounding never UNDERBUYS
+PASS G4  no nonzero amount displays as "0"
+PASS G5  every shown amount is within one unit of the exact value — not a fabricated constant
+FAIL G6  no provenance drawer control found to open — call site UNTESTED
+FAIL G7  no edit input rendered — call site UNTESTED
+PASS G8  no reset control on this line (not user-edited) — n/a
+
+=== T-019 cooking mode ===
+PASS C0  cook.js exports renderCook
+PASS C1  session created for "Greek Sheet-Pan Chicken Thighs with Potatoes and Feta" (201)
+PASS C2  cooking screen renders (562 chars)
+PASS C3  the step instruction is shown VERBATIM from the API — never re-worded
+PASS C4  title states position from the API: "Step 1 of 4"
+PASS C5  step time carries BOTH total (10m) and active (10m)
+PASS C6  step has no unattended time — clause n/a for this step
+PASS C7  next safe stopping point rendered from API kind="now" step_index=0
+PASS C8  maximum pause rendered from API (unlimited)
+PASS C9  recovery text shown verbatim from API: "The marinated chicken and potatoes hold fine at room tempera…"
+PASS C10  no invented cooking advice alongside the no-guidance fallback (Invariant 6)
+FAIL C11  NOT EXERCISED — no step of this recipe produced an attention_warning; clause unproven
+FAIL C12  a real timer with absolute ends_at_utc=2026-08-19T05:43:02.233Z is on the session (400)
+FAIL C13  timer never rendered — Invariant 2 UNPROVEN
+FAIL C14  an already-expired timer reads as done and offers the acknowledgement
+FAIL C15  a cold mount after progress lands on step 5, not step 1 — reload resumes at the right place
+GATE HARNESS ERROR: TypeError: Cannot read properties of null (reading 'text')
+    at main (file:///opt/targets/dinner/.swarm/runs/cycle-015-gate.mjs:424:51)

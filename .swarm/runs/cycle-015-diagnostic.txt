@@ -1,0 +1,80 @@
+listening on http://127.0.0.1:45731
+=== GROCERY DOM: first 3 line rows ===
+matched row-ish nodes: 173 [
+  'grocery-line grocery-line--totaste',
+  'grocery-line__body',
+  'grocery-line__text',
+  'grocery-line__name',
+  'grocery-line__meta',
+  'grocery-line__qty text-muted'
+]
+--- all distinct classes under app ---
+grocery-line grocery-line--totaste grocery-line__body grocery-line__check grocery-line__checkbox grocery-line__meta grocery-line__name grocery-line__qty grocery-line__text grocery-section grocery-section__list grocery-section__title num screen screen-header screen-header__eyebrow screen-header__subtitle screen-header__title text-muted
+--- full text ---
+This weekGrocery listGrouped by aisle, with every amount traced back to the recipe that needs it.To tasteBlack pepperFor Greek Sheet-Pan Chicken Thighs with Potatoes and Feta, Japanese-Style Soy-Butter Egg Fried RiceTo tasteKosher saltFor Greek Sheet-Pan Chicken Thighs with Potatoes and Feta, Japanese-Style Soy-Butter Egg Fried RiceTo tasteRed pepper flakesFor Cold Sesame Tofu and Cucumber SaladTo tasteCondimentsHoney12 mlOlive oilAlready have enough0 mlRice vinegar23 mlSoy sauce45 mlToasted sesame oil26 mlVegetable oil12 mlDairy EggsFeta57 gLarge eggs4.5 countUnsalted butter23 mlDry GoodsLong-grain white rice225 gFrozenFrozen peas178 mlMeat SeafoodBoneless skinless chicken thighs675 gProduceCarrots2.3 countEnglish cucumber0.8 countFirm tofu300 gFlat-leaf parsley23 mlGarlic6 countLemons1.5 countRusset potatoes3 countScallions5.3 countSpicesDried oregano8 mlSesame seeds15 ml
+--- tappables ---
+ * BUTTON "Black pepperFor Greek Sheet-Pan Chicken Thighs with Potatoes" class= grocery-line__body
+ * BUTTON "Kosher saltFor Greek Sheet-Pan Chicken Thighs with Potatoes " class= grocery-line__body
+ * BUTTON "Red pepper flakesFor Cold Sesame Tofu and Cucumber SaladTo t" class= grocery-line__body
+ * BUTTON "Honey12 ml" class= grocery-line__body
+ * BUTTON "Olive oilAlready have enough0 ml" class= grocery-line__body
+ * BUTTON "Rice vinegar23 ml" class= grocery-line__body
+ * BUTTON "Soy sauce45 ml" class= grocery-line__body
+ * BUTTON "Toasted sesame oil26 ml" class= grocery-line__body
+ * BUTTON "Vegetable oil12 ml" class= grocery-line__body
+ * BUTTON "Feta57 g" class= grocery-line__body
+ * BUTTON "Large eggs4.5 count" class= grocery-line__body
+ * BUTTON "Unsalted butter23 ml" class= grocery-line__body
+ * BUTTON "Long-grain white rice225 g" class= grocery-line__body
+ * BUTTON "Frozen peas178 ml" class= grocery-line__body
+--- line data sample ---
+{
+ "line_id": "d0a16c7a-153c-4d8d-9c90-1d8ad2fef990",
+ "ingredient_id": "honey",
+ "display_name": "honey",
+ "section": "condiments",
+ "purchase_quantity": {
+  "n": "1419529419",
+  "d": "128000000"
+ },
+ "unit": "ml",
+ "package_label": null,
+ "is_estimate": false,
+ "user_edited_quantity": null,
+ "checked": false,
+ "provenance": {
+  "contributions": [
+   {
+    "recipe_id": "55555555-5555-4555-8555-555555555555",
+    "recipe_name": "Cold Sesame Tofu and Cucumber Salad",
+    "amount": {
+     "n": "1419529419",
+     "d": "128000000"
+    },
+    "unit": "ml"
+   }
+  ],
+  "inventory_deducted": {
+   "n": "0",
+   "d": "1"
+  },
+  "expected_surplus": {
+   "n": "0",
+   "d": "1"
+  }
+ }
+}
+
+=== after clicking first tappable line-ish control ===
+sheet text: Black pepperWhy is this on my list?Used to taste — no measured amount, added as needed while cooking.Greek Sheet-Pan Chicken Thighs with Potatoes and FetaJapanese-Style Soy-Butter Egg Fried Rice
+inputs in sheet: []
+sheet tappables: [ '' ]
+
+=== RECIPES with a continuous-attention step ===
+ 22222222-2222-4222-8222-222222222222  steps=6  continuous-attention at idx 3
+ 33333333-3333-4333-8333-333333333333  steps=6  continuous-attention at idx 2,3,4
+ 44444444-4444-4444-8444-444444444444  steps=7  continuous-attention at idx 3
+ 66666666-6666-4666-8666-666666666666  steps=7  continuous-attention at idx 3,4,5
+
+=== timer_started probe on a FRESH session ===
+timer_started status 200 {"session":{"session_id":"e9b01f95-0e29-4627-b021-a8bd57600d6e","recipe_id":"11111111-1111-4111-8111-111111111111","status":"active","current_step_index":0,"total_steps":4,"step":{"index":0,"text":"Heat the oven to 425F/220C. In a large bowl, whisk the oil, juice of 1 lemon, garlic, oregano, salt and pepper. Cut the second lemon into wedges. Toss the chicken thighs and potato wedges in the marinad

@@ -2320,3 +2320,156 @@ runfile-mirror:
   the prep screen carved out to T-057; live items 39 -> 34
 - if this session dies mid-wave: the tree may hold partial screens. Judge from git diff,
   salvage-commit or reset per cycle.md step 2, re-queue with attempts+1.
+
+## cycle 15 — RESUMED (dispatch survived, the session did not) — build-wave T-019 + T-052 → **2 verified**
+
+- clock 05:32:47Z, stop_at 12:00Z (~6h27m); heartbeat re-stamped, pid 2423356
+- budget: REAL probe (`bin/swarm-budget.sh` DENIED an 11th consecutive cycle — KI-1 — so
+  `npx ccusage@latest` parsed by hand, raw at `runs/cc-probe-c16.json`). Window 04:00–09:00Z:
+  **65,398,652 / 130,591,250** used, burn 697,660 tok/min = **41.9M tok/h**. T_target is the
+  09:00Z reset: 65.2M remaining over 3.44h ⇒ target 18.95M tok/h ⇒ **ρ = 2.21 ⇒ gear_target 1**.
+  Weekly governor still binding (weekly 72.0% at 28.9% elapsed, heat 2.49; opus heat 2.63;
+  ceiling 2, promote blocked). Hysteresis one step: gear 2 → **gear 1, crawl. Wave cap 1.**
+- control channel: `swarm-notify.sh poll` DENIED (KI-1 family); `runs/control.json` read
+  directly — empty. No pending commands, no injections.
+
+### salvage (cycle.md step 2)
+
+Cycle 15 dispatched two foreground builders and died before writing anything. The tree held
+`web/js/cook.js` (557 lines) and `web/css/cook.css` untracked, plus edits to `plan.js` (+129),
+`grocery.js` (+92), `router.js` (+3), `index.html` (+1). **Judged coherent on evidence, not
+optimism**: the full suite was already green on the dirty tree, every new import resolved to a
+function that already existed (`api.js` `createCookingSession`/`getCookingSession`/
+`postCookingEvent`; server routes `/api/cooking/sessions{,/:id,/:id/events}`), and no file was
+half-written. Salvage-committed as `5622810`, then gated from scratch. **D-24** records it.
+
+### the gate took two revisions, and every rev1 failure was MINE
+
+rev1 reported 9 FAILs. A diagnostic run (`cycle-015-diagnostic.txt`) proved all of them were
+harness bugs, not product bugs, before a single line of product code was doubted:
+
+- it looked for the rendered amount under the API's lowercase `display_name` and in the wrong
+  node — the row renders it capitalised;
+- it opened the bottom sheet of a **to-taste** line, which correctly has neither an amount nor
+  an editor, and concluded the editor did not exist;
+- its attention-warning probe drove the session through **every** step, completing it — so the
+  four checks after it (timer inject, Invariant 2, expiry, resume) ran against a finished
+  session and failed for that reason alone. The diagnostic replayed the identical
+  `timer_started` payload against a *fresh* session: **200**.
+
+rev1 and its output are preserved unmodified beside rev2. **D-25** records the method.
+
+### VERIFICATION EVIDENCE — cycle-015-gate-rev2.mjs (conductor-authored post-freeze, 32/32)
+
+```
+--- c15 ground truth: household_size 3, 3 meals, 7 sections, 22 grocery lines ---
+PASS G2  22 numeric line amounts, all shoppable
+PASS G3  display rounding never UNDERBUYS
+PASS G5  every shown amount within one unit of exact — not a fabricated constant
+PASS G6  provenance sheet for "honey" carries no raw rationals (157 chars)
+PASS G7  editor prefills a shoppable number ("12")
+PASS C2  the step instruction is shown VERBATIM from the API — never re-worded
+PASS C7  recovery text verbatim from API: "The marinated chicken and potatoes hold fine at room te…"
+PASS C9  unattended interval (1980s) on step 3 is labelled as such
+PASS C10 attention warning on 22222222 step 1 names the required duration (60s → "1", phase upcoming)
+PASS C13 after a full remount 3.2s later the clock fell 3s (5:00 → 4:57) — recomputed from
+         ends_at_utc, never restarted from a stored duration
+PASS C15 a cold mount after progress lands on step 2 of 4, not step 1
+PASS C18 plan screen offers resume: names "Greek Sheet-Pan Chicken Thighs…" at step 2 of 4
+pass 32 / 32
+```
+
+Full output: `.swarm/runs/cycle-015-verify-wave-rev2.txt` (rev1 at `…-rev1.txt`).
+
+### VERIFICATION EVIDENCE — the acceptance's own named check, file UNALTERED
+
+T-052's acceptance names `cycle-014-gate-rev2.mjs` check R21 explicitly. `git diff HEAD` on
+that file is empty; re-run verbatim:
+
+```
+PASS R20  all 22 lines rendered
+PASS R21  no unreadable raw fractions on the ledger
+pass 29 / 29
+```
+
+Was 28/29 at cycle 14. The one red check is now green, the file was not touched, and T-016's
+plan-screen checks did not regress.
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run)
+
+```
+ℹ tests 355
+ℹ pass 355
+ℹ fail 0
+```
+
+`node bin/collision-scan.mjs` → `applicable: false` (ES modules, no classic scripts). Recorded,
+not counted as a pass.
+
+### T-019 → DONE. The differentiator now exists as a screen.
+
+A parent can start cooking from the plan, and the screen shows one step at a time with the
+instruction **verbatim** from the API, both the total and the hands-on time, the unattended
+stretch labelled as unattended, the next safe stopping point with its pause window, and the
+step's real recovery sentence — or the single honest fallback line, never invented advice.
+
+The check I care about most is **C13**. A timer with `ends_at_utc` five minutes out reads
+`5:00`; destroy the screen entirely, wait 3.2 real seconds, mount it fresh, and it reads
+`4:57`. A screen that stored a duration and restarted a countdown would have read `5:00` again.
+That is Invariant 2 proven by behaviour rather than by reading the source.
+
+### T-052 → DONE, and proven general rather than tuned to its own check
+
+`R21` is committed in this repo, so the builder *could* have read it — which is why the G-checks
+are deliberately different in shape: a third household size, the amount read from the DOM node
+rather than the page text, a direction test (display rounding may never underbuy), a
+one-unit-of-exact test so a plausible constant cannot pass, and the two call sites R21 never
+touched — the provenance sheet and the editor's prefilled value. All green. `formatQuantity`
+gained a ceiling-mode sibling; honey's exact `1419529419/128000000` ml now reads **12 ml**.
+
+### the finding I derived from the code, not from an agent
+
+**KI-12 / T-058 — kitchen timers are unreachable in the running product.** Nothing anywhere in
+`web/` or in server business logic ever produces a `timer_started` event; the only occurrence is
+`routes.ts:1418`, the validator that would *accept* one. My C12–C14 evidence is therefore
+render-path evidence: I injected the event myself over HTTP. Root cause is a contract gap the
+T-019 builder **documented in cook.js's header rather than papering over** — `encodeStepView`
+never emits a step's timer duration, and deriving one from total-minus-active is provably wrong
+for several shipped recipes, so offering "start timer" would have meant shipping a wrong kitchen
+timer. Filed HIGH, two-sided fix. Same shape as T-055 (inventory confirmation questions
+unreachable) — this run keeps finding *correct code with no way in*.
+
+### not run, stated as not run
+
+- **No qa-verify look pass this cycle.** Two brand-new screens landed and they deserve one;
+  gear 1 with the governor at ceiling 2 does not pay for a QA agent when the conductor has just
+  run 32 live-render checks over the same files. `qa.last_look_cycle` stays **12**. The
+  cooking screen's *visual* polish is unproven — only its behaviour is.
+- **C22 (one primary action per screen) is vacuous** — it counted bars after `cleanup()` had
+  already unmounted them, so it found 0 and passed. Not counted as evidence; the real
+  one-dominant-action claim remains unproven for the cooking screen.
+- Client JS still typechecks nothing (KI-11 / T-054), so both builders' "typecheck passes" are
+  true and vacuous for their own files. The DOM gate is the only real evidence here.
+
+### bookkeeping
+
+Wave autotune: **clean wave** — 0 reverts, 0 failed verifies → `wave_streak` 0 → 1; `k_current`
+stays 5 (needs 2, and the gear-1 cap of 1 binds regardless). Burn attribution: window_tokens
+65,398,652 vs 15,446,681 last cycle, delta **+49,951,971** credited to cycle 14's target.
+`consecutive_no_value` stays 0. Backlog **19 done / 32 todo / 1 blocked — 52 live, 6 dropped, 58 filed**.
+
+result: **T-019 → done. T-052 → done. NINETEEN verified of 58 filed.**
+
+honest status. Onboarding, calibration, the plan with reasoned swaps, the traceable grocery list
+and now interruption-aware cooking all exist and are proven by execution. The two things a
+parent still cannot do: see the prep plan (T-057, no screen), and record what happened after
+dinner (T-018, no screen). And the timer inside cooking mode — the single most obviously useful
+thing on that screen — cannot be started at all (T-058).
+
+next: **T-018** (feedback screen, S-effort, closes the last missing loop stage) or **T-058**
+(makes the timer reachable). Gear 1 caps the wave at 1 item. ~6h10m to stop_at 12:00Z.
+
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":18,"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
