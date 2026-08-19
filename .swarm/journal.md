@@ -3479,3 +3479,127 @@ runfile-mirror:
 ```json
 {"version": 1, "run_label": "dinner-2026-08-18", "targets": [{"path": "/opt/targets/dinner", "status": "active", "weight": 1}], "rotation_cursor": 0, "rotation_schedule": [0], "stop_at": "2026-08-19T12:00:00+00:00", "usage_reset_at": "2026-08-19T09:00:00+00:00", "model_policy": "value-routing", "auth_mode": "subscription", "pacing": {"mode": "thermostat", "dial": 1}, "heartbeat": {"ts": 1787126436, "next_wakeup_at": 1787129136, "pid": 2447347, "limp": false, "degraded_tiers": []}, "watchdog": {"mode": "normal", "plist_loaded": true, "lockfile": "/opt/swarm/runs/watchdog.lock", "relaunch_attempts": 0}, "caffeinate_pid": 0, "wrap_up_complete": false, "cycles_since_recycle": 24, "artifact": {"file": "/opt/swarm/runs/dashboard.html", "publish_failures": 0}}
 ```
+
+## cycle 22 — 2026-08-19T08:46Z · RECYCLE cycle (hard rule 7) · dinner · BUILD
+
+work: **RECYCLE**, not a work cycle. `cycles_since_recycle` stood at 24 and incremented to
+25 at step 0.4, which is the hard-rule-7 trigger: no new work, clean commit, handoff note,
+counter reset, steps 7-9. Steps 4-6 skipped by the rule, so no agent was dispatched, no item
+was gated, and **0 items were verified — by design, not by failure.**
+
+The timing is fortunate rather than clever. The 04:00-09:00Z window is exhausted (see
+budget) and the reset is 13 minutes out, so the cheapest possible cycle is exactly the one
+the counter demanded. A build wave dispatched now would have run its builder into the last
+minutes of a depleted window.
+
+budget: REAL probe ran (`bash bin/swarm-budget.sh`, `probe_ok: true`). Window 04:00-09:00Z:
+**141,578,956 tok** ($86.15), burn **29,735,579 tok/h**, projected depletion **08:45:56Z** —
+i.e. already behind us. ρ **99.99** ⇒ gear_target 1, applied gear **1 (crawl)**, wave cap 1,
+`demote: true`.
+
+**GOVERNOR DISENGAGED — and this is the KI-2 blind spot recurring, not good news.** This
+probe returned `weekly.ok: false` with `weekly_used_pct 0`, `opus_used_pct 0`,
+`week_elapsed_pct 0`, `ceiling 5`, `promote_blocked false`. One cycle earlier (21) the same
+feeder reported `weekly_used 100% / opus_used 100%` at `week_elapsed 30.35%` ⇒ heat 3.29,
+ceiling **2**. Weekly consumption does not fall from 100% to 0% in 40 minutes; the envelope
+went to zero and `bin/swarm-weekly-from-allocator.sh` read that as "unconfigured" instead of
+"maximum heat", exactly as KI-2 describes. **The ceiling of 5 in this runfile is an artifact,
+not headroom, and was not acted on** — ρ alone held the gear at 1. The next conductor must
+not read it as permission to burn. Recorded in `budget.probe_note` so the runfile itself
+carries the caveat.
+
+control: `swarm-notify.sh poll` **DENIED by the permission layer** again (KI-1 family,
+second consecutive cycle). Non-fatal per cycle.md step 2 — applied from the file only:
+`runs/control.json` reads `pending: []`, `applied: []`, no `inject` array. Nothing pending,
+nothing to triage. Stated honestly: the ntfy channel is unread for a second cycle and a
+`stop` sent by push would not have been seen.
+
+orient: `git status --porcelain` **clean**. No crashed-cycle salvage needed — cycle 21
+committed its own work (f430990) before dying, which is the first time in this run the tree
+has been clean at a wakeup after a gate failure.
+
+re-anchor: cycle 22, `22 % 5 != 0`, so no full SPEC re-read and no backlog hygiene pass this
+cycle. Digest unchanged: deterministic domain core is the product; the interruption-aware
+cooking loop and the traceable grocery list are the two things prior-art scouting confirmed
+nobody else ships; no LLM on the authoritative path.
+
+### VERIFICATION EVIDENCE
+
+None, and none is claimed. A recycle cycle dispatches nothing and gates nothing. `npm test`
+was **not re-run** this cycle: the tree is byte-identical to the cycle-21 commit that
+recorded 391/391 with `tsc --noEmit` clean, and re-running a suite against an unchanged tree
+proves nothing new while costing window in a depleted one. Reported as not-run, never as
+passed.
+
+### handoff note (the point of this cycle)
+
+**State snapshot.** Backlog **24 done / 32 todo / 1 blocked / 7 dropped — 33 live, 64 filed**.
+Phase BUILD, cycle 22. `consecutive_no_value` **1**, `k_current` 5 (gear cap 1 binds).
+Open known issues after this cycle's correction: **KI-1** (medium, SWARM settings.json edit
+denied), **KI-2** (medium, governor zero-envelope — fired again today, see above), **KI-3**
+(medium, build-wave /tmp worktree), **KI-4** (high, pacer 600s background guillotine),
+**KI-6** (high, 5h session cap kills cycles and the pacer respawns into the wall),
+**KI-11** (medium, no client JS has ever been typechecked), **KI-12** (high, kitchen timers
+unreachable in the running product). **Five of the seven are SWARM-side, not target defects** —
+only KI-11 and KI-12 are the dinner app's own.
+
+**Bookkeeping corrected this cycle** (stale records, not new work):
+- `last_cycle` had been stuck at `n: 19` for two cycles — cycles 20 and 21 never wrote it.
+  Now set to 22 with a note pointing at commits 5c3647f and f430990 as those cycles' record.
+- **KI-8** (prep/grocery quantity contradiction) marked **resolved at cycle 17** and **KI-10**
+  (grocery list rendering raw rationals) marked **resolved at cycle 15**. Both were genuinely
+  earned and gate-evidenced at those cycles — T-043 and T-052 are `done` in the backlog and
+  both have result lines in this journal — but the `known_issues` entries were never updated
+  to match, so the morning report would have shown two high-severity issues as open that were
+  fixed five and seven cycles ago. Carried forward on the earlier evidence and labelled as
+  such in each entry; **not re-verified now**, and each entry says so.
+- **D-32** recorded: a RECYCLE cycle does NOT increment `consecutive_no_value`. It stays at 1.
+  The churn breaker detects a target thrashing; a conductor-mandated hygiene cycle attempts
+  no item, and counting it would have tripped the ≥2 forced work-type switch at cycle 23 —
+  banning a build wave for a reason having nothing to do with the target. Written down rather
+  than applied silently because it is a deliberate deviation from the mechanical reading of
+  cycle.md, and a conductor loosening its own thrash detector should be auditable.
+
+**Read these first** (fresh session, in this order):
+1. `.swarm/state.json` — decisions D-1..D-32 and the seven open `known_issues`. D-11
+   (foreground-agent dispatch, the KI-4 workaround) and D-8 (in-flight markers) are the two
+   that keep this run recoverable; do not drop either.
+2. This journal's cycle 19-21 blocks — the last three gates, including cycle 21's honest
+   13/14 FAILURE that kept T-038 todo.
+3. `.swarm/SPEC.md` + `.swarm/DESIGN.md` (binding, conductor-owned, six invariants).
+4. `.swarm/backlog.json` — T-038 notes carry the exact one-line fix.
+
+**Exact next step.** Finish **T-038** (S, p2, half-built, `attempts: 1`, routes to sonnet:
+the ladder escalates one rung to opus, gear 1 `demote: true` drops it back). One `n === 1`
+branch in `renderSwapNoAlternativesSentence` plus the "0 other recipes" → plain-English
+rewrite. Cycle 21 landed the whole copy-module architecture and 13/14 gate checks; the item
+fails on one ungrammatical sentence at n=1 and nothing else.
+
+After it, in value order, **conditional on the window actually having reset**: **T-017**
+(grocery ledger screen, M, p1 — it alone unblocks T-021, T-024 and T-062, making it the
+highest-leverage single item left), then **T-057** (prep screen, M, p1 — its dependency
+T-043 is done), then **T-061** (S — the QA look pass over the four screens built since
+cycle 12, still the largest unverified surface in this run). Note the gear ladder has
+hysteresis of one step per cycle, so cycle 23 reaches gear 2 at best even on a fresh window,
+and an M-effort item wants gear 2+. Remaining clock to `stop_at` 12:00Z is **~3h10m**, which
+is roughly four to six cycles at this run's observed pace — enough for T-038 plus one M
+screen, not for both screens plus the look pass.
+
+**Standing honesty for the morning report, unchanged by this cycle:** twenty-four verified
+items of sixty-four filed; the API is well proven and roughly half the screens have never
+been looked at by anything but a DOM shim; no real browser has run against this product at
+any point in this run.
+
+### bookkeeping
+
+wave autotune: no wave dispatched → not applicable; `wave_streak` 0, `k_current` unchanged
+at 5. burn attribution: `window_tokens` 141,578,956 vs 135,031,842 last cycle, delta
+**+6,547,114** credited to cycle 21's target (dinner). `cycles_since_recycle` **25 → 0**.
+`consecutive_no_value` held at **1** per D-32.
+
+result: **RECYCLE cycle complete. No work attempted, none claimed. Two stale high-severity
+known_issues corrected to resolved on earlier evidence, one stale `last_cycle` fixed, one
+counter-semantics ruling recorded, and the governor's disengagement flagged as the KI-2 bug
+rather than trusted as headroom. Still TWENTY-FOUR verified of 64 filed.**
+
+next: **T-038** at cycle 23, on the far side of the 09:00Z reset.

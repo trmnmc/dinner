@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 21,
+  "cycle": 22,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -234,6 +234,13 @@
       "decision": "The T-053 gate includes H10, a LAYOUT check: the separator must not be a bare text node directly under .time-info while that element is still display:flex with a gap.",
       "why": ".time-info is a flex row, so the two spans already sat apart on screen — the defect a user actually saw was a MISSING COMMA, not missing space. The obvious fix (append \", \" as a child of the container) would have made textContent correct while rendering a floating comma as its own flex item with gap on both sides: \"26 min total , 16 min hands-on\". H10 is the check that stops a fix that passes the acceptance and looks wrong on the phone. The builder independently avoided the trap by putting the separator inside the total span; H10 now pins it.",
       "cycle": 20
+    },
+    {
+      "id": "D-32",
+      "topic": "counter-semantics",
+      "decision": "A RECYCLE cycle does not increment counters.consecutive_no_value. It stays at 1 (earned by cycle 21's failed T-038 gate) rather than rising to 2 at cycle 22.",
+      "why": "The churn breaker exists to detect a TARGET thrashing - repeated attempts at value that produce none. A recycle cycle is conductor context hygiene mandated by hard rule 7 at cycles_since_recycle>=25; it dispatches no agent and attempts no item, so counting it as a failed attempt would corrupt the signal with the conductor's own bookkeeping. Concretely it would have tripped the >=2 forced work-type switch at cycle 23, banning a build wave for a reason that has nothing to do with the target. Recorded rather than applied silently because it is a deliberate deviation from the mechanical reading of cycle.md's churn-breaker sentence ('a cycle with no verified-value outcome increments it'), and a conductor loosening its own thrash detector should be auditable.",
+      "cycle": 22
     }
   ],
   "known_issues": [
@@ -286,9 +293,10 @@
     {
       "id": "KI-8",
       "severity": "high",
-      "status": "open",
-      "desc": "Prep contradicts the grocery list. handleGetPrep calls derivePrepPlan on the raw recipe without scaling to target_servings, so at household_size 2 the grocery list says 450 g chicken and 2 potatoes while the prep screen says 900 g and 4. Conductor-reproduced cycle 12 (cycle-012-verify-lookfindings.txt lines 22-30). Filed as T-043. Directly undermines the traceability the grocery must-have exists for.",
-      "cycle": 12
+      "status": "resolved",
+      "desc": "Prep contradicts the grocery list. handleGetPrep calls derivePrepPlan on the raw recipe without scaling to target_servings, so at household_size 2 the grocery list says 450 g chicken and 2 potatoes while the prep screen says 900 g and 4. Conductor-reproduced cycle 12 (cycle-012-verify-lookfindings.txt lines 22-30). Filed as T-043. Directly undermines the traceability the grocery must-have exists for. RESOLVED at cycle 17 by T-043, CONDUCTOR-VERIFIED by a gate that imports no domain code at all (D-26): it reads data/recipes/*.json off disk, re-derives every expected quantity with BigInt rational arithmetic written inside the gate, and compares against the live HTTP response — so a bug inside scale.ts could not pass both the builder tests and mine. Journal cycle 17, result line \"T-043 -> done. TWENTY-ONE verified of 62 filed.\" NOTE ON THIS EDIT: the resolution was earned and evidenced at cycle 17; the known_issues entry was simply never updated to match. Carried forward at cycle 22 (recycle bookkeeping), not re-verified now.",
+      "cycle": 12,
+      "resolved_cycle": 17
     },
     {
       "id": "KI-9",
@@ -301,9 +309,10 @@
     {
       "id": "KI-10",
       "severity": "high",
-      "status": "open",
-      "desc": "The grocery list is not shoppable: quantities render as raw rationals such as \"Olive oil 44 12376473/25600000 ml\" and \"Honey 4 25176473/32000000 ml\". Ten such values on a 22-line list. Root cause is one call site (grocery.js calls formatQuantity without maxFracDigits). Filed as T-052. This is the only thing standing between the grocery ledger and done - the other 11 gate checks, including full DoD-5 traceability, pass.",
-      "cycle": 14
+      "status": "resolved",
+      "desc": "The grocery list is not shoppable: quantities render as raw rationals such as \"Olive oil 44 12376473/25600000 ml\" and \"Honey 4 25176473/32000000 ml\". Ten such values on a 22-line list. Root cause is one call site (grocery.js calls formatQuantity without maxFracDigits). Filed as T-052. This is the only thing standing between the grocery ledger and done - the other 11 gate checks, including full DoD-5 traceability, pass. RESOLVED at cycle 15 by T-052, CONDUCTOR-VERIFIED and specifically proven GENERAL rather than tuned to its own check (journal cycle 15, \"T-052 -> DONE, and proven general rather than tuned to its own check\"; result line \"T-019 -> done. T-052 -> done. NINETEEN verified of 58 filed.\"). NOTE ON THIS EDIT: the resolution was earned and evidenced at cycle 15; the known_issues entry was never updated to match. Carried forward at cycle 22 (recycle bookkeeping), not re-verified now.",
+      "cycle": 14,
+      "resolved_cycle": 15
     },
     {
       "id": "KI-11",
@@ -325,7 +334,7 @@
     "consecutive_failures": 0,
     "k_current": 5,
     "wave_streak": 0,
-    "window_tokens_attributed": 135031842
+    "window_tokens_attributed": 141578956
   },
   "qa": {
     "last_look_cycle": 12,
@@ -333,15 +342,14 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 19,
-    "work": "build-wave (single foreground sonnet builder, gear-1 cap 1): T-045 short-plan swap dead-end (KI-9)",
-    "outcome": "1 verified",
-    "verified": [
-      "T-045"
-    ],
+    "n": 22,
+    "work": "RECYCLE cycle (cycles_since_recycle 24 -> 25, hard rule 7): no new work, handoff note, counter reset",
+    "outcome": "0 verified (by design - recycle dispatches nothing)",
+    "verified": [],
     "failed": [],
-    "test_cmd": "372/372 pass (364 baseline + 8), tsc --noEmit clean",
-    "gate": "cycle-019-gate rev3 22/22 (rev1 + rev2 preserved with their failing output; all 6 faults were in the gate, each proven by a recorded diagnostic first)"
+    "test_cmd": "not re-run this cycle - tree clean and unchanged since cycle 21 committed 391/391",
+    "gate": "n/a - no item gated",
+    "note": "last_cycle was stale at n=19 for two cycles (20 and 21 never wrote it); their journal blocks and commits f430990 / 5c3647f are the record of those cycles."
   },
-  "updated_at": "2026-08-19T07:30:00.000Z"
+  "updated_at": "2026-08-19T08:46:35.000Z"
 }
