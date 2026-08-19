@@ -3316,3 +3316,24 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787126014,"next_wakeup_at":1787126104,"pid":2443789,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":23,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+
+---
+
+## cycle 21 — IN FLIGHT (marker committed before dispatch)
+
+- opened 1787126542 (2026-08-19T07:59:14Z). stop_at 12:00Z, usage_reset_at 09:00Z.
+- probe REAL, probe_ok true: window 135,031,842 tok, burn 33,815,039 tok/h, projected
+  depletion 07:59:45Z — i.e. NOW, 61 min before the reset. rho 99.99 => gear 1 (crawl),
+  wave cap 1, demote=true. Weekly governor still binding: 100% weekly / 100% opus used at
+  30.35% week elapsed, heat 3.29, ceiling 2, promote blocked.
+- control: `swarm-notify.sh poll` DENIED by the permission layer (non-fatal per cycle.md
+  step 2). Proceeding from the file only: runs/control.json pending [] applied [], no
+  inject array. Nothing to apply.
+- craft pack: ok, degraded []. NOT passed to this builder — the cycle.md rule flags
+  craft:"ui" only for html/css/jsx/tsx/vue/svelte files or a title naming a UI surface;
+  this item is domain/src/*.ts. The ui pack is visual guidance (color, radius, shadow) and
+  would be noise here.
+- pick: **T-038** (S, fix, sonnet) — swap no-alternatives copy. RE-SCOPED, see below.
+- single foreground Agent (headless -p session: Workflow is review-gated, cycle.md
+  failure-table fallback), sonnet, wave of 1 per the gear cap.
