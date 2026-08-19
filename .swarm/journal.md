@@ -1790,3 +1790,20 @@ runfile-mirror:
 ```json
 {"version": 1, "run_label": "dinner-2026-08-18", "targets": [{"path": "/opt/targets/dinner", "status": "active", "weight": 1}], "rotation_cursor": 0, "rotation_schedule": [0], "stop_at": "2026-08-19T12:00:00+00:00", "usage_reset_at": "2026-08-18T23:00:00+00:00", "model_policy": "value-routing", "auth_mode": "subscription", "heartbeat": {"ts": 1787107098, "next_wakeup_at": 1787109798, "pid": 2399315, "limp": false, "degraded_tiers": []}, "pacing": {"mode": "thermostat", "dial": 1}, "budget": {"source": "probe", "gear": 2, "gear_target": 5, "ratio": 0.499, "mode": "thermostat", "k_cap": 2, "promote": false, "demote": true, "window_tokens": 50916143, "window_cost_usd": 62.97, "api_cap_usd": null, "api_spend_usd": 0, "tokens_per_hour": 19879890, "projected_depletion_at": 1787112000, "last_probe_ts": 1787104794, "last_real_probe_ts": 1787104794, "probe_failures": 0, "probe_note": "Cycle 10 REAL probe via allowlisted `npx ccusage@latest blocks --json --token-limit max`. bin/swarm-budget.sh DENIED again (KI-1, 7th consecutive cycle; the compound `cd && RUNFILE=... ./bin/...` form is refused by the harness). Raw: runs/cc-probe-c10.json. Block 23:00-04:00Z, limit 130,591,250, used 50,916,143, remaining 79,675,107 over 7,206s to T_target (block end 04:00Z, earlier than stop_at 12:00Z) => target 39,804,220 tok/h; actual 19,879,890 tok/h (ccusage 331,332 tok/min) => rho 0.499 => gear_target 5. The WINDOW is now genuinely cool. WEEKLY GOVERNOR still binding on the RAW ACCOUNT (runs/allocator.json): weekly_used 69.0% at week_elapsed 26.78% => heat 2.58 > 1.3; opus 75/26.78 = 2.80. Heat climbed again, 2.30 -> 2.58, and opus_used jumped 58% -> 75% in one cycle. gear_target 5 clamped to ceiling 2 + promote_blocked; prev gear 2, hysteresis no-op => applied gear 2. Wave cap 2, demote=true. THE DECISIVE FACT THIS CYCLE IS NEITHER OF THESE: the account 5h SESSION cap killed cycle 10 mid-wave and 3 pacer spawns after it (KI-6). Neither rho (cool) nor the weekly heat (hot) models that third limit, so the gear arithmetic below is correct and was still not protective. KI-2 UNCHANGED: allocator posture trickle, swarm_used_pct 0 with allow_overall_pct 0, so the feeder u/(u+a) denominator is 0/0 and would DISENGAGE the governor; my arithmetic reads weekly_used/week_elapsed off the raw account and never uses that formula, so this clamp is sound regardless. Allocator dial 0.30 vs runfile pacing dial 1.0: recorded, not applied (hard rule 5).", "weekly": {"ok": true, "weekly_used_pct": 69.0, "opus_used_pct": 75, "week_elapsed_pct": 26.78, "weekly_heat": 2.58, "opus_heat": 2.8, "ceiling": 2, "promote_blocked": true}}, "watchdog": {"mode": "normal", "plist_loaded": true, "lockfile": "/opt/swarm/runs/watchdog.lock", "relaunch_attempts": 0}, "caffeinate_pid": 0, "wrap_up_complete": false, "cycles_since_recycle": 12, "playbook": {"mode": "auto", "applied": [], "vetoed": [], "note": "swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."}, "artifact": {"file": "/opt/swarm/runs/dashboard.html", "publish_failures": 0}}
 ```
+
+---
+
+## cycle 12 — IN-FLIGHT MARKER (written before dispatch, D-8)
+
+- ts 1787108346 (2026-08-19T03:00Z) · pid 2404495 · headless pacer spawn
+- gear 2 (rho 0.350 cool, weekly heat 2.52 → ceiling 2) · wave cap 2 · demote=true
+- work type: build-wave, 2 items, direct foreground Agent calls (KI-4 workaround)
+  - T-014 HTTP server + routes + entrypoint — L — opus demoted to sonnet
+  - T-015 web shell + ui + onboarding + calibration — L — opus demoted to sonnet
+- worktrees: /opt/targets/dinner/.wt/T-014, /opt/targets/dinner/.wt/T-015 (KI-3 workaround)
+- branches: wave-1787108346-T-014, wave-1787108346-T-015
+- conductor authored a FROZEN HTTP CONTRACT v1 and passed it verbatim to BOTH builders;
+  they cannot see each other and this contract is the only thing keeping them compatible.
+- if this marker is the last block in the file, cycle 12 died mid-wave: check the two
+  branches above, merge only what verifies, and re-queue the rest with attempts+1.
+
