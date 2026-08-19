@@ -1,0 +1,33 @@
+baseline: suite must be GREEN before mutating
+  ok
+
+  PASS  [T-013] KILLED: total-time copy drift
+  PASS  [T-013] KILLED: hands-on copy drift
+  PASS  [T-013] KILLED: INVARIANT 6: absence copy replaced by fabricated guidance
+  PASS  [T-013] KILLED: three-reason cap raised to 4
+  PASS  [T-013] KILLED: zero minutes now prints a false-precision "0 min"
+  PASS  [T-013] KILLED: nearest-minute rounding becomes truncation
+  PASS  [T-013] KILLED: combined-label separator drift
+  FAIL  [T-013] SURVIVED: active-time blocks stop splitting on zero-active steps
+  PASS  [T-013] KILLED: every ingredient becomes a do-ahead task
+  PASS  [T-005] KILLED: VALUE ASYMMETRY ERASED (negative no longer moves further)
+  PASS  [T-005] KILLED: CONFIDENCE ASYMMETRY ERASED (negative no longer faster)
+  PASS  [T-005] KILLED: positive raw magnitude drift
+  PASS  [T-005] KILLED: never_recommend lock weakened
+  PASS  [T-005] KILLED: never_recommend confidence weakened
+  PASS  [T-005] KILLED: durability escalation threshold drift
+  PASS  [T-005] KILLED: targeted reason boost silently disabled
+  FAIL  [T-005] SURVIVED: card floor dropped below the 8-15 band
+  PASS  [T-005] KILLED: target card count drift
+  FAIL  [T-005] SURVIVED: signal seeding all but disabled
+  PASS  [T-005] KILLED: greedy tie-break flips (lowest-id determinism broken)
+
+  PASS  every mutated file is byte-identical to its original
+  PASS  suite green again after restore
+
+T-005: 9/11 mutants killed
+  SURVIVED: card floor dropped below the 8-15 band (calibration.ts: min_cards: 8 -> min_cards: 2)
+  SURVIVED: signal seeding all but disabled (calibration.ts: known_confidence_threshold: rational(3, 5) -> known_confidence_threshold: rational(1))
+
+T-013: 8/9 mutants killed
+  SURVIVED: active-time blocks stop splitting on zero-active steps (prep.ts: active_duration_seconds > 0 -> active_duration_seconds >= 0)

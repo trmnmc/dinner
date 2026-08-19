@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 7,
+  "cycle": 8,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -127,6 +127,12 @@
       "severity": "high",
       "desc": "SWARM-side. The headless pacer kills a cycle's background tasks after 600s (\"Background tasks still running after 600s; terminating\" — runs/pacer.log 2026-08-18T22:55Z), but build-wave's own duration budget is 2700s. Any wave whose builders run past 10 minutes is guillotined mid-flight: cycle 6 lost its workflow return, its journal block and one builder's test file this way, and cycle 4 died the same way earlier in the run. The conductor's in-flight marker makes this RECOVERABLE (cycle 6 was resumed and closed cleanly), but every occurrence costs a cycle and can leave merged-but-ungated code. Fix direction: set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS to match the wave budget in bin/swarm-pacer.sh, or have the pacer read the wave-duration table. Hard rule 5 forbids the fix mid-run; morning report.",
       "cycle": 6
+    },
+    {
+      "id": "KI-5",
+      "severity": "high",
+      "desc": "TARGET-SIDE, and the first genuine product defect this run has found: calibration never_recommend over-excludes via filters.ts. applyCalibrationReaction(never_recommend) (preferences.ts, T-005) writes value -1 / confidence 1 to EVERY attribute-value pair of the reacted card - all six single axes plus every flavour and texture tag - and filters.ts (T-006, verified done at cycle 6) treats any signal at value <= -4/5 with confidence >= 1/2 as an ABSOLUTE hard exclusion. Measured by the cycle-8 gate: one never_recommend tap on a chicken/thai card left 2 of 6 survivors in a catalog sharing NO protein and NO cuisine with it (exclusions fired on richness=rich, effort=high, method=stir_fry, spice=hot). On a real 30-recipe catalog this plausibly empties the plan and breaks DoD 2 from the first onboarding flow. NOTE THE CLASS: neither module is wrong in isolation, and both passed their own gates - this is an interaction defect that only an integration probe finds, which is exactly why the conductor gate now calls applyHardFilters with real preference signals rather than testing preferences.ts alone. Fix scoped in T-005 notes (attempt 1, targeted change, not a rebuild); T-006/filters.ts may also deserve a look at whether an attribute-level signal should EVER be an absolute filter.",
+      "cycle": 8
     }
   ],
   "counters": {
@@ -134,7 +140,7 @@
     "consecutive_failures": 0,
     "k_current": 5,
     "wave_streak": 0,
-    "window_tokens_attributed": 28482688
+    "window_tokens_attributed": 39042004
   },
   "qa": {
     "last_look_cycle": null,
@@ -142,9 +148,9 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "n": 7,
-    "work": "build-wave k=2 (foreground agents): T-003 scaling+aggregation+traceability, T-029 score.ts regression tests",
-    "outcome": "both verified done: T-003 gate 43/43, T-029 mutation gate killed 11/13; 187/187 suite green; 2 surviving mutants filed as T-031",
-    "commit": "dc495b4"
+    "n": 8,
+    "work": "build-wave k=2 (foreground agents): T-005 preference model + calibration, T-013 prep derivation + copy/time module",
+    "outcome": "T-013 verified done (gate 94/94, mutation 8/9); T-005 FAILED the gate on a product-breaking integration defect (never_recommend over-exclusion) -> todo attempts 1, KI-5 filed; 265/265 suite green; 2 mutation coverage gaps filed as T-032/T-033",
+    "commit": ""
   }
 }

@@ -162,8 +162,8 @@
         8
       ],
       "model": "sonnet",
-      "attempts": 0,
-      "notes": "Card selection variance is why candidate B won — the spec demands deliberately varied cards, not just reactions. Four reactions: looks good / not for me / never recommend / too much work; 'never recommend' feeds the hard-exclusion set consumed by filters. Persisted score/signal values go through Rational on authoritative paths (Invariant 1)."
+      "attempts": 1,
+      "notes": "Card selection variance is why candidate B won — the spec demands deliberately varied cards, not just reactions. Four reactions: looks good / not for me / never recommend / too much work; 'never recommend' feeds the hard-exclusion set consumed by filters. Persisted score/signal values go through Rational on authoritative paths (Invariant 1). || CYCLE 8 VERDICT: FAILED VERIFICATION (attempt 1). Gate SWARM/runs/cycle-008-gate-T005.mjs scored 44/45; the module is 95% right (asymmetry proven from EQUAL raw inputs and pinned to the exact 3/2 config ratio, all 8 axes covered, clamping exact, greedy selection beat the BEST of 500 random samples on coverage 34 vs 34 and the mean 28.97, deterministic under input reordering). The ONE failure is a product-breaking integration defect and it is the whole reason this item is not done: applyCalibrationReaction(never_recommend) writes value -1 / confidence 1 to EVERY attribute-value pair on the card (all 6 single axes plus every flavour and texture tag), and filters.ts treats ANY signal at value <= -4/5 with confidence >= 1/2 as an ABSOLUTE hard exclusion. Measured: one never_recommend tap on a chicken/thai card left 2 of 6 survivors in a catalog sharing NO protein and NO cuisine with it - r-01 and r-06 died on richness=rich + effort=high, r-02 on method=stir_fry, r-03 on spice=hot. On a real 30-recipe catalog this plausibly empties the plan and breaks DoD 2 (>=2 of 3 meals approvable) from the very first onboarding flow. FIX DIRECTION (do NOT rebuild the module - it is good work; this is a targeted change): never_recommend must not write an absolute-exclusion-strength value to GENERIC axes. Either scope the -1 lock to the distinctive axes only (protein, cuisine, and flavour tags) and write an ordinary strong negative to the generic ones (spice/richness/method/effort/texture), or introduce a recipe-scoped exclusion instead of an attribute-scoped one. Whichever is chosen, the re-verify gate will re-run the 6-recipe integration probe and require a majority to survive. The builder itself flagged this in its return as worth a second look - credit to it for the honesty. See also KI-5."
     },
     {
       "id": "T-006",
@@ -410,7 +410,7 @@
       "priority": 1,
       "value": "H",
       "effort": "M",
-      "status": "todo",
+      "status": "done",
       "deps": [
         "T-001"
       ],
@@ -432,7 +432,7 @@
       ],
       "model": "sonnet",
       "attempts": 0,
-      "notes": "[Steal C] binds: ONE copy module + ONE shared time renderer makes DoD 6 a property of a single helper instead of a per-screen convention, and a voice review a one-file diff. Copy is concrete and countable ('22 min total, 7 hands-on'), guilt-free, honest about uncertainty. At most three reason codes per meal, rendered as concrete copy."
+      "notes": "[Steal C] binds: ONE copy module + ONE shared time renderer makes DoD 6 a property of a single helper instead of a per-screen convention, and a voice review a one-file diff. Copy is concrete and countable ('22 min total, 7 hands-on'), guilt-free, honest about uncertainty. At most three reason codes per meal, rendered as concrete copy. || CYCLE 8 VERDICT: DONE. Conductor gate SWARM/runs/cycle-008-gate-T013.mjs 94/94, mutation gate 8/9 (D-12 method). Built prep.ts (184) + reasons.ts (293) + 624 lines of tests. Invariant 6 proven both ways: authored instruction renders verbatim, none_available renders the one honest absence sentence, and NO fabricated-guidance literal exists anywhere in the copy module (a mutant that replaced the absence copy with invented guidance was killed). DoD 6 is now structurally a property of one helper: renderTotalActiveTime always returns both sides and refuses an impossible pair (active > total)."
     },
     {
       "id": "T-014",
@@ -1019,6 +1019,62 @@
       "model": "sonnet",
       "attempts": 0,
       "notes": "Found by the cycle-7 conductor mutation gate (SWARM/runs/cycle-007-gate-T029.mjs), evidence in .swarm/runs/cycle-007-verify-T-029.txt. Root cause is specific and worth understanding before fixing: the total test recomputes weighted components from a SPEC_WEIGHTS literal declared in the test (which is why every weight mutant dies) but subtracts penalties by reading b.penalties[name] back from the engine (line ~360), so a penalty AMOUNT drift mutates test and engine in lockstep and stays invisible. Fix by pinning penalty literals the same way SPEC_WEIGHTS pins the weights. Do NOT weaken or rewrite the existing passing assertions; add to them. repeat_penalty_window_days and dish_count_free_allowance are already covered (both mutants died)."
+    },
+    {
+      "id": "T-032",
+      "title": "Pin prep.ts active-time block splitting against silent drift",
+      "kind": "fix",
+      "priority": 2,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-013"
+      ],
+      "files_hint": [
+        "tests/prep.test.ts"
+      ],
+      "acceptance": "Mutating prep.ts’s active-block membership test from `active_duration_seconds > 0` to `>= 0` turns the committed suite RED. A fixture with a zero-active step between two active steps asserts EXACTLY two maximal blocks with their exact second sums, so a step that stops splitting blocks is observable.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [
+        "Prep plan and cooking mode"
+      ],
+      "dod": [
+        6
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Found by the cycle-8 conductor mutation gate (SWARM/runs/cycle-008-mutate.mjs); evidence .swarm/runs/cycle-008-verify-mutation.txt. IMPORTANT: the BEHAVIOUR is correct - the conductor gate proved directly that a zero-active step splits blocks into two maximal runs (cycle-008-gate-T013.mjs section G). This is purely a committed-test coverage hole: no test in tests/prep.test.ts pins it, so the engine could drift silently. Add the assertion; do not change prep.ts."
+    },
+    {
+      "id": "T-033",
+      "title": "Pin the calibration card floor and the signal-seeding threshold against silent drift",
+      "kind": "fix",
+      "priority": 2,
+      "value": "M",
+      "effort": "S",
+      "status": "todo",
+      "deps": [
+        "T-005"
+      ],
+      "files_hint": [
+        "tests/calibration.test.ts"
+      ],
+      "acceptance": "Mutating CALIBRATION_CONFIG.min_cards from 8 to 2, or known_confidence_threshold from 3/5 to 1, each turns the committed suite RED. The 8–15 band is asserted against a catalog large enough for the floor to bind, and a fixture with signals at confidence just above and just below 3/5 proves the seeding threshold actually moves the selection.",
+      "packages": [],
+      "wave": 2,
+      "must_haves": [
+        "Taste calibration"
+      ],
+      "dod": [
+        1
+      ],
+      "route_class": "core",
+      "model": "sonnet",
+      "attempts": 0,
+      "notes": "Found by the cycle-8 conductor mutation gate; evidence .swarm/runs/cycle-008-verify-mutation.txt. Both survivors are in calibration.ts, and both are coverage holes rather than behaviour defects: the conductor gate independently proved the 8-15 band holds and that seeding is live (a household with confident signals gets a different selection). Sequence this AFTER T-005’s re-verify lands, since that fix touches preferences.ts and may shift these fixtures."
     }
   ]
 }
