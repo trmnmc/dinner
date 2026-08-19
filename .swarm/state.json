@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 16,
+  "cycle": 17,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -192,6 +192,13 @@
       "decision": "Cycle 15's gate went through two revisions, and every rev1 failure was a fault in the gate, not the product. rev1 is preserved unmodified beside rev2 with its output. The three faults: it searched for the rendered amount under a lowercase display_name and inside the wrong node; it opened the bottom sheet of a to-taste line, which correctly has neither an amount nor an editor; and its attention-warning probe drove the session through every step, completing it, so the four checks that followed ran against a finished session and failed for that reason alone. A separate diagnostic (cycle-015-diagnostic.txt) proved each before rev2 was written.",
       "why": "A gate that fails for its own reasons is worse than no gate: it either gets believed, and real work is re-queued for nothing, or it gets waved through, and the next false pass is invisible. Writing the diagnostic first — dump the actual DOM, list which recipes actually have continuous-attention steps, replay the rejected timer payload against a fresh session — turned five ambiguous FAILs into five understood harness bugs in one run. The rule this run keeps re-learning: when a gate fails, find out WHY it failed before touching either side.",
       "cycle": 15
+    },
+    {
+      "id": "D-26",
+      "topic": "verification-method",
+      "decision": "The T-043 gate imports no domain code at all — it reads data/recipes/*.json off disk, re-derives every expected quantity with BigInt rational arithmetic written inside the gate, and compares against the live HTTP response.",
+      "why": "The builder's own tests import scale.ts, the module whose correctness is the question. A bug inside scale.ts would pass their tests and mine both if mine reused it. Re-deriving independently also caught that the checks were worth having: G4 exists purely to prove the comparison is not a factor-1 tautology, and G5/G6 (identity at size 4, exact thirds at size 3) cover the two ways a scaling fix usually goes wrong — double-scaling and integer truncation.",
+      "cycle": 17
     }
   ],
   "known_issues": [
@@ -281,8 +288,8 @@
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 0,
-    "window_tokens_attributed": 141083035
+    "wave_streak": 1,
+    "window_tokens_attributed": 158170188
   },
   "qa": {
     "last_look_cycle": 12,
@@ -300,5 +307,5 @@
     "test_cmd": "355/355 pass",
     "gate": "cycle-016-gate-rev2 33/33 (rev1 crashed on a harness timer fault, preserved)"
   },
-  "updated_at": "2026-08-19T06:12:56.735Z"
+  "updated_at": "2026-08-19T06:22:44.000Z"
 }

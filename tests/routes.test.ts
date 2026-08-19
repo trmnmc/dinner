@@ -19,6 +19,9 @@ import { join } from 'node:path';
 
 import { startServer } from '../server/src/main.ts';
 import type { StartedServer } from '../server/src/main.ts';
+import { rational, eq } from '../domain/src/qty.ts';
+import { canonicalizeQuantity } from '../domain/src/units.ts';
+import type { IngredientQuantity, Unit } from '../domain/src/recipe.ts';
 
 // ---------------------------------------------------------------------------
 // JSON navigation helpers (unknown, never any)
@@ -614,6 +617,96 @@ test('grocery list has a populated provenance drawer, and a user quantity edit s
     });
     assert.equal(crossPatch.status, 404);
     assert.equal(jStr(j(j(crossPatch.json)['error'])['code']), 'grocery_line_not_found');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
+test('T-043: prep quantities agree with the grocery list for the same plan meal, scaled to household size (not servings_default)', async () => {
+  const ts = await startTestServer();
+  try {
+    // household_size 2, distinct from every catalog recipe's servings_default
+    // (4 in the fixtures, and typically 4 in the real catalog) — this is the
+    // exact repro shape from the T-043 bug report (450g/2 potatoes expected,
+    // 900g/4 potatoes was the bug).
+    const householdId = await createHousehold(ts.base, { household: { household_size: 2 } });
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    const planId = jStr(plan['plan_id']);
+    const meals = jArr(plan['meals']).map((m) => j(m));
+
+    const groceryRes = await api(ts.base, 'GET', `/api/plans/${planId}/grocery`, { householdId });
+    assert.equal(groceryRes.status, 200, JSON.stringify(groceryRes.json));
+    const sections = jArr(j(j(groceryRes.json)['list'])['sections']).map((s) => j(s));
+    const groceryLines: Json[] = [];
+    for (const section of sections) groceryLines.push(...jArr(section['lines']).map((l) => j(l)));
+
+    // WHY these two numbers, and not e.g. `purchase_quantity`: grocery
+    // aggregates a line across every recipe that wants that ingredient and
+    // then rounds UP to a purchasable package (packaging.ts) — that rounded,
+    // aggregated number is allowed to differ from any one recipe's need.
+    // What must agree between prep and grocery is the UNDERLYING scaled
+    // requirement for THIS recipe's THIS ingredient line: prep's
+    // `required_ingredients[].quantity` (scaled, still in the recipe's own
+    // unit — scale.ts's documented contract) run through the same
+    // `canonicalizeQuantity` the aggregation path uses, versus the grocery
+    // line's per-recipe `provenance.contributions[].amount` (also scaled +
+    // canonicalized, pre-aggregation, pre-rounding) for a contribution from
+    // that same recipe. Comparing those two — not the rounded, cross-recipe
+    // `purchase_quantity` — is the comparison the T-043 acceptance criterion
+    // actually calls for ("agreeing with the grocery list for the same
+    // plan"), because it isolates exactly the scale-factor bug and nothing
+    // packaging/aggregation is allowed to legitimately change.
+    let compared = 0;
+    for (const meal of meals) {
+      const slot = jNum(meal['slot']);
+      const recipeId = jStr(meal['recipe_id']);
+      const prepRes = await api(ts.base, 'GET', `/api/plans/${planId}/meals/${String(slot)}/prep`, { householdId });
+      assert.equal(prepRes.status, 200, JSON.stringify(prepRes.json));
+      const prep = j(j(prepRes.json)['prep']);
+      const requiredIngredients = jArr(prep['required_ingredients']).map((l) => j(l));
+
+      for (const line of requiredIngredients) {
+        const quantity = j(line['quantity']);
+        if (jStr(quantity['kind']) !== 'exact') continue; // ranges/to_taste aggregate differently; compare the unambiguous case
+        const ingredientId = jStr(line['ingredient_id']);
+        const groceryLine = groceryLines.find((g) => jStr(g['ingredient_id']) === ingredientId);
+        if (groceryLine === undefined) continue;
+        const contributions = jArr(j(groceryLine['provenance'])['contributions']).map((c) => j(c));
+        const fromThisRecipe = contributions.filter((c) => jStr(c['recipe_id']) === recipeId);
+        // Wire contributions only carry recipe_id (not the recipe-line id),
+        // so if this recipe contributed more than one line for this
+        // ingredient (e.g. a required + an optional/garnish line both
+        // resolving to the same ingredient) the match would be ambiguous —
+        // skip rather than risk comparing the wrong pair.
+        if (fromThisRecipe.length !== 1) continue;
+        const contribution = fromThisRecipe[0] as Json;
+
+        const amt = j(quantity['amount']);
+        const prepQuantity: IngredientQuantity = {
+          kind: 'exact',
+          amount: rational(BigInt(jStr(amt['n'])), BigInt(jStr(amt['d']))),
+          unit: jStr(quantity['unit']) as Unit,
+        };
+        const canonical = canonicalizeQuantity(prepQuantity);
+        assert.equal(canonical.kind, 'exact', 'an exact prep quantity canonicalizes to an exact amount');
+        if (canonical.kind !== 'exact') continue; // narrow for TS; asserted above
+
+        const contribAmt = j(contribution['amount']);
+        const contribRational = rational(BigInt(jStr(contribAmt['n'])), BigInt(jStr(contribAmt['d'])));
+
+        assert.equal(
+          eq(canonical.amount, contribRational),
+          true,
+          `prep vs grocery mismatch for ingredient ${ingredientId} on recipe ${recipeId}: ` +
+            `prep canonical ${String(canonical.amount.num)}/${String(canonical.amount.den)} ${canonical.unit} vs ` +
+            `grocery contribution ${String(contribRational.num)}/${String(contribRational.den)} ${jStr(groceryLine['unit'])}`,
+        );
+        compared++;
+      }
+    }
+    assert.ok(compared > 0, 'expected at least one directly comparable required-ingredient line across the plan');
   } finally {
     await stopTestServer(ts);
   }

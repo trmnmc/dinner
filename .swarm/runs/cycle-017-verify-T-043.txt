@@ -1,0 +1,11 @@
+listening on http://127.0.0.1:40333
+PASS G1  household of 2 → plan 2f5cdc4a-d9ef-48ad-ab8a-21e1ba592166 with 3 active meal(s)
+PASS G2  34 prep ingredient lines across 3 meals match independently re-derived raw × target/servings_default
+PASS G3  to_taste lines pass through unscaled
+PASS G4  29 quantity value(s) actually MOVED off the raw catalog number — G2 is not a factor-1 tautology
+PASS G5  identity case: 29 values from a size-4 household against servings_default-4 recipes come back unchanged (no double-scaling)
+PASS G6  household of 3: exact rational thirds/quarters preserved (23 genuinely fractional value(s), zero truncation)
+PASS G7  15 prep↔grocery ingredient pairs agree on the same plan; 14 skipped as unit-converted [honey (tbsp→ml), olive_oil (tbsp→ml), rice_vinegar (tbsp→ml), soy_sauce (tbsp→ml), toasted_sesame_oil (tbsp→ml), toasted_sesame_oil (tsp→ml), vegetable_oil (tbsp→ml), unsalted_butter (tbsp→ml), frozen_peas (cup→ml), flat_leaf_parsley (tbsp→ml), dried_oregano (tsp→ml), sesame_seeds (tbsp→ml), sesame_seeds (tsp→ml)]
+PASS G8  3 recipe(s) seen at both household sizes: equipment, do-ahead, blocks, safe stop and every time field identical
+
+pass 8 / 8

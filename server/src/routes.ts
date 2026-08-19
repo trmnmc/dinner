@@ -1283,7 +1283,11 @@ function handleGetPrep(deps: Deps, ctx: JsonRouteContext): RouteResult {
   if (row === undefined) throw new HttpError(404, 'meal_not_found', 'No active meal at that slot.');
   const recipe = deps.catalogMap.get(row.recipe_id);
   if (recipe === undefined) throw new HttpError(500, 'internal_error', 'Plan references an unknown recipe.');
-  const prep = derivePrepPlan(recipe);
+  // T-043: scale to THIS plan meal's target_servings, not the recipe's own
+  // servings_default — the same factor scaleRecipeRequirements(recipe,
+  // row.id, row.target_servings) applies on the grocery path (above), so
+  // prep and grocery agree on the underlying scaled requirement.
+  const prep = derivePrepPlan(recipe, row.target_servings);
   return { status: 200, body: { prep: encodePrepPlan(prep, recipe) } };
 }
 

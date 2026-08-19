@@ -7,7 +7,15 @@
  * structured facts a "before you start cooking" screen needs:
  *
  * - ingredients to retrieve (split required / optional, straight from the
- *   authored `optional` flag — never re-guessed)
+ *   authored `optional` flag — never re-guessed), quantities SCALED to the
+ *   caller's explicit `targetServings` via `scale.ts`'s `scaleFactor` /
+ *   `scaleQuantity` — the SAME functions `scaleRecipeRequirements` uses to
+ *   build the grocery list (T-043: prep must agree with grocery for the
+ *   same plan meal, not report `servings_default` quantities regardless of
+ *   household size). The factor is computed once and applied to required
+ *   and optional lines alike; `do_ahead_tasks` carries no quantity so it is
+ *   unaffected. This module does not re-derive the factor independently —
+ *   it reuses scale.ts, never a second scaling path.
  * - equipment needed (recipe-level + every step's equipment, deduplicated)
  * - do-ahead tasks (ingredient lines that carry a non-null `preparation` —
  *   the only per-ingredient field describing work performable ahead of the
@@ -39,6 +47,7 @@
 import type { IngredientId, Recipe, RecipeIngredientLine, RecipeStep, Uuid } from './recipe.ts';
 import type { NextSafeStop } from './cooking.ts';
 import { nextSafeStop } from './cooking.ts';
+import { scaleFactor, scaleQuantity } from './scale.ts';
 
 // ---------------------------------------------------------------------------
 // Derived shapes
@@ -89,7 +98,17 @@ export interface PrepPlan {
 // Derivation
 // ---------------------------------------------------------------------------
 
-function deriveIngredients(recipe: Recipe): {
+/**
+ * Every ingredient line, quantity scaled to `targetServings` via `scale.ts`
+ * (the same factor and function the grocery path uses) — authored order
+ * preserved, nothing else on the line touched.
+ */
+function scaleIngredientLines(recipe: Recipe, targetServings: number): readonly RecipeIngredientLine[] {
+  const factor = scaleFactor(recipe.servings_default, targetServings);
+  return recipe.ingredients.map((line) => ({ ...line, quantity: scaleQuantity(line.quantity, factor) }));
+}
+
+function deriveIngredients(scaledIngredients: readonly RecipeIngredientLine[]): {
   required: readonly RecipeIngredientLine[];
   optional: readonly RecipeIngredientLine[];
   do_ahead_tasks: readonly DoAheadTask[];
@@ -97,7 +116,7 @@ function deriveIngredients(recipe: Recipe): {
   const required: RecipeIngredientLine[] = [];
   const optional: RecipeIngredientLine[] = [];
   const do_ahead_tasks: DoAheadTask[] = [];
-  for (const line of recipe.ingredients) {
+  for (const line of scaledIngredients) {
     if (line.optional) optional.push(line);
     else required.push(line);
     if (line.preparation !== null) {
@@ -164,13 +183,18 @@ function deriveActiveTimeBlocks(recipe: Recipe): readonly ActiveTimeBlock[] {
 }
 
 /**
- * Derive the full prep plan for any valid `Recipe`. Total function over
- * the frozen `Recipe` shape — including the degenerate cases of an empty
- * step list, zero optional ingredients, zero active time, or a recipe with
- * no safe stopping point anywhere.
+ * Derive the full prep plan for any valid `Recipe`, scaled to
+ * `targetServings` — the plan meal's `target_servings`, NOT the recipe's
+ * own `servings_default`. Explicit and required (T-043): a caller cannot
+ * accidentally get `servings_default` quantities by omission, which is
+ * exactly the bug this parameter exists to make unrepresentable. Total
+ * function over the frozen `Recipe` shape — including the degenerate cases
+ * of an empty step list, zero optional ingredients, zero active time, or a
+ * recipe with no safe stopping point anywhere.
  */
-export function derivePrepPlan(recipe: Recipe): PrepPlan {
-  const { required, optional, do_ahead_tasks } = deriveIngredients(recipe);
+export function derivePrepPlan(recipe: Recipe, targetServings: number): PrepPlan {
+  const scaledIngredients = scaleIngredientLines(recipe, targetServings);
+  const { required, optional, do_ahead_tasks } = deriveIngredients(scaledIngredients);
   return {
     recipe_id: recipe.id,
     required_ingredients: required,

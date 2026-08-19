@@ -2615,3 +2615,161 @@ runfile-mirror:
 ```json
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":19,"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 17 | 2026-08-19T06:36:13Z | dinner | BUILD
+
+work: build-wave k=1 [T-043] — prep quantities are unscaled. The only S-effort p1 in the
+backlog, which is exactly what gear 1 pays for, and it is the prep screen's (T-057) hard
+dependency. Cycle 16's journal named it as next.
+
+dispatch: DIRECT Agent call, single foreground builder — this is a headless `-p` session
+where the Workflow tool is review-gated (SKILL.md headless fallback). No runId. models:
+T-043 sonnet (gear 1 demote=true, but build/fix never drops below sonnet).
+
+budget: REAL probe ran, probe_ok true. Window 04:00–09:00Z: 89,341,205 tok used, burn
+37,446,937 tok/h, projected depletion 07:29Z — before the 09:00Z reset. ρ 2.36 ⇒ gear_target
+1, applied gear **1 (crawl)**, wave cap 1, demote=true. Weekly governor still binding:
+weekly_used 100% / opus_used 100% at week_elapsed 29.39% ⇒ heat 3.40, ceiling 2, promote
+blocked.
+
+control: `swarm-notify.sh poll` was DENIED by the sandbox (KI-1 family). Non-fatal per
+cycle.md step 2 — proceeded with file-sourced `pending[]` only: `runs/control.json` reads
+`pending: []`, `applied: []`, no `inject` array. Nothing to apply, nothing to triage.
+
+craft pack: `swarm-craft.mjs` clean, `degraded: []`. T-043 touches no UI surface (domain +
+server + tests), so the `craft.ui` pack was not spliced.
+
+### the fix
+
+`handleGetPrep` called `derivePrepPlan(recipe)` on the RAW recipe while the grocery path
+called `scaleRecipeRequirements(recipe, row.id, row.target_servings)` a few lines above it —
+two views of the same plan meal, one scaled and one not. `derivePrepPlan` now takes a
+**required** `targetServings` parameter and applies `scale.ts`'s existing `scaleFactor` /
+`scaleQuantity` — the same functions and the same exact-rational factor the grocery path
+uses, not a second scaling path. Making the parameter required rather than optional is the
+part worth keeping: it makes the bug unrepresentable by omission, which is the exact shape
+the bug had.
+
+### VERIFICATION EVIDENCE — T-043
+
+Check authored AT VERIFICATION TIME, after the builder finished. The builder never saw it.
+`\.swarm/runs/cycle-017-gate.mjs` imports **no domain code at all**: it reads
+`data/recipes/*.json` off disk, re-derives every expected quantity with BigInt rational
+arithmetic written inside the gate, and compares against the LIVE HTTP endpoint. The
+builder's own tests import `scale.ts` — the module whose correctness is the question — so a
+bug inside `scale.ts` would have been invisible to them and to me if I had reused it.
+
+```
+PASS G1  household of 2 → plan 2f5cdc4a-… with 3 active meal(s)
+PASS G2  34 prep ingredient lines across 3 meals match independently re-derived
+         raw × target/servings_default
+PASS G3  to_taste lines pass through unscaled
+PASS G4  29 quantity value(s) actually MOVED off the raw catalog number — G2 is not a
+         factor-1 tautology
+PASS G5  identity: 29 values from a size-4 household against servings_default-4 recipes
+         come back unchanged (no double-scaling)
+PASS G6  household of 3: exact rational thirds/quarters preserved (23 genuinely fractional
+         values, zero truncation)
+PASS G7  15 prep↔grocery ingredient pairs agree on the same plan; 14 skipped as
+         unit-converted [honey tbsp→ml, olive_oil tbsp→ml, …]
+PASS G8  3 recipes seen at both household sizes: equipment, do-ahead, blocks, safe stop
+         and every time field identical
+pass 8 / 8
+```
+
+Full output: `.swarm/runs/cycle-017-verify-T-043.txt`. G7 is the acceptance criterion
+itself. G4/G5/G6 exist because a scaling fix fails in exactly three ways — not applied,
+applied twice, or applied with truncation — and a gate that only checks "the number changed"
+catches none of them.
+
+The literal cycle-12 repro, restated in the bug report's own numbers:
+
+```
+household_size 2, recipe r01 (servings_default 4), slot 0
+  raw catalog: chicken 900 g, potatoes 4 count
+  prep now  -> boneless skinless chicken thighs: 450/1 g
+  prep now  -> russet potatoes: 2/1 count
+```
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run, cwd /opt/targets/dinner)
+
+```
+ℹ tests 358
+ℹ pass 358
+ℹ fail 0
+```
+
+355 before this cycle, +3 from the builder. `node bin/collision-scan.mjs` →
+`collisions: []`, `load_errors: []`, `no classic scripts found — not applicable`. Recorded,
+not counted as a pass.
+
+I also read the test diff rather than trusting the builder's "no tests weakened" claim: all
+14 pre-existing `derivePrepPlan(...)` call sites in `tests/prep.test.ts` gained a second
+argument of `4`, and the fixture's `servings_default` is 4 (`tests/prep.test.ts:61`) — so
+every one of those is identity scaling and **no expected value changed**. That is a
+signature change, not a weakened assertion.
+
+### the harness fault, recorded rather than quietly fixed
+
+Rev1 of my gate walked `body.grocery.sections` for the grocery lines. The live shape is
+`{list: {sections: […]}}`, so it found zero pairs and G7 reported `compared 0` — and
+**failed**, because the check is written `compared > 0 && no mismatches`. A gate that treats
+"no data" as "nothing wrong" is worse than no gate. I fixed the walk (confirmed against the
+running server, not guessed) and re-ran. No check was weakened, removed or retimed.
+
+### T-043 → DONE. Prep and grocery now tell the parent the same story.
+
+### the finding I re-derived rather than accepted
+
+The builder reported that the grocery list aggregates `optional: true` garnish lines as
+purchase requirements, citing "SPEC's 'Optional garnish/serving suggestion — excluded from
+hard requirements' line". I checked: that sentence is **`domain/src/recipe.ts:79`, a code
+comment, not SPEC.md** — SPEC.md line 87 does not rule on garnishes at all. The underlying
+behaviour is real (`aggregate.ts` never reads the `optional` flag; all six catalog recipes
+carry optional lines — r01 feta + flat_leaf_parsley, r02 lime + cilantro, and so on).
+
+Filed as **T-062** at priority 3, with a conductor RULING that differs from the builder's
+framing: do NOT drop garnishes from the list — a parent who skips buying the parsley because
+the app hid it still ends up without parsley. Buying them is right; presenting them as
+mandatory is not. The missing thing is the signal, and the stale artifact is the comment.
+
+### not run, stated as not run
+
+- **No qa-verify look pass, third cycle running.** `qa.last_look_cycle` stays **12**. This
+  cycle merged zero user-visible files (domain + server + tests only), so the build-wave
+  post-merge look pass genuinely does not apply here — but the four screens shipped since
+  cycle 12 are still unlooked-at. Tracked as **T-061**, not silently carried.
+- **No real browser, again.** The gate drives HTTP and JSON. Nothing here touches CSS or
+  layout, so that is the right scope for T-043 — it is not evidence about any screen.
+- **The prep SCREEN does not exist yet** (T-057). This cycle fixed what the endpoint
+  returns. No parent can see it until that screen is built.
+- **Client JS still typechecks nothing** (KI-11 / T-054). Unchanged, untouched this cycle.
+- G7 compared 15 pairs and **skipped 14** where the grocery path applied a unit conversion
+  (tbsp→ml and kin) that the gate deliberately does not reimplement. Those 14 are unverified
+  by G7 — named in the output rather than dropped. G2 covers all 34 lines including them, so
+  the scaling itself is proven for every line; what is unproven is only the cross-path
+  agreement for the converted subset.
+
+### bookkeeping
+
+Wave autotune: **clean wave** — 0 reverts, 0 failed verifies → `wave_streak` 0 → **1**. It
+does not reach 2, so `k_current` stays 5; the gear-1 cap of 1 binds regardless. Burn
+attribution: window_tokens 89,341,205 vs 72,254,052 last cycle, delta **+17,087,153**
+credited to cycle 16's target. `consecutive_no_value` stays 0. T-057's deps updated —
+T-043 cleared, T-040 (no `time_label` on `active_time_blocks`) is the remaining soft block,
+and that is presentation, not arithmetic. Backlog **21 done / 34 todo / 1 blocked — 56 live,
+6 dropped, 62 filed**.
+
+result: **T-043 → done. TWENTY-ONE verified of 62 filed.**
+
+next: **T-040** (S, formatting — clears the last soft block on the prep screen and fits gear
+1) or **T-057** (M, the prep screen itself — needs gear 2+). ~5h24m to stop_at 12:00Z, but
+the real event is nearer: at 37.4M tok/h the window depletes ~07:29Z, ninety minutes before
+the 09:00Z reset. Expect limp before then.
+
+commit: see `git log` — `cycle 17: T-043 prep quantity scaling verified [1 verified, gate 8/8, suite 358/358]`
+next wakeup: 1787121463 (+90s)
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787121373,"next_wakeup_at":1787121463,"pid":2428973,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":20,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

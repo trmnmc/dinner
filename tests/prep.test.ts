@@ -124,17 +124,38 @@ const PLATE = step(3, {
 const FOUR_STEPS: readonly RecipeStep[] = [CHOP, SEAR, SIMMER, PLATE];
 
 test('derivePrepPlan: recipe_id passes through unchanged', () => {
-  const plan = derivePrepPlan(baseRecipe({ id: 'xyz-123', steps: FOUR_STEPS }));
+  const plan = derivePrepPlan(baseRecipe({ id: 'xyz-123', steps: FOUR_STEPS }), 4);
   assert.equal(plan.recipe_id, 'xyz-123');
+});
+
+test('derivePrepPlan: ingredient quantities scale to targetServings (T-043) — a household of 2 gets half of a servings_default-4 recipe, both required and optional', () => {
+  const chicken = line('a', { optional: false, quantity: { kind: 'exact', amount: rational(900), unit: 'g' } });
+  const potatoes = line('b', { optional: false, quantity: { kind: 'exact', amount: rational(4), unit: 'count' } });
+  const garnish = line('c', { optional: true, quantity: { kind: 'range', min: rational(1), max: rational(2), unit: 'count' } });
+  const plan = derivePrepPlan(
+    baseRecipe({ servings_default: 4, steps: FOUR_STEPS, ingredients: [chicken, potatoes, garnish] }),
+    2, // household of 2 — this is the exact repro from the T-043 bug report
+  );
+  assert.deepEqual(plan.required_ingredients, [
+    { ...chicken, quantity: { kind: 'exact', amount: rational(450), unit: 'g' } },
+    { ...potatoes, quantity: { kind: 'exact', amount: rational(2), unit: 'count' } },
+  ]);
+  assert.deepEqual(plan.optional_ingredients, [
+    { ...garnish, quantity: { kind: 'range', min: rational(1, 2), max: rational(1), unit: 'count' } },
+  ]);
+});
+
+test('derivePrepPlan: a "to_taste" quantity is never scaled — passes through untouched regardless of targetServings', () => {
+  const salt = line('a', { quantity: { kind: 'to_taste' } });
+  const plan = derivePrepPlan(baseRecipe({ servings_default: 4, steps: FOUR_STEPS, ingredients: [salt] }), 2);
+  assert.deepEqual(plan.required_ingredients[0]?.quantity, { kind: 'to_taste' });
 });
 
 test('derivePrepPlan: ingredients split required/optional by the authored flag, order preserved', () => {
   const required1 = line('a', { optional: false, preparation: 'minced' });
   const required2 = line('b', { optional: false, preparation: null });
   const optional1 = line('c', { optional: true, preparation: 'washed' });
-  const plan = derivePrepPlan(
-    baseRecipe({ steps: FOUR_STEPS, ingredients: [required1, required2, optional1] }),
-  );
+  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS, ingredients: [required1, required2, optional1] }), 4);
   assert.deepEqual(plan.required_ingredients, [required1, required2]);
   assert.deepEqual(plan.optional_ingredients, [optional1]);
 });
@@ -143,7 +164,7 @@ test('derivePrepPlan: do-ahead tasks are exactly the lines with a non-null prepa
   const a = line('a', { optional: false, preparation: 'minced' });
   const b = line('b', { optional: false, preparation: null });
   const c = line('c', { optional: true, preparation: 'washed' });
-  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS, ingredients: [a, b, c] }));
+  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS, ingredients: [a, b, c] }), 4);
   assert.deepEqual(plan.do_ahead_tasks, [
     { ingredient_line_id: 'a', ingredient_id: 'ing-a', display_name: 'Ingredient a', preparation: 'minced' },
     { ingredient_line_id: 'c', ingredient_id: 'ing-c', display_name: 'Ingredient c', preparation: 'washed' },
@@ -152,32 +173,30 @@ test('derivePrepPlan: do-ahead tasks are exactly the lines with a non-null prepa
 
 test('derivePrepPlan: no ingredient carries a preparation → empty do-ahead list, not omitted', () => {
   const a = line('a', { preparation: null });
-  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS, ingredients: [a] }));
+  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS, ingredients: [a] }), 4);
   assert.deepEqual(plan.do_ahead_tasks, []);
 });
 
 test('derivePrepPlan: equipment is recipe-level then per-step, deduplicated, first-seen order', () => {
-  const plan = derivePrepPlan(
-    baseRecipe({ steps: FOUR_STEPS, equipment: ['skillet', 'oven'] }),
-  );
+  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS, equipment: ['skillet', 'oven'] }), 4);
   // recipe-level: skillet, oven; step0: cutting board; step1: skillet(dup), tongs; step2: skillet(dup)
   assert.deepEqual(plan.equipment, ['skillet', 'oven', 'cutting board', 'tongs']);
 });
 
 test('derivePrepPlan: first non-interruptible step is the FIRST step with requires_continuous_attention', () => {
-  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS }));
+  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS }), 4);
   assert.equal(plan.first_non_interruptible_step, SEAR);
   assert.equal((plan.first_non_interruptible_step as RecipeStep).id, 's1');
 });
 
 test('derivePrepPlan: no step requires continuous attention → explicit null, never a guess', () => {
   const calm: readonly RecipeStep[] = [step(0), step(1), step(2)];
-  const plan = derivePrepPlan(baseRecipe({ steps: calm }));
+  const plan = derivePrepPlan(baseRecipe({ steps: calm }), 4);
   assert.equal(plan.first_non_interruptible_step, null);
 });
 
 test('derivePrepPlan: first safe stopping point agrees with cooking.ts nextSafeStop at step 0 ("now": chop is safe to pause during)', () => {
-  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS }));
+  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS }), 4);
   assert.deepEqual(plan.first_safe_stopping_point, {
     kind: 'now',
     step_index: 0,
@@ -187,7 +206,7 @@ test('derivePrepPlan: first safe stopping point agrees with cooking.ts nextSafeS
 });
 
 test('derivePrepPlan: expected active-time blocks merge every consecutive active step (all four steps here)', () => {
-  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS }));
+  const plan = derivePrepPlan(baseRecipe({ steps: FOUR_STEPS }), 4);
   assert.deepEqual(plan.active_time_blocks, [{ start_step_index: 0, end_step_index: 3, active_seconds: 690 }]);
   // 120 + 300 + 30 + 240 = 690, matching the fixture's active_time_seconds convention.
   assert.equal(
@@ -203,7 +222,7 @@ test('derivePrepPlan: an unattended step in the middle splits the recipe into tw
     step(2, { active_duration_seconds: 90 }),
     step(3, { active_duration_seconds: 45 }),
   ];
-  const plan = derivePrepPlan(baseRecipe({ steps }));
+  const plan = derivePrepPlan(baseRecipe({ steps }), 4);
   assert.deepEqual(plan.active_time_blocks, [
     { start_step_index: 0, end_step_index: 0, active_seconds: 60 },
     { start_step_index: 2, end_step_index: 3, active_seconds: 135 },
@@ -217,7 +236,7 @@ test('derivePrepPlan: an unattended step in the middle splits the recipe into tw
 test('degenerate: a recipe with zero safe stopping points anywhere → end_of_recipe, not a fabricated stop', () => {
   const unsafe = { safe_to_pause_before: false, safe_to_pause_during: false, safe_to_pause_after: false } as const;
   const steps: readonly RecipeStep[] = [step(0, unsafe), step(1, unsafe)];
-  const plan = derivePrepPlan(baseRecipe({ steps }));
+  const plan = derivePrepPlan(baseRecipe({ steps }), 4);
   assert.deepEqual(plan.first_safe_stopping_point, { kind: 'end_of_recipe' });
 });
 
@@ -236,7 +255,7 @@ test('degenerate: a recipe that is entirely one unattended step', () => {
       recovery_instruction: { kind: 'none_available' },
     }),
   ];
-  const plan = derivePrepPlan(baseRecipe({ steps: oneStep }));
+  const plan = derivePrepPlan(baseRecipe({ steps: oneStep }), 4);
   assert.equal(plan.first_non_interruptible_step, null);
   assert.deepEqual(plan.active_time_blocks, []); // zero active time, nothing to merge
   // Safe-to-pause-during wins as "now" — but cooking.ts's "now"/"during_step"
@@ -256,12 +275,12 @@ test('degenerate: a zero-active-time recipe (every step is pure wait) → no act
     step(1, { active_duration_seconds: 0, unattended_duration_seconds: 600 }),
     step(2, { active_duration_seconds: 0, unattended_duration_seconds: 120 }),
   ];
-  const plan = derivePrepPlan(baseRecipe({ steps }));
+  const plan = derivePrepPlan(baseRecipe({ steps }), 4);
   assert.deepEqual(plan.active_time_blocks, []);
 });
 
 test('degenerate: a recipe with zero steps at all — every derived field is the explicit "none"', () => {
-  const plan = derivePrepPlan(baseRecipe({ steps: [], ingredients: [] }));
+  const plan = derivePrepPlan(baseRecipe({ steps: [], ingredients: [] }), 4);
   assert.equal(plan.first_non_interruptible_step, null);
   assert.deepEqual(plan.first_safe_stopping_point, { kind: 'end_of_recipe' });
   assert.deepEqual(plan.active_time_blocks, []);
