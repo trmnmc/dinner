@@ -90,6 +90,12 @@ export interface AggregatedAmountLine {
    * different dimension: the exact refused conversions (which curated
    * fields were missing), straight from units.ts — never a guess. */
   readonly merge_refusals: readonly NotConvertible[];
+  /** True iff EVERY contributing recipe line authored this ingredient
+   * `optional: true` (T-062, garnish/serving-suggestion lines). One
+   * required contributor is enough to make the merged line non-optional —
+   * a parent must never be told they can skip something a recipe actually
+   * needs. */
+  readonly optional: boolean;
 }
 
 /** The distinct non-numeric presence of an ingredient: at least one recipe
@@ -101,6 +107,9 @@ export interface AggregatedToTasteLine {
   readonly store_section: StoreSection;
   readonly preparations: readonly Preparation[];
   readonly contributions: readonly ToTasteContribution[];
+  /** True iff EVERY contributing recipe line authored this ingredient
+   * `optional: true` (T-062) — same all-or-nothing rule as the amount line. */
+  readonly optional: boolean;
 }
 
 export type AggregatedLine = AggregatedAmountLine | AggregatedToTasteLine;
@@ -205,6 +214,9 @@ function buildAmountLine(
     preparations: distinctSortedPreparations(members.map((m) => m.line)),
     contributions,
     merge_refusals: refusals,
+    // All-or-nothing (T-062): one non-optional contributor makes the whole
+    // merged line something the parent genuinely needs to buy.
+    optional: members.every((m) => m.line.optional),
   };
 }
 
@@ -305,6 +317,7 @@ export function aggregateRequirements(
             recipe_ingredient_line_id: l.recipe_ingredient_line_id,
           }))
           .sort(compareProvenance),
+        optional: toTaste.every((l) => l.optional),
       });
     }
   }

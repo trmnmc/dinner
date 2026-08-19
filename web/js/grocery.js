@@ -53,10 +53,11 @@ import { navigate } from './router.js';
  *   is_estimate: boolean,
  *   user_edited_quantity: Qty|null,
  *   checked: boolean,
+ *   optional: boolean,
  *   provenance: Provenance,
  * }} GroceryLine
  * @typedef {{section: string, lines: GroceryLine[]}} GrocerySection
- * @typedef {{ingredient_id: string, display_name: string, recipe_names: string[]}} ToTasteItem
+ * @typedef {{ingredient_id: string, display_name: string, recipe_names: string[], optional: boolean}} ToTasteItem
  * @typedef {{ingredient_id: string, display_name: string, needed: Qty, believed_on_hand: Qty, unit: string, question: string}} ConfirmationQuestion
  * @typedef {{list_id: string, sections: GrocerySection[], to_taste: ToTasteItem[], confirmation_questions: ConfirmationQuestion[]}} GroceryListView
  */
@@ -324,6 +325,10 @@ export function renderGrocery(container, _params) {
     const effective = line.user_edited_quantity || line.purchase_quantity;
     const qtyText = formatPurchaseQty(effective, line.unit);
     const metaBits = [];
+    // T-062: garnish/serving-suggestion lines are named in plain text, not
+    // colour alone — "skip if you like" tells a scanning parent they can
+    // leave it off the cart without reading the provenance drawer.
+    if (line.optional) metaBits.push('Optional — skip if you like');
     if (line.package_label) {
       metaBits.push(line.is_estimate ? `${line.package_label} — estimated` : line.package_label);
     } else if (isZero(effective)) {
@@ -345,7 +350,9 @@ export function renderGrocery(container, _params) {
         type: 'button',
         class: 'grocery-line__body',
         'aria-haspopup': 'dialog',
-        'aria-label': `Why am I buying ${qtyText} ${line.unit} of ${line.display_name}?`,
+        'aria-label': line.optional
+          ? `Why am I buying ${qtyText} ${line.unit} of ${line.display_name}? Optional, skip if you like.`
+          : `Why am I buying ${qtyText} ${line.unit} of ${line.display_name}?`,
         onClick: () => openProvenanceDrawer(line),
       },
       [
@@ -360,7 +367,7 @@ export function renderGrocery(container, _params) {
 
     const row = h(
       'li',
-      { class: 'grocery-line', dataset: { checked: String(line.checked) } },
+      { class: 'grocery-line', dataset: { checked: String(line.checked), optional: String(line.optional) } },
       [h('label', { class: 'grocery-line__check' }, [checkbox]), openBtn],
     );
     return row;
@@ -514,6 +521,11 @@ export function renderGrocery(container, _params) {
       : null;
 
     const content = h('div', { class: 'grocery-drawer' }, [
+      current.optional
+        ? h('p', { class: 'grocery-drawer__stat text-secondary' }, [
+            'Optional — every recipe using it lists it as a garnish or serving suggestion. Skip it if you like.',
+          ])
+        : null,
       current.package_label
         ? h('p', { class: 'grocery-drawer__package text-secondary' }, [
             current.package_label,
@@ -545,7 +557,9 @@ export function renderGrocery(container, _params) {
     const content = h('div', { class: 'grocery-drawer' }, [
       h('h3', { class: 'grocery-drawer__heading' }, ['Why is this on my list?']),
       h('p', { class: 'grocery-drawer__stat text-secondary' }, [
-        'Used to taste — no measured amount, added as needed while cooking.',
+        item.optional
+          ? 'Used to taste — no measured amount, added as needed while cooking. Optional: every recipe using it lists it as a garnish, so skip it if you like.'
+          : 'Used to taste — no measured amount, added as needed while cooking.',
       ]),
       h(
         'ul',
@@ -595,20 +609,24 @@ export function renderGrocery(container, _params) {
         'ul',
         { class: 'grocery-section__list' },
         items.map((item) =>
-          h('li', { class: 'grocery-line grocery-line--totaste' }, [
+          h('li', { class: 'grocery-line grocery-line--totaste', dataset: { optional: String(item.optional) } }, [
             h(
               'button',
               {
                 type: 'button',
                 class: 'grocery-line__body',
                 'aria-haspopup': 'dialog',
-                'aria-label': `Why is ${item.display_name} on my list?`,
+                'aria-label': item.optional
+                  ? `Why is ${item.display_name} on my list? Optional, skip if you like.`
+                  : `Why is ${item.display_name} on my list?`,
                 onClick: () => openToTasteDrawer(item),
               },
               [
                 h('span', { class: 'grocery-line__text' }, [
                   h('span', { class: 'grocery-line__name' }, [capitalize(item.display_name)]),
-                  h('span', { class: 'grocery-line__meta' }, [`For ${item.recipe_names.join(', ')}`]),
+                  h('span', { class: 'grocery-line__meta' }, [
+                    item.optional ? `Optional · For ${item.recipe_names.join(', ')}` : `For ${item.recipe_names.join(', ')}`,
+                  ]),
                 ]),
                 h('span', { class: 'grocery-line__qty text-muted' }, ['To taste']),
                 icon('chevronLeft'),

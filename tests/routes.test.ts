@@ -793,6 +793,79 @@ test('grocery list has a populated provenance drawer, and a user quantity edit s
   }
 });
 
+test('T-062: a grocery line is optional only when EVERY contributing recipe line authored it optional', async () => {
+  const ts = await startTestServer();
+  try {
+    // A fresh default household's planner is deterministic (no randomness
+    // anywhere in filters/score/planset) and — verified live — always
+    // yields r01 (Greek Sheet-Pan Chicken), r04 (Moroccan-Spiced Chickpea),
+    // r05 (Cold Sesame Tofu). That combination gives two REAL catalog
+    // fixtures for this rule without fabricating recipe data:
+    //   - "feta" is authored optional:true ONLY in r01 -> the merged line's
+    //     single contributor is optional, so the WHOLE line must read
+    //     optional (an all-optional garnish line).
+    //   - "lemon" is authored optional:false in r01 (2 count, required for
+    //     the marinade) AND optional:true in r04 (1 count, a wedge garnish)
+    //     -> same ingredient id, same canonical dimension (count), so
+    //     aggregate.ts merges them into ONE line with two contributors —
+    //     that line must NOT read optional, because one contributor
+    //     genuinely needs it.
+    const householdId = await createHousehold(ts.base);
+    const planRes = await api(ts.base, 'POST', '/api/plans', { householdId });
+    assert.equal(planRes.status, 201, JSON.stringify(planRes.json));
+    const plan = j(j(planRes.json)['plan']);
+    const planId = jStr(plan['plan_id']);
+    const recipeNames = jArr(plan['meals']).map((m) => jStr(j(m)['name']));
+    assert.ok(
+      recipeNames.some((n) => n.includes('Greek')) && recipeNames.some((n) => n.includes('Moroccan')),
+      `expected the deterministic default plan to include the Greek and Moroccan recipes, got: ${JSON.stringify(recipeNames)}`,
+    );
+
+    const groceryRes = await api(ts.base, 'GET', `/api/plans/${planId}/grocery`, { householdId });
+    assert.equal(groceryRes.status, 200, JSON.stringify(groceryRes.json));
+    const sections = jArr(j(j(groceryRes.json)['list'])['sections']).map((s) => j(s));
+    const lines: Json[] = [];
+    for (const section of sections) lines.push(...jArr(section['lines']).map((l) => j(l)));
+
+    const fetaLine = lines.find((l) => jStr(l['ingredient_id']) === 'feta');
+    assert.ok(fetaLine !== undefined, 'expected a "feta" grocery line');
+    assert.equal(jBool((fetaLine as Json)['optional']), true, 'feta has one contributor and it is optional -> line must be optional');
+    const fetaContributions = jArr(j((fetaLine as Json)['provenance'])['contributions']);
+    assert.equal(fetaContributions.length, 1, 'feta is only used by the Greek recipe in this catalog');
+
+    const lemonLine = lines.find((l) => jStr(l['ingredient_id']) === 'lemon');
+    assert.ok(lemonLine !== undefined, 'expected a "lemon" grocery line');
+    const lemonContributions = jArr(j((lemonLine as Json)['provenance'])['contributions']).map((c) => j(c));
+    assert.equal(lemonContributions.length, 2, 'lemon must be a merged line from both the Greek and Moroccan recipes');
+    assert.equal(
+      jBool((lemonLine as Json)['optional']),
+      false,
+      'lemon is required in the Greek recipe even though it is optional in the Moroccan one -> the merged line must NOT read optional',
+    );
+
+    // The same distinction must survive a PATCH round-trip (the route
+    // recomputes `optional` fresh on every read, including after a write —
+    // it is derived from the live aggregation, not a persisted column).
+    const lemonLineId = jStr((lemonLine as Json)['line_id']);
+    const patchRes = await api(ts.base, 'PATCH', `/api/grocery/lines/${lemonLineId}`, {
+      householdId,
+      body: { checked: true },
+    });
+    assert.equal(patchRes.status, 200, JSON.stringify(patchRes.json));
+    assert.equal(jBool(j(j(patchRes.json)['line'])['optional']), false, 'optional must still read false for the mixed lemon line after a PATCH');
+
+    const fetaLineId = jStr((fetaLine as Json)['line_id']);
+    const fetaPatchRes = await api(ts.base, 'PATCH', `/api/grocery/lines/${fetaLineId}`, {
+      householdId,
+      body: { checked: true },
+    });
+    assert.equal(fetaPatchRes.status, 200, JSON.stringify(fetaPatchRes.json));
+    assert.equal(jBool(j(j(fetaPatchRes.json)['line'])['optional']), true, 'optional must still read true for the all-optional feta line after a PATCH');
+  } finally {
+    await stopTestServer(ts);
+  }
+});
+
 test('T-069: a real 3-meal plan grocery list renders package labels, estimates, and surplus sourced from data/ingredients.json — not a test fixture', async () => {
   const ts = await startTestServer();
   try {

@@ -18,6 +18,8 @@
  *   - `mountPrimaryAction`   the ONE dominant bottom-anchored action button
  *   - `mountReactionGrid`    calibration's explicit four-reaction exception
  *   - `renderTimeInfo`       the single shared total-vs-active time renderer
+ *   - `durationWords`        the single shared "N seconds/minutes/hours" copy
+ *                            formatter (bounded windows like `maximum_pause`)
  *   - `createLoadingState` / `createErrorState` / `createEmptyState`
  *   - `icon`                 real inline SVG icons, never emoji
  *
@@ -574,6 +576,48 @@ export function renderTimeInfo(fields = {}) {
     ariaLabel = [totalTxt, activeTxt].filter(Boolean).join(', ');
   }
   return h('div', { class: 'time-info', 'aria-label': ariaLabel }, parts);
+}
+
+// ---------------------------------------------------------------------------
+// The single shared duration-to-words formatter — bounded windows like
+// `maximum_pause` that don't go through `renderTimeInfo` (that renderer is
+// specifically the total-vs-active pair; this is for standalone one-off
+// durations quoted in a sentence).
+// ---------------------------------------------------------------------------
+
+/**
+ * Humane, spoken-register copy for a single duration, at whatever scale it
+ * actually is — never a raw "418 minutes" or a malformed "1 hours". Several
+ * authored windows (e.g. `maximum_pause`) are genuinely under a minute, so
+ * those stay in exact, countable seconds rather than rounding away to
+ * "under 1 minute"; minute-scale windows stay in minutes; anything an hour
+ * or longer collapses to whole hours ("about N hours") when the leftover
+ * minutes are close enough to an hour boundary (within 10 minutes either
+ * side) to round away without lying, or spells out the leftover minutes
+ * ("N hours M minutes") when they're not.
+ * @param {number} seconds
+ * @returns {string}
+ */
+export function durationWords(seconds) {
+  const total = Math.max(0, seconds);
+  if (total < 60) {
+    const s = Math.round(total);
+    return `${String(s)} second${s === 1 ? '' : 's'}`;
+  }
+  const totalMinutes = Math.round(total / 60);
+  if (totalMinutes < 60) {
+    return `${String(totalMinutes)} minute${totalMinutes === 1 ? '' : 's'}`;
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  if (mins <= 10) {
+    return `about ${String(hours)} hour${hours === 1 ? '' : 's'}`;
+  }
+  if (mins >= 50) {
+    const roundedUp = hours + 1;
+    return `about ${String(roundedUp)} hour${roundedUp === 1 ? '' : 's'}`;
+  }
+  return `${String(hours)} hour${hours === 1 ? '' : 's'} ${String(mins)} minute${mins === 1 ? '' : 's'}`;
 }
 
 // ---------------------------------------------------------------------------

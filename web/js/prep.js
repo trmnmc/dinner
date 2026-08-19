@@ -42,10 +42,12 @@
  * any `total_seconds`/`active_seconds`/`time_label` triple (those always go
  * through `ui.js`'s shared `renderTimeInfo`). The one place a duration IS
  * hand-converted to words is `first_safe_stopping_point.maximum_pause` —
- * `reasons.ts` has no renderer for `MaximumPause` (confirmed by reading it),
- * and `cook.js` already hand-formats this exact shape locally
- * (`durationWords` / `safeStopText`) for the same reason. `durationWords`
- * and `safeStopText` below are that same idiom, not a second convention.
+ * `reasons.ts` has no renderer for `MaximumPause` (confirmed by reading it).
+ * That conversion is `ui.js`'s shared `durationWords` export (T-067 —
+ * humane units at every scale, not a raw "N minutes"); `safeStopText` below
+ * is this screen's own wiring of that shared helper into a sentence.
+ * `cook.js` still has its own private, pre-T-067 copy of the same idiom —
+ * a separate backlog item, not fixed here.
  *
  * Ingredient quantities here are the RECIPE's own authored units (g, kg,
  * oz, lb, ml, l, tsp, tbsp, cup, fl_oz, count — `domain/src/recipe.ts`
@@ -73,6 +75,7 @@ import {
   createStatusBadge,
   mountPrimaryAction,
   renderTimeInfo,
+  durationWords,
   createLoadingState,
   createErrorState,
   createEmptyState,
@@ -179,23 +182,6 @@ function formatIngredientQuantity(quantity) {
     return `${formatAmount(quantity.amount, quantity.unit)} ${unitLabel(quantity.unit)}`;
   }
   return `${formatAmount(quantity.min, quantity.unit)}–${formatAmount(quantity.max, quantity.unit)} ${unitLabel(quantity.unit)}`;
-}
-
-/**
- * Concrete, countable duration copy for `maximum_pause` — several of the
- * authored windows are well under a minute, so anything under a minute is
- * shown in seconds rather than rounding it away to "under 1 minute"
- * (matches `cook.js`'s `durationWords`, the established idiom for this
- * exact shape — see header comment).
- * @param {number} seconds @returns {string}
- */
-function durationWords(seconds) {
-  if (seconds < 60) {
-    const s = Math.max(0, Math.round(seconds));
-    return `${String(s)} second${s === 1 ? '' : 's'}`;
-  }
-  const m = Math.round(seconds / 60);
-  return `${String(m)} minute${m === 1 ? '' : 's'}`;
 }
 
 /**

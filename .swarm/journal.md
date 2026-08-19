@@ -4559,3 +4559,180 @@ the evidence I would want if I were it.
 ```runfile-mirror
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787137400,"next_wakeup_at":1787137490,"pid":2469933,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.98,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":86225926,"window_cost_usd":46.36915430000004,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":53986739,"projected_depletion_at":1787139979,"last_probe_ts":1787136180,"last_real_probe_ts":1787136180,"probe_failures":0,"probe_note":"Cycle 26 REAL probe, probe_ok true (the first plain-form invocation succeeded; the env-var-prefixed form RUNFILE=... swarm-budget.sh was DENIED by the harness, KI-1 family — recorded, not worked around). window_tokens 51,766,264 -> 86,225,926 since the 09:00Z reset; rho 1.20 => gear_target 2, applied gear 2 (no hysteresis move). Governor still engaged: weekly 100% / opus 100% at week_elapsed 31.96% => heat 3.13, ceiling 2, promote blocked. Projected depletion 1787139979 (~11:46:19Z) now lands one minute AFTER the 11:45Z wrap trigger and 14 min BEFORE stop_at — the window is expected to survive to the wrap-up decision, but not to 12:00Z. Cycle 26 is therefore planned as the LAST work cycle of the run.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":31.96,"weekly_heat":3.13,"opus_heat":3.13,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":4,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 27 — 2026-08-19T11:08Z → 11:30Z · BUILD · T-067 + T-062 verified (the last work cycle)
+
+clock: opened 1787137733 (11:08:53Z). WRAP_UP trigger (`stop_at − 900`) = 1787139900 (11:45Z),
+`stop_at` = 12:00Z. Hard rule 3 honoured — `date +%s` first, before any pick.
+
+budget: **REAL probe, `probe_ok: true`** — gear 2, ρ **0.79**, k_cap 2, `demote: true`,
+`promote: false`; window_tokens 86,225,926 → 95,292,044 since the 09:00Z reset,
+46.45 M tokens/hour, projected depletion **1787141542 (12:12:22Z)**. That is the material
+change from cycle 26: burn fell 53.99 → 46.45 M/h, so the projected depletion moved from
+11:46:19Z (one minute *after* the wrap trigger) to 12:12Z — **after `stop_at`**. The window is
+now projected to survive the whole run. ρ 0.79 would have earned gear 4; the **weekly
+governor ceiling of 2 is what binds** (weekly 100% / opus 100% at week_elapsed 32.23% ⇒
+heat 3.10). Effective wave size = min(k_current 5, gear cap 2) = **2**.
+
+probe note, KI-1 family: the plain-form invocation succeeded; `RUNFILE=… swarm-budget.sh` is
+still DENIED by the harness, as is `bash swarm-notify.sh poll 2>&1 | tail`. Same narrow gap
+cycle 26 recorded — it is the env-prefixed / multi-op *forms* that are blocked, not the
+scripts. Not worked around, not edited mid-run (hard rule 5).
+
+control: `swarm-notify.sh poll` was DENIED by the harness (non-fatal per cycle.md step 2 —
+journalled, continue file-sourced). `runs/control.json` read directly: `pending: []`,
+`applied: []`, no `inject` array. Nothing to apply. Tree CLEAN at orient — cycle 26 closed
+properly, no salvage.
+
+### the pick, against cycle 26's own recommendation (again)
+
+Cycle 26's footer recommended **preferring WRAP_UP over one more item**, on evidence that the
+window would deplete at 11:46:19Z. That evidence was correct when written and is **stale
+now**: the re-probe moved depletion 26 minutes later, past `stop_at`. The recommendation was
+conditional on a number that changed, so I overrode it — and cycle 26's own discipline is why
+that was checkable rather than a guess.
+
+Admission arithmetic: `stop_at − now − 900` = 2051 s. A 2700 s build wave does NOT admit at
+face value; the final-60-minutes **S-effort carve-out** admits an S-effort-only wave at 900 s
+(cycle.md step 4). So: S-effort only, k = 2, one wave, and the heartbeat still re-touched at
+the full 2700 s budget so a slow wave is never read as stale.
+
+Two picks, both **user-visible copy/comprehension defects on screens a parent actually
+reads**, chosen by the two-question ratchet over the pin-against-drift test items (T-031/032/
+033/035 — real value, but invisible to the target user, and this is the last cycle a *user*
+gets anything from):
+
+- **T-067** (p2, S) — the prep screen telling a parent "Pause up to 418 minutes".
+- **T-062** (p3, S) — garnishes indistinguishable from essentials on the grocery list.
+
+Dispatch: **two direct foreground Agent calls on sonnet** (Workflow is review-gated headless;
+gear 2 `demote: true`, and fix/polish never drops below sonnet). No worktrees — strictly
+disjoint file scopes enforced in the prompts, the pattern cycles 24–26 proved:
+T-067 → `web/js/ui.js` + `web/js/prep.js` + one NEW test file; T-062 → `domain/src/aggregate.ts`
++ `server/src/routes.ts` + `web/js/grocery.js` + `tests/routes.test.ts`. Craft pack loaded
+clean (`degraded: []`), craft.ui spliced into both prompts.
+
+### VERIFICATION EVIDENCE — T-067 (humane pause copy, one shared formatter)
+
+Check authored at verification time, not from the backlog and not from the builder's notes:
+import the shared export **directly in node** and read the ladder off real output. The builder
+never saw this check.
+
+```
+$ node --input-type=module -e "import {durationWords as d} from '/opt/targets/dinner/web/js/ui.js'; ..."
+0 -> "0 seconds"          3540 -> "59 minutes"
+1 -> "1 second"           3599 -> "about 1 hour"
+20 -> "20 seconds"        3600 -> "about 1 hour"
+59 -> "59 seconds"        5400 -> "1 hour 30 minutes"
+60 -> "1 minute"          25080 -> "about 7 hours"     <-- the 418-minute bug, fixed
+90 -> "2 minutes"         86400 -> "about 24 hours"
+```
+
+The malformed cases the item existed to prevent are all absent: no `"1 hours"`, no
+`"60 minutes"`, no `"418 minutes"`. Sub-minute windows stay honest in seconds.
+
+Second half of the acceptance — formatting lives in ONE place:
+
+```
+$ grep -c "function durationWords" web/js/prep.js   -> 0     (private copy gone)
+$ grep -n  "durationWords" web/js/prep.js
+  46: * That conversion is `ui.js`'s shared `durationWords` export (T-067 —
+  78:   durationWords,                                  (imported from ui.js)
+ 205:      ? ` Pause up to ${durationWords(pause.seconds)}.`
+```
+
+**Mutation gate** — do the new tests actually pin it, or do they merely pass? Mutant:
+`ui.js` `if (totalMinutes < 60)` → `< 600`, which re-introduces exactly the "418 minutes" bug:
+
+```
+MUTANT APPLIED: totalMinutes < 60 -> < 600
+ℹ tests 411   ℹ pass 406   ℹ fail 5      <-- mutant KILLED (5 assertions)
+REVERTED
+ℹ tests 411   ℹ pass 411   ℹ fail 0
+```
+
+**T-067 passes.**
+
+### VERIFICATION EVIDENCE — T-062 (optional grocery lines)
+
+The rule under test is all-or-nothing: a merged line is optional iff EVERY contributing recipe
+line was authored optional; one required contributor makes it required. The failure mode that
+matters is the *inverted* one — marking a line skippable when a real ingredient is in it,
+which would send a parent home without dinner. So the check I authored is the mutant that
+inverts precisely that quantifier in `domain/src/aggregate.ts`:
+
+```
+MUTANT APPLIED: optional: members.every((m) => m.line.optional)
+             -> optional: members.some((m)  => m.line.optional)
+ℹ tests 411   ℹ pass 410   ℹ fail 1      <-- mutant KILLED
+  ERR_ASSERTION  actual: true   expected: false   (the mixed line went optional)
+REVERTED
+ℹ tests 411   ℹ pass 411   ℹ fail 0
+```
+
+The killed assertion is the mixed-contributor one, which is the assertion that has to exist:
+`lemon` merges r01 (2 count, **required**) with r04 (1 count, optional) and must stay
+required; `feta` is single-contributor optional and is marked. Both are real catalog fixtures,
+not synthetic, and both are re-checked after a `PATCH .../checked` round trip — the PATCH path
+re-derives `optional` from the live aggregation rather than reading a persisted column, so the
+frozen-DB-row path is covered too. Wire shape: `optional: boolean` on every
+`list.sections[].lines[]`, on `list.to_taste[]`, and on the PATCH response `line`. UI marks it
+as plain secondary text ("Optional — skip if you like") in the meta row plus the `aria-label`
+and the provenance drawer — **not** colour alone, which is the craft rule that matters here.
+
+**T-062 passes.**
+
+### full-suite and standing gates (run by the conductor, not reported by an agent)
+
+```
+$ npm test        (cwd /opt/targets/dinner — tsc --noEmit then node --test)
+ℹ tests 411   ℹ suites 0   ℹ pass 411   ℹ fail 0   ℹ cancelled 0
+ℹ skipped 0   ℹ todo 0     ℹ duration_ms 5213.588705
+```
+
+404 → **411 passing**, +7 net new assertions, zero failures, typecheck clean on both the node
+and web tsconfigs. Green main (hard rule 4) holds — nothing to revert.
+
+```
+$ node /opt/swarm/bin/collision-scan.mjs /opt/targets/dinner
+{"applicable": false, "files_scanned": [], "collisions": [], "load_errors": [], "allowlisted": []}
+collision-scan: no classic scripts found — not applicable
+```
+
+Not-applicable is the honest reading, not a pass: the client is ES modules throughout, so the
+classic-script global-collision failure mode this gate exists to catch cannot occur here.
+
+### wave autotune
+
+Clean wave — zero reverts, zero failed verifies, two clean merges into a working tree with no
+cross-scope contamination (each builder independently confirmed via `git status` that it had
+not touched the other's files, and the diff confirms it: 6 modified + 1 new, exactly the two
+declared scopes). `wave_streak` 0 → **1** (needs 2 to bump), `k_current` stays 5 — academic
+while the governor caps the effective wave at 2. `consecutive_no_value` stays 0.
+
+### not run — reported as not-run, never as passed
+
+- The qa-verify **look** pass over the two touched screens (Workflow is review-gated in a
+  headless `-p` session). T-061 still carries it as a filed, unstarted item.
+- The **taste** pass. `qa.last_taste_cycle` is still `null` — this run never had one. That is
+  a real gap and the morning report must carry it as such: nothing in this run has judged
+  whether the product stays interesting after ten uses.
+- `web/js/cook.js` still holds its own private `durationWords` copy. T-067's scope deliberately
+  excluded it to keep the two builders disjoint; **T-063** now carries that remainder in its
+  notes. The prep screen is fixed; the cooking screen's duplicate is still a live duplicate.
+
+result: **TWO items verified — T-067 and T-062 — both user-visible, both mutation-gated.**
+35 verified of 73 filed. The last thing this run put in front of a parent is a prep screen
+that says "about 7 hours" instead of "418 minutes", and a grocery list that tells them which
+lines are garnish they can skip.
+
+next: **WRAP_UP.** The next wakeup is clamped to 11:45:00Z (`stop_at − 900`), which is the
+trigger itself — cycle 28 opens straight into WRAP_UP with ~15 minutes of window and a
+projected depletion at 12:12Z. No further work cycle admits. What cycle 28 owes the morning:
+`REPORT.md` and `RETRO.md` per hard rule, the distilled playbook candidates, the `v0.1-overnight`
+tag, and — stated plainly rather than buried — the honest hand-off that the correctness tail
+here is machine-checked but the **taste** of the product never was.
+
+```runfile-mirror
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787137849,"next_wakeup_at":1787140549,"pid":2473692,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.79,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":95292044,"window_cost_usd":59.121212800000016,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":46454609,"projected_depletion_at":1787141542,"last_probe_ts":1787137849,"last_real_probe_ts":1787137849,"probe_failures":0,"probe_note":"Cycle 27 REAL probe, probe_ok true (plain-form invocation; the RUNFILE=... env-prefixed form is still DENIED by the harness, KI-1 family). window_tokens 86,225,926 -> 95,292,044 since the 09:00Z reset; rho 0.79 => gear_target 2 (the governor ceiling of 2 binds here, not rho), applied gear 2. Weekly governor still engaged: weekly 100% / opus 100% at week_elapsed 32.23% => heat 3.10, ceiling 2, promote blocked. Projected depletion 1787141542 (~12:12:22Z) now lands AFTER stop_at 12:00:00Z - burn fell from 53.99M/h to 46.45M/h, so the window is projected to survive the whole run. Cycle 27 is the last WORK cycle: the next wakeup clamps to 11:45:00Z, which is the WRAP_UP trigger.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":32.23,"weekly_heat":3.1,"opus_heat":3.1,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":5,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

@@ -1031,6 +1031,10 @@ interface GroceryLineData {
   readonly user_edited_quantity: Rational | null;
   readonly checked: boolean;
   readonly contributions: readonly GroceryContribution[];
+  /** T-062: true iff every recipe line that contributed to this ingredient
+   * was authored `optional: true` (garnish/serving suggestion) — one
+   * required contributor makes the whole merged line non-optional. */
+  readonly optional: boolean;
 }
 
 function buildGroceryLineView(d: GroceryLineData, recipeNameFor: (id: Uuid) => string): Record<string, unknown> {
@@ -1053,6 +1057,7 @@ function buildGroceryLineView(d: GroceryLineData, recipeNameFor: (id: Uuid) => s
     is_estimate: d.is_estimate,
     user_edited_quantity: d.user_edited_quantity === null ? null : encodeRational(d.user_edited_quantity),
     checked: d.checked,
+    optional: d.optional,
     provenance: {
       contributions: d.contributions.map((c) => ({
         recipe_id: c.recipe_id,
@@ -1115,6 +1120,7 @@ function handleGetGrocery(deps: Deps, ctx: JsonRouteContext): RouteResult {
         ingredient_id: line.ingredient_id,
         display_name: line.display_name,
         recipe_names: [...new Set(line.contributions.map((c) => recipeNameFor(c.recipe_id)))],
+        optional: line.optional,
       });
       continue;
     }
@@ -1159,6 +1165,7 @@ function handleGetGrocery(deps: Deps, ctx: JsonRouteContext): RouteResult {
         unit: line.unit,
         user_edited_quantity: existing?.user_edited_quantity ?? null,
         checked: existing?.checked ?? false,
+        optional: line.optional,
         ...patch,
       },
       recipeNameFor,
@@ -1185,6 +1192,28 @@ function handleGetGrocery(deps: Deps, ctx: JsonRouteContext): RouteResult {
     status: 200,
     body: { list: { list_id: listId, sections, to_taste: toTasteOut, confirmation_questions: confirmationQuestions } },
   };
+}
+
+/** T-062: `optional` is derived from the live aggregation (mirroring how
+ * `handleGetGrocery` computes it), never persisted — the frozen `GroceryLine`
+ * db row has no column for it. Keyed the same way `handleGetGrocery` keys
+ * `existingByKey` (`ingredient_id::unit`), so a PATCH re-read (which starts
+ * from a persisted row, not a fresh `AggregatedLine`) can look it up. */
+function computeOptionalByKey(deps: Deps, householdId: string, planId: Uuid): ReadonlyMap<string, boolean> {
+  const rows = deps.db.listPlanMeals(householdId, planId).filter((r) => r.status !== 'swapped_out');
+  const scaledLines: import('../../domain/src/scale.ts').ScaledRequirementLine[] = [];
+  for (const row of rows) {
+    const recipe = deps.catalogMap.get(row.recipe_id);
+    if (recipe === undefined) continue;
+    scaledLines.push(...scaleRecipeRequirements(recipe, row.id, row.target_servings));
+  }
+  const aggregated = aggregateRequirements(scaledLines, deps.registry);
+  const map = new Map<string, boolean>();
+  for (const line of aggregated) {
+    if (line.kind !== 'amount') continue;
+    map.set(`${line.ingredient_id}::${line.unit}`, line.optional);
+  }
+  return map;
 }
 
 function findGroceryLineOwner(deps: Deps, householdId: string, lineId: Uuid): { readonly listId: Uuid } | null {
@@ -1227,8 +1256,10 @@ function handlePatchGroceryLine(deps: Deps, ctx: JsonRouteContext): RouteResult 
 
   const refreshed = deps.db.listGroceryLines(household.id, owner.listId).find((l) => l.id === lineId);
   if (refreshed === undefined) throw new HttpError(404, 'grocery_line_not_found', 'No grocery line with that id for this household.');
+  const optionalByKey = computeOptionalByKey(deps, household.id, owner.listId);
+  const optional = optionalByKey.get(`${refreshed.ingredient_id}::${refreshed.unit}`) ?? false;
   const recipeNameFor = (id: Uuid): string => deps.catalogMap.get(id)?.name ?? id;
-  const view = buildGroceryLineView(refreshed, recipeNameFor);
+  const view = buildGroceryLineView({ ...refreshed, optional }, recipeNameFor);
   return { status: 200, body: { line: view } };
 }
 
