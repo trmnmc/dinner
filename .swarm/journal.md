@@ -3155,3 +3155,147 @@ step 3: cycle % 5 == 0 -> full SPEC.md re-read (done) + backlog hygiene this cyc
 pick: T-053 (S, fix, sonnet — gear 1 permits S-effort sonnet builds; fix never demotes
 below sonnet). ONE foreground agent, wave cap 1.
 
+work: T-053 renderTimeInfo separator + sub-minute branch (S, fix, sonnet, gear 1 wave cap 1).
+merge: single foreground agent, no branch — direct working-tree edit, conductor-verified.
+collision-scan: `applicable: false` — no classic scripts, this client is ESM only. Recorded
+as not-applicable, which is not the same as passed and is not counted as a check.
+
+### VERIFICATION EVIDENCE — conductor gate 14/14, and the proof it can fail
+
+The gate (`/opt/swarm/runs/c20-gate-T053.mts`) was authored AFTER the builder returned and
+the builder never saw it. It refuses to hardcode the expected text: it imports
+`domain/src/reasons.ts` and asks the domain what the label should be, then executes the real
+`web/js/ui.js` under the conductor's own DOM shim (`.swarm/runs/domshim.mjs`, cycle 14 —
+also builder-invisible). So it tests the product's internal agreement, not my memory of it.
+
+```
+  PASS H1a  raw textContent "26 min total, 16 min hands-on" === domain combined_label
+  PASS H2   sub-minute "1 min total, under 1 min hands-on" === domain
+  PASS H3   1743 (total,active) pairs swept, 0 disagree with the domain
+  PASS H4   total-only "26 min total" — no trailing separator
+  PASS H5   active-only "16 min hands-on" — no leading separator
+  PASS H7   aria-label === visible text === domain
+  PASS H10  direct text-node children of .time-info = 0, container still flex+gap
+  T-053 gate: 14 passed, 0 failed
+```
+
+The same gate against `git show HEAD:web/js/ui.js` — **9 passed, 5 FAILED**:
+
+```
+  FAIL H1a  "26 min total16 min hands-on"  !=  "26 min total, 16 min hands-on"
+  FAIL H2   "1 min total0 min hands-on"    !=  "1 min total, under 1 min hands-on"
+  FAIL H3   1743 pairs swept, 1743 disagree — first: total=0s active=0s
+              got "0 min total0 min hands-on" want "under 1 min total, under 1 min hands-on"
+```
+
+A gate that never fails is not pointed at anything. This one is, and it was run against the
+broken code BEFORE the fix landed, not reconstructed afterwards.
+
+### the gate found a second defect nobody had filed
+
+T-053 named ONE bug: the missing separator. The 1743-pair sweep found a second one in the
+same function. `minuteText()` — with its `under 1 min` boundary — existed but was wired only
+into the **aria-label** fallback. The visible spans rendered `${m} min` unconditionally. So a
+30-second step showed **"0 min total"** to the eye while a screen reader heard **"under 1 min
+total"**. Two surfaces of the same product disagreeing about the same number, which is
+precisely what DoD 6 and the spec's "never shows false precision" taste note exist to stop.
+It would have survived a gate that hardcoded `"26 min total, 16 min hands-on"`.
+
+### the layout trap H10 exists for
+
+`.time-info` is `display:flex` with `gap` (app.css:501). The two spans were therefore ALREADY
+separated on screen — what the user actually lacked was the comma, not the space. The obvious
+fix, appending `', '` as a child of the container, would have made `textContent` correct while
+rendering the comma as its own anonymous flex item with gap on BOTH sides: `26 min total ,
+16 min hands-on`. Correct by the acceptance, wrong on the phone. The builder avoided it
+independently (separator appended inside the total span); H10 now pins it so a later refactor
+— T-063 — cannot reintroduce it.
+
+### VERIFICATION EVIDENCE — full test_cmd (conductor-run)
+
+```
+ℹ tests 377
+ℹ pass 377
+ℹ fail 0
+
+npm test = `tsc --noEmit` && `node --test` — node --test ran, so tsc was clean.
+git diff --numstat -- web tests  =>  19 added, 6 deleted, web/js/ui.js only
+git diff -- tests | grep -c '^-[^-]'  =>  0 deleted lines. No assertion weakened.
+```
+
+372 before, **+5** from the builder's new `tests/ui-time-info.test.ts`.
+
+### VERIFICATION EVIDENCE — the builder's test is not vacuous (checked, not believed)
+
+The builder claimed their test fails without the fix. I restored `HEAD`'s ui.js underneath it,
+ran it, put the fix back, and verified by sha256 that the tree returned byte-identical
+(`/opt/swarm/runs/c020-mutant.mjs`):
+
+```
+  fixed ui.js sha256:      84ed764d55d2cd25...  restored: 84ed764d55d2cd25... IDENTICAL
+  ✖ both fields present reads the same as the domain combined_label
+  ✖ sub-minute (under 1 min) durations on both sides match the domain
+  ℹ tests 5 | pass 3 | fail 2
+  VERDICT: NON-VACUOUS — 2 of the builder's tests fail without the fix
+```
+
+Full output: `.swarm/runs/cycle-020-verify-T-053.txt`.
+
+### T-053 → DONE. TWENTY-FOUR verified of 64 filed.
+
+### not run, stated as not run
+
+- **No qa-verify look pass — sixth cycle running.** `qa.last_look_cycle` stays **12** and was
+  deliberately NOT advanced. This cycle DID merge a user-visible file, so unlike cycle 19 the
+  post-merge look pass genuinely applied and I skipped it: the look/taste seats are judgment
+  seats, exempt from gear demotion, so a look pass costs fable — at gear 1 crawl with the
+  weekly governor pinned at 100% used and the window projected to deplete at 07:50Z, that is
+  the wrong spend. My gate executed the real client code and asserted what a user reads, which
+  is stronger evidence for THIS change than a look pass would be — but it says nothing about
+  the four screens shipped since cycle 12, which remain unlooked-at. Tracked as **T-061**.
+  This is now the single largest unverified surface in the run and belongs in the report.
+- **No real browser, ever, in this run.** DOM shim + HTTP only. Nothing here says anything
+  about contrast, tap targets, or how the comma actually looks at 14px on a phone.
+- **H9 is a grep, not an execution.** It proves plan.js and calibrate.js call the shared
+  renderer and contain no `/60` arithmetic of their own; it does NOT mount them. `buildMealCard`
+  is not exported and `renderPlan` needs a stubbed fetch — out of budget this cycle.
+- **Client JS still typechecks nothing** (KI-11 / T-054). The new test typechecks; `web/**` is
+  still excluded from tsconfig. Unchanged.
+
+### step 3 — cycle % 5 == 0: full SPEC re-read + backlog hygiene
+
+hygiene: T-025 (panic button) → **dropped**: not in SPEC must-haves or nice-to-haves, gated
+behind five items of which four are M-effort and unreachable under a governor-clamped ceiling
+of 2, and nothing depends on it. T-063 cross-noted as SUBSUMING T-053 (must not regress its
+gate). T-010/T-011 cross-noted to land T-064 first — a routes test pins "no meal yields more
+than one active_time_block", true only of the six-recipe fixture, so a correct new recipe
+would break it and look like the batch's fault. Duplicate `D-18` in state.decisions (cycle 12
+MealView + cycle 18 time-label) resolved by renumbering the cycle-18 entry to **D-28**,
+explicitly and journaled — cycle 19 was right that a silent rewrite of a prior record is not
+hygiene. Live items 35 → 34.
+
+**The ~30 cap is left breached at 34, deliberately (D-29).** The remaining 34 all cover a
+must-have, a DoD clause, or a filed defect. Dropping four to hit the number would shrink the
+ledger, not the work, and would hide the real shortfall: **T-010/T-011 are 24 of the 30
+spec'd recipes** and **T-017 (grocery ledger screen) alone gates T-021, T-024 and T-062** —
+all L/M-effort, all unreachable while the governor holds the ceiling at 2. That is the
+headline for the morning report, and it is a clock-and-quota fact, not a backlog-tidiness one.
+
+wave autotune: **clean wave** — 0 reverts, 0 failed verifies → `wave_streak` 1 → 2 → fires →
+`k_current` stays 5 (already at the hard max), streak reset to 0. The gear-1 cap of 1 binds
+regardless. burn attribution: window_tokens 121,884,803 vs 109,749,715 last cycle, delta
+**+12,135,088** credited to cycle 19's target. `consecutive_no_value` stays 0.
+Backlog **24 done / 32 todo / 1 blocked — 33 live, 7 dropped, 64 filed**.
+
+result: **T-053 → done. TWENTY-FOUR verified of 64 filed. The gate caught a second, unfiled
+defect the item never named — sub-minute durations read "0 min" to the eye and "under 1 min"
+to a screen reader.**
+
+next: the window was projected to deplete at 07:50Z and it is past that, so expect limp or a
+degraded tier before the **09:00Z** reset, then a fresh window with ~3h to stop_at 12:00Z. In
+gear 1 the remaining S-effort work is **T-064** (unpin the brittle catalog assertion — do this
+before any recipe batch), **T-038** (swap no-alternatives copy), and the four drift pins
+T-031/T-032/T-033/T-035. The moment the gear allows M again the order is **T-017** (grocery
+ledger — it alone unblocks three items) then **T-057** (prep screen). If the governor never
+lifts, the run ends with the API proven and roughly half the screens unlooked-at; say so
+plainly in the report rather than reporting 24 green items as if they were a finished product.

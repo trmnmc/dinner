@@ -1,0 +1,62 @@
+gate T-053 — ui.js under test: /opt/targets/dinner/web/js/ui.js
+
+  PASS H1a  raw textContent "26 min total, 16 min hands-on" === domain combined_label "26 min total, 16 min hands-on"
+  PASS H1b  visibleText "26 min total, 16 min hands-on" === "26 min total, 16 min hands-on"
+  PASS H1c  no "total<digit>" run-together in "26 min total, 16 min hands-on"
+  PASS H2  sub-minute "1 min total, under 1 min hands-on" === "1 min total, under 1 min hands-on"
+  PASS H3  1743 (total,active) pairs swept, 0 disagree with the domain
+  PASS H4  total-only "26 min total" === "26 min total" (no trailing separator)
+  PASS H5  active-only "16 min hands-on" === "16 min hands-on" (no leading separator)
+  PASS H6a  time_label passthrough "26 min total, 16 min hands-on"
+  PASS H6b  empty fallback "Time not available"
+  PASS H7  aria-label "26 min total, 16 min hands-on" === visible/domain "26 min total, 16 min hands-on"
+  PASS H8  no non-empty ::before/::after content on .time-info (would double the separator)
+  PASS H9-plan.js  calls renderTimeInfo=true, own /60 arithmetic=false
+  PASS H9-calibrate.js  calls renderTimeInfo=true, own /60 arithmetic=false
+  PASS H10  direct text-node children of .time-info = 0 ([]), container still flex+gap = true
+
+T-053 gate: 14 passed, 0 failed
+gate T-053 — ui.js under test: /opt/swarm/runs/c20-prefix-ui.js
+
+  FAIL H1a  raw textContent "26 min total16 min hands-on" === domain combined_label "26 min total, 16 min hands-on"
+  FAIL H1b  visibleText "26 min total16 min hands-on" === "26 min total, 16 min hands-on"
+  FAIL H1c  no "total<digit>" run-together in "26 min total16 min hands-on"
+  FAIL H2  sub-minute "1 min total0 min hands-on" === "1 min total, under 1 min hands-on"
+  FAIL H3  1743 (total,active) pairs swept, 1743 disagree with the domain — first: total=0s active=0s got "0 min total0 min hands-on" want "under 1 min total, under 1 min hands-on"
+  PASS H4  total-only "26 min total" === "26 min total" (no trailing separator)
+  PASS H5  active-only "16 min hands-on" === "16 min hands-on" (no leading separator)
+  PASS H6a  time_label passthrough "26 min total, 16 min hands-on"
+  PASS H6b  empty fallback "Time not available"
+  PASS H7  aria-label "26 min total, 16 min hands-on" === visible/domain "26 min total, 16 min hands-on"
+  PASS H8  no non-empty ::before/::after content on .time-info (would double the separator)
+  PASS H9-plan.js  calls renderTimeInfo=true, own /60 arithmetic=false
+  PASS H9-calibrate.js  calls renderTimeInfo=true, own /60 arithmetic=false
+  PASS H10  direct text-node children of .time-info = 0 ([]), container still flex+gap = true
+
+T-053 gate: 9 passed, 5 failed
+failed checks:
+  - H1a  raw textContent "26 min total16 min hands-on" === domain combined_label "26 min total, 16 min hands-on"
+  - H1b  visibleText "26 min total16 min hands-on" === "26 min total, 16 min hands-on"
+  - H1c  no "total<digit>" run-together in "26 min total16 min hands-on"
+  - H2  sub-minute "1 min total0 min hands-on" === "1 min total, under 1 min hands-on"
+  - H3  1743 (total,active) pairs swept, 1743 disagree with the domain — first: total=0s active=0s got "0 min total0 min hands-on" want "under 1 min total, under 1 min hands-on"
+fixed ui.js sha256: 84ed764d55d2cd252e020fc65ad6dc6fb09df337e65994d69eb2791ea5ebc041
+swapped in HEAD ui.js sha256: e7ef53f9e35317691681be52a1630f242d2b111d97d8c86be45cac247423fa69 
+
+
+restored ui.js sha256: 84ed764d55d2cd252e020fc65ad6dc6fb09df337e65994d69eb2791ea5ebc041 — IDENTICAL to the fix
+
+--- builder test vs UNFIXED ui.js (exit 1) ---
+✖ renderTimeInfo: both fields present reads the same as the domain combined_label (2.767669ms)
+✖ renderTimeInfo: sub-minute (under 1 min) durations on both sides match the domain (0.416854ms)
+✔ renderTimeInfo: total-only matches the domain total_label, no stray separator (0.435821ms)
+✔ renderTimeInfo: active-only matches the domain active_label, no stray separator (0.265322ms)
+✔ renderTimeInfo: neither field present falls back to the provided label or the fixed fallback text (0.218202ms)
+ℹ tests 5
+ℹ pass 3
+ℹ fail 2
+✖ failing tests:
+✖ renderTimeInfo: both fields present reads the same as the domain combined_label (2.767669ms)
+✖ renderTimeInfo: sub-minute (under 1 min) durations on both sides match the domain (0.416854ms)
+
+VERDICT: NON-VACUOUS — 2 of the builder's tests fail without the fix

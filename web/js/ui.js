@@ -469,6 +469,16 @@ function minuteText(minutes, suffix) {
 }
 
 /**
+ * Visible children for one side (total or active) of the pair: the bolded
+ * numeral when there is one to show, or the plain "under 1 min ..." phrase
+ * — byte-identical to `minuteText` — when rounding lands on zero, so the
+ * on-screen text never disagrees with the `aria-label` fallback below.
+ */
+function timeSpanChildren(minutes, suffix) {
+  return minutes <= 0 ? [minuteText(minutes, suffix)] : [h('strong', {}, [`${minutes} min`]), ` ${suffix}`];
+}
+
+/**
  * The ONE function in the client that turns a meal/recipe/step's time
  * fields into on-screen markup. Every view shape in the frozen contract
  * carries `total_seconds`, `active_seconds` AND a pre-rendered `time_label`
@@ -491,15 +501,18 @@ export function renderTimeInfo(fields = {}) {
   const parts = [];
   let ariaLabel = time_label;
   if (hasTotal) {
-    const m = minutesFromSeconds(total_seconds);
-    parts.push(
-      h('span', { class: 'time-info__total num' }, [h('strong', {}, [`${m} min`]), ' total']),
-    );
+    const children = timeSpanChildren(minutesFromSeconds(total_seconds), 'total');
+    // Domain's combined_label joins total and active with ", " — that
+    // separator has to be a real text node, not CSS spacing, or it is
+    // invisible to textContent/aria consumers. It lives at the end of the
+    // total span (rather than as its own flex child) so the container's
+    // existing gap between spans doesn't stack a second gap around it.
+    if (hasActive) children.push(', ');
+    parts.push(h('span', { class: 'time-info__total num' }, children));
   }
   if (hasActive) {
-    const m = minutesFromSeconds(active_seconds);
     parts.push(
-      h('span', { class: 'time-info__active num' }, [h('strong', {}, [`${m} min`]), ' hands-on']),
+      h('span', { class: 'time-info__active num' }, timeSpanChildren(minutesFromSeconds(active_seconds), 'hands-on')),
     );
   }
   if (!ariaLabel) {

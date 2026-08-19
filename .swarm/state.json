@@ -3,7 +3,7 @@
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
   "phase": "BUILD",
-  "cycle": 19,
+  "cycle": 20,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -201,10 +201,10 @@
       "cycle": 17
     },
     {
-      "id": "D-18",
+      "id": "D-28",
       "topic": "time-label-placement",
       "decision": "The active-time-block label is PRODUCED in domain/src/reasons.ts and ATTACHED at the route encode boundary in server/src/routes.ts — it is not stored on the domain ActiveTimeBlock type.",
-      "why": "DoD 6's mechanism is one shared time renderer, and reasons.ts already owns the only duration-to-text function in the product; a second minute formatter anywhere is precisely the drift the rule exists to prevent. But ActiveTimeBlock is derived recipe data carrying no presentation text, and pushing a label into it would churn unrelated deepEqual assertions in prep.test.ts for no correctness gain. Produce in the domain, attach at the wire. Ruled BEFORE dispatch and recorded in .swarm/runs/cycle-018-inflight.md so the builder could not have reverse-engineered it from the gate.",
+      "why": "DoD 6's mechanism is one shared time renderer, and reasons.ts already owns the only duration-to-text function in the product; a second minute formatter anywhere is precisely the drift the rule exists to prevent. But ActiveTimeBlock is derived recipe data carrying no presentation text, and pushing a label into it would churn unrelated deepEqual assertions in prep.test.ts for no correctness gain. Produce in the domain, attach at the wire. Ruled BEFORE dispatch and recorded in .swarm/runs/cycle-018-inflight.md so the builder could not have reverse-engineered it from the gate. [id corrected cycle 20: this entry was filed as a second D-18, colliding with cycle 12's MealView ruling. Renumbered to D-28 — the cycle-12 entry keeps D-18 because prior journal blocks cite it under that id.]",
       "cycle": 18
     },
     {
@@ -213,6 +213,27 @@
       "decision": "Swap arity is generalised from exactly-3 to 1-3 meals. SwapRequest.meals is readonly SwapMealInput[], SwapResult.unchanged and the two frozen parameters are readonly SwapMealInput[], and the frozen context MAY BE EMPTY. DESIGN.md Invariant 4's wording ('re-ranks against the frozen remaining TWO meals') is now imprecise for 1- and 2-meal plans; its SUBSTANCE - swap ranks only against the frozen remaining meals and never re-runs planset - is unchanged and was gate-verified (S3: swap.ts still does not import planset). Recorded as a decision rather than edited into DESIGN.md, which is binding and conductor-owned.",
       "why": "KI-9 (high, open since cycle 12) was not a route bug: server/src/routes.ts required rows.length === 3 because domain/src/swap.ts typed meals as a fixed 3-tuple. A time-limited household is exactly the household the planner gives a partial plan to, so the users most likely to get a short plan were the users who could then never change it - a permanent dead end. The ruling was made BEFORE dispatch and written to .swarm/runs/cycle-019-inflight.md so the builder could not reverse-engineer it from the gate: no tuple padding, no casts, no planset re-run, no weakening of the 409, slot validation stays real. The empty-frozen-set semantics were checked in the code first and PINNED as correct (overlap 0, protein/cuisine diversity 1, no fabricated shares_ingredients fact) so a builder could not 'fix' behaviour that was already right.",
       "cycle": 19
+    },
+    {
+      "id": "D-29",
+      "topic": "backlog-hygiene",
+      "decision": "The ~30-live-item cap is left BREACHED at 34, not met by dropping work. One item was dropped on merit (T-025). The remaining 34 all cover a SPEC must-have, a definition-of-done clause, or a filed defect.",
+      "why": "The cap exists to stop a backlog from accumulating noise. This backlog is not noisy — it is larger than the clock. Dropping four real items to reach 30 would shrink the ledger, not the work, and would hide a genuine shortfall from the morning report. The honest artifact is an over-cap backlog with the shortfall named: T-010/T-011 (24 of the 30 spec'd recipes) and T-017 (the grocery ledger screen, which alone gates T-021, T-024 and T-062) are L/M-effort and the weekly governor has clamped the reachable gear ceiling to 2 for the rest of this run.",
+      "cycle": 20
+    },
+    {
+      "id": "D-30",
+      "topic": "verification-method",
+      "decision": "The T-053 gate asserts client output against the DOMAIN's own combined_label, computed live by importing domain/src/reasons.ts — never against a literal string typed into the gate.",
+      "why": "A gate that hardcodes \"26 min total, 16 min hands-on\" tests the gate author's memory of the spec. A gate that asks the domain tests the product's internal agreement, which is what DoD 6 actually asserts. It paid immediately: the sweep of 1743 (total,active) pairs caught a second live defect nobody had filed — the visible spans never implemented the \"under 1 min\" branch that the domain and the aria-label both had, so sub-minute durations rendered \"0 min total\" to the eye and \"under 1 min total\" to a screen reader. A hardcoded 26/16 gate would have gone green over it.",
+      "cycle": 20
+    },
+    {
+      "id": "D-31",
+      "topic": "gate-design",
+      "decision": "The T-053 gate includes H10, a LAYOUT check: the separator must not be a bare text node directly under .time-info while that element is still display:flex with a gap.",
+      "why": ".time-info is a flex row, so the two spans already sat apart on screen — the defect a user actually saw was a MISSING COMMA, not missing space. The obvious fix (append \", \" as a child of the container) would have made textContent correct while rendering a floating comma as its own flex item with gap on both sides: \"26 min total , 16 min hands-on\". H10 is the check that stops a fix that passes the acceptance and looks wrong on the phone. The builder independently avoided the trap by putting the separator inside the total span; H10 now pins it.",
+      "cycle": 20
     }
   ],
   "known_issues": [
@@ -303,8 +324,8 @@
     "consecutive_no_value": 0,
     "consecutive_failures": 0,
     "k_current": 5,
-    "wave_streak": 1,
-    "window_tokens_attributed": 178578698
+    "wave_streak": 0,
+    "window_tokens_attributed": 190713786
   },
   "qa": {
     "last_look_cycle": 12,
