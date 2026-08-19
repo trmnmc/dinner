@@ -165,6 +165,6 @@
     "n": 9,
     "work": "build-wave k=2 (foreground agents): T-004 inventory subtraction + package selection, T-005 never_recommend re-fix",
     "outcome": "T-004 verified done (gate 22/22 incl. an independent brute-force oracle over 240 probes, mutation 8/9); T-005 FAILED again -> BLOCKED at attempts 2, over-exclusion moved to the flavour axis (3/12 survivors measured); remedy measured and filed as T-034; 297/297 suite green",
-    "commit": ""
+    "commit": "f79f4dc"
   }
 }
