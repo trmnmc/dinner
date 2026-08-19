@@ -2948,7 +2948,7 @@ runfile-mirror:
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787122740,"next_wakeup_at":1787122830,"pid":2432201,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":21,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
 
-## cycle 19 — 2026-08-19T07:08Z → 07:50Z · T-045 short-plan swap dead-end (KI-9)
+## cycle 19 — 2026-08-19T07:08Z → 07:28Z · T-045 short-plan swap dead-end (KI-9)
 
 gear **1** (crawl) · ρ **3.05** · wave cap **1** · demote=true · promote blocked by the
 weekly governor (weekly_used 100%, opus_used 100% at week_elapsed 29.85% → heat 3.35,
@@ -3133,3 +3133,10 @@ renderers) behind it. In gear 1 the remaining S-effort work is **T-064** (brittl
 assertion), **T-038** (swap no-alternatives copy — now directly relevant, since the
 constrained household sees exactly that path), and the four drift-pinning items
 T-031/T-032/T-033/T-035.
+
+commit: `beff6ce` — cycle 19: T-045 short-plan swap dead-end verified — KI-9 resolved [1 verified, gate 22/22, suite 372/372]. Pushed to origin/master (c2d0a26..beff6ce).
+next wakeup: 1787124592 (+90s base — verified-value cycle; gears never touch the wakeup delay, only limp waits)
+runfile-mirror:
+```json
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","pacing":{"mode":"thermostat","dial":1},"heartbeat":{"ts":1787124502,"next_wakeup_at":1787124592,"pid":2440196,"limp":false,"degraded_tiers":[]},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":22,"artifact":{"file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```
