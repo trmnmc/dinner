@@ -4736,3 +4736,109 @@ here is machine-checked but the **taste** of the product never was.
 ```runfile-mirror
 {"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"active","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787137849,"next_wakeup_at":1787140549,"pid":2473692,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.79,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":95292044,"window_cost_usd":59.121212800000016,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":46454609,"projected_depletion_at":1787141542,"last_probe_ts":1787137849,"last_real_probe_ts":1787137849,"probe_failures":0,"probe_note":"Cycle 27 REAL probe, probe_ok true (plain-form invocation; the RUNFILE=... env-prefixed form is still DENIED by the harness, KI-1 family). window_tokens 86,225,926 -> 95,292,044 since the 09:00Z reset; rho 0.79 => gear_target 2 (the governor ceiling of 2 binds here, not rho), applied gear 2. Weekly governor still engaged: weekly 100% / opus 100% at week_elapsed 32.23% => heat 3.10, ceiling 2, promote blocked. Projected depletion 1787141542 (~12:12:22Z) now lands AFTER stop_at 12:00:00Z - burn fell from 53.99M/h to 46.45M/h, so the window is projected to survive the whole run. Cycle 27 is the last WORK cycle: the next wakeup clamps to 11:45:00Z, which is the WRAP_UP trigger.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":32.23,"weekly_heat":3.1,"opus_heat":3.1,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":false,"cycles_since_recycle":5,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
 ```
+
+## cycle 28 — 2026-08-19T11:50Z → 12:05Z · WRAP_UP · run complete
+
+clock: opened 1787140217 (11:50:17Z). `stop_at` = 1787140800 (12:00:00Z). Step-1 check
+`now ≥ stop_at − 900` → **1787140217 ≥ 1787139900 = TRUE**. WRAP_UP, as cycle 27's footer
+predicted. No new work admitted; hard rule 3 honoured — `date +%s` before anything else.
+
+Tree CLEAN at orient — cycle 27 closed properly, nothing to salvage, no unmerged in-flight
+branches to list. `runs/control.json`: `pending: []`, `applied: []`, no `inject` array.
+
+### WRAP_UP step 1 — verified work only
+
+Nothing in flight. The last commit (35896c0, cycle 27) is the tip. Suite re-run **by the
+conductor at wrap-up**, not carried forward from cycle 27's claim:
+
+```
+$ npm test        (cwd /opt/targets/dinner)
+ℹ tests 411   ℹ suites 0   ℹ pass 411   ℹ fail 0
+ℹ cancelled 0  ℹ skipped 0  ℹ todo 0    ℹ duration_ms 4812.683455
+```
+
+DoD 11's second half checked directly rather than inferred from `strict`:
+
+```
+$ grep -rn ": any\|as any\|<any>" domain/src/
+domain/src/inventoryMath.ts:238:      // The gate: anything less certain is NEVER silently subtracted.
+domain/src/filters.ts:325:    // ...and even a present tag is overridden by the registry: any
+```
+
+Two prose comments, **zero `any` types**. DoD 11 passes on both halves.
+
+### the honest count
+
+35 of 73 filed items verified. Catalog re-counted at wrap-up rather than trusted:
+`ls data/recipes/ | wc -l` → **6**, against a must-have of ~30. T-010 and T-011 were filed at
+cycle 2 and never picked. That is the single largest gap in the run and REPORT.md carries it as
+`⚠️ partial — 6 of ~30` rather than as a shipped must-have.
+
+**Not run, recorded as not-run in REPORT.md, never as passed:**
+
+- **DoD 9** (hard-exclusion fuzz, T-022) and **DoD 10** (household isolation, T-023) — both filed
+  at priority 1, neither ever picked. The engine's precedence is unit-tested and `db.ts` is
+  household-scoped by construction, but no test proves either property adversarially. The report
+  says plainly: do not deploy multi-tenant until T-023 runs.
+- **No QA pass and no taste pass ever ran** — `qa.last_full_qa_cycle` and `qa.last_taste_cycle`
+  are both `null` after 27 cycles; one live-look pass total (cycle 23). Nothing in this run
+  judged whether the product is *good*, only whether it is correct.
+- **No accessibility audit** — T-024 and T-068 unstarted, no screen-reader or contrast tool run.
+- **T-048** — nothing in the product marks a meal cooked, so the "decrement on cooked" rule is
+  correct in the engine and unreachable in the app.
+- **T-005** stays `blocked` at attempts 2. Its code is in main and green; the calibration
+  variance-selection and feedback-narrowing surfaces were never independently gated. T-037 was
+  filed for exactly that and never picked.
+
+### step 2 — RETRO + DISTILL
+
+`.swarm/RETRO.md` written; every entry cites cycle numbers per the evidence rule.
+
+Five candidates drafted to `SWARM/runs/wrapup-candidates.md`. **`bin/swarm-playbook.sh append`
+was DENIED by the harness** — the 27th consecutive occurrence of the KI-1 family:
+
+```
+$ bash /opt/swarm/bin/swarm-playbook.sh append --candidates ... --run-date 2026-08-19 --targets dinner
+This command requires approval
+```
+
+Not a script exit code, so the documented fallback applies: hand-edit in the v2 grammar, ids from
+the `next_id:` header, 20-bullet cap, and **flag it for human attention in the morning report**.
+This hand-edit did NOT pass the script's validator — that is stated in the playbook header too.
+
+Distillation: 5 candidates → **3 kept, 1 new id**. L-046 minted (a domain capability is not
+shipped until a check exercises it through the outermost layer a user touches) — genuinely new,
+no semantic home, and observed **four times in one run** (KI-10 c23, KI-12 c24, D-34/T-065 c24,
+T-069 c25). L-016 gained the headless-direct-Agent clause (observed 3→4); L-038 gained the
+reserve-a-mid-run-taste-cycle clause (observed 1→2). Two med-confidence candidates (item
+granularity; journal the binding constraint) were NOT promoted — they stay in RETRO.md until a
+second run re-observes them.
+
+**Overflow drop — deviation, flagged (D-37):** the file was at 20 with every lesson high, so the
+mechanical rule selects L-008. Two prior runs declined that drop by argument (L-008 is the
+most-wired `[apply:]` directive). Rather than decline a third time and lose L-046, **L-020** was
+archived instead — the narrowest lesson in the file, single-source, never re-observed since
+2026-08-09. Archived to `learnings-archive-2026-08-18.md`, not deleted, with the reversal
+instruction written next to it. Verified after the edit: `grep -c "^- L-0"` → **20**, cap held.
+
+### steps 3-10
+
+REPORT.md written with a per-must-have table (4 ⚠️ partial, 1 ❌ not proven, stated as such) and
+a clause-by-clause DoD table. Tag `v0.1-overnight` applied. Dashboard re-rendered locally — on
+this host the file write IS the publication; no Artifact tool in a headless session, which is
+not a publish failure. Watchdog disarmed via `systemctl disable --now swarm-watchdog.timer`.
+`caffeinate_pid` is 0 (Linux — no caffeinate was ever spawned), so the identity-check-then-kill
+step is a no-op by construction. Control channel archived.
+
+result: **run complete.** 27 work cycles + this wrap-up, 81 commits, 35 items verified, suite
+411/411 re-verified by the conductor at wrap-up. The interruption model — per-step
+active/unattended/continuous-attention time, safe stopping points, validated-only recovery, and
+cooking state proven to survive a process kill — is built and proven. The catalog is thin at 6
+recipes, DoD 9 and 10 are unproven, and nothing ever judged the product's taste. All three are
+in the report as gaps, not as achievements.
+
+next: nothing. `wrap_up_complete = true`, no further wakeups.
+
+```runfile-mirror
+{"version":1,"run_label":"dinner-2026-08-18","targets":[{"path":"/opt/targets/dinner","status":"done","weight":1}],"rotation_cursor":0,"rotation_schedule":[0],"stop_at":"2026-08-19T12:00:00+00:00","usage_reset_at":"2026-08-19T09:00:00+00:00","model_policy":"value-routing","auth_mode":"subscription","heartbeat":{"ts":1787140619,"next_wakeup_at":0,"pid":2473692,"limp":false,"degraded_tiers":[]},"pacing":{"mode":"thermostat","dial":1},"budget":{"source":"probe","gear":2,"gear_target":2,"ratio":0.79,"mode":"thermostat","k_cap":2,"promote":false,"demote":true,"window_tokens":95292044,"window_cost_usd":59.121212800000016,"api_cap_usd":null,"api_spend_usd":0,"tokens_per_hour":46454609,"projected_depletion_at":1787141542,"last_probe_ts":1787137849,"last_real_probe_ts":1787137849,"probe_failures":0,"probe_note":"Cycle 27 REAL probe, probe_ok true (plain-form invocation; the RUNFILE=... env-prefixed form is still DENIED by the harness, KI-1 family). window_tokens 86,225,926 -> 95,292,044 since the 09:00Z reset; rho 0.79 => gear_target 2 (the governor ceiling of 2 binds here, not rho), applied gear 2. Weekly governor still engaged: weekly 100% / opus 100% at week_elapsed 32.23% => heat 3.10, ceiling 2, promote blocked. Projected depletion 1787141542 (~12:12:22Z) now lands AFTER stop_at 12:00:00Z - burn fell from 53.99M/h to 46.45M/h, so the window is projected to survive the whole run. Cycle 27 is the last WORK cycle: the next wakeup clamps to 11:45:00Z, which is the WRAP_UP trigger.","weekly":{"ok":true,"weekly_used_pct":100,"opus_used_pct":100,"week_elapsed_pct":32.23,"weekly_heat":3.1,"opus_heat":3.1,"ceiling":2,"promote_blocked":true}},"watchdog":{"mode":"normal","plist_loaded":true,"lockfile":"/opt/swarm/runs/watchdog.lock","relaunch_attempts":0},"caffeinate_pid":0,"wrap_up_complete":true,"cycles_since_recycle":6,"playbook":{"mode":"auto","applied":[],"vetoed":[],"note":"swarm-playbook.sh parse DENIED at kickoff (KI-1 family); apply_mode read directly from playbook/learnings.md as 'auto'. No directives staged - proceeding with defaults per SKILL.md step 3."},"artifact":{"url":"","file":"/opt/swarm/runs/dashboard.html","publish_failures":0}}
+```

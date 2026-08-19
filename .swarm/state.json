@@ -2,8 +2,8 @@
   "idea": "Dinner decision-and-execution system for a busy parent: onboarding -> taste calibration -> ranked 3-dinner plan -> one-tap reasoned swaps -> consolidated traceable grocery list -> prep plan -> interruption-aware cooking mode -> one-tap feedback. Mobile-first web client over a deterministic TypeScript domain package and node:sqlite, zero runtime dependencies.",
   "project_dir": "/opt/targets/dinner",
   "created_at": "2026-08-18T18:33:00+00:00",
-  "phase": "BUILD",
-  "cycle": 27,
+  "phase": "DONE",
+  "cycle": 28,
   "run_cmd": "npm start",
   "test_cmd": "npm test",
   "preview": {
@@ -283,6 +283,13 @@
       "cycle": 26,
       "decision": "Both test deliverables were gated by MUTATION TESTING (D-12), not by a green suite: 12 deliberate defects injected into server/src/routes.ts one at a time, each requiring the target test file alone to go red, every file restored sha256-identical. Gate rev1 scored 10/12; both failures were defects in the GATE and were proven so by a recorded diagnostic before either check was touched. rev1 and its failing output are kept on disk beside rev2 (14/14).",
       "why": "A file of assert.ok(true) passes npm test, so \"the suite is green\" is not evidence that a test item is done \u2014 it is evidence that the test does not fail. The two rev1 failures were baseline counter checks asserting node's TAP output (\"# pass 1\") while node's default SPEC reporter prints \"\u2139 pass 1\"; the runs themselves were green all along. Diagnosed by running node --test on the file and reading the actual output BEFORE editing, per the rule this run keeps re-earning. The correction does not loosen the check \u2014 an unparseable counter still fails, because '?' is not '0'. rev2 also ADDED two mutants in response to something rev1 revealed: L1 and L6 were both killed by assertion 2 (approvability), which reads the plan-meal payload and fires before the DoD-6 structural sweep ever runs, so neither one actually isolated assertion 5. L7 mutates a step view and L8 pushes from the opposite side by making the active_time_blocks exemption (D-17) widen \u2014 payloads approvability never reads, so only the sweep can catch them. Both were killed, and the sweep is now proven to bite on its own rather than being carried by an upstream assertion. A gate whose checks never fail is not pointed at anything."
+    },
+    {
+      "id": "D-37",
+      "topic": "playbook-overflow",
+      "cycle": 28,
+      "decision": "At WRAP_UP distillation the playbook sat at its 20-lesson cap with every lesson high-confidence. L-046 (implemented != reachable) was minted and L-020 archived instead of the mechanically-selected L-008.",
+      "why": "L-046 was observed four times in one run (KI-10 c23, KI-12 c24, D-34/T-065 c24, T-069 c25) and had no semantic home. The mechanical rule selects L-008, the most-wired apply directive, whose drop two prior runs already declined by argument; L-020 is the narrowest lesson in the file, single-source and never re-observed since 2026-08-09. Deviation flagged in the playbook header for human review; L-020 archived, not deleted."
     }
   ],
   "known_issues": [
@@ -394,10 +401,10 @@
     "last_taste_cycle": null
   },
   "last_cycle": {
-    "cycle": 27,
-    "work": "build-wave (2 direct agents, S-effort): T-067 + T-062",
-    "outcome": "2 verified",
-    "ts": 1787138488
+    "cycle": 28,
+    "work": "WRAP_UP (stop_at reached)",
+    "outcome": "reports written, suite re-verified 411/411, tagged v0.1-overnight",
+    "ts": 1787140619
   },
-  "updated_at": "2026-08-19T11:03:20.000Z"
+  "updated_at": "2026-08-19T11:56:59Z"
 }
