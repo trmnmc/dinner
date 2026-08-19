@@ -151,6 +151,6 @@
     "n": 8,
     "work": "build-wave k=2 (foreground agents): T-005 preference model + calibration, T-013 prep derivation + copy/time module",
     "outcome": "T-013 verified done (gate 94/94, mutation 8/9); T-005 FAILED the gate on a product-breaking integration defect (never_recommend over-exclusion) -> todo attempts 1, KI-5 filed; 265/265 suite green; 2 mutation coverage gaps filed as T-032/T-033",
-    "commit": ""
+    "commit": "e5385a2"
   }
 }
